@@ -1,7 +1,7 @@
 {
   "name": "sms-gateway-server",
-  "version": "3.0.0",
-  "description": "SMS Gateway Multi-tenant Server",
+  "version": "4.0.0",
+  "description": "SMS Gateway Multi-tenant Server med PostgreSQL",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -11,7 +11,8 @@
     "express": "^4.18.2",
     "uuid": "^9.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
