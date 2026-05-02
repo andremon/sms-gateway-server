@@ -471,7 +471,7 @@ input:checked+.slider:before{transform:translateX(20px)}
         <h2>Innkommende meldinger</h2>
         <div class="toolbar">
           <input type="text" id="inboxSearch" placeholder="Søk etter nummer eller tekst..." style="max-width:300px" oninput="loadInbox()">
-          <a href="/api/export/inbox?token=${getToken()}" class="btn btn-outline" download>⬇ Eksporter CSV</a>
+          <a id="inboxExportLink" href="#" class="btn btn-outline" download>⬇ Eksporter CSV</a>
           <button class="btn btn-outline" onclick="loadInbox()">↻ Oppdater</button>
         </div>
         <table><thead><tr><th>Fra</th><th>Melding</th><th>Tidspunkt</th></tr></thead>
@@ -822,6 +822,7 @@ async function changePassword() {
 function init() {
   document.getElementById('serverUrl').textContent = BASE;
   document.getElementById('sentExportLink').href = BASE + '/api/export/sent?token=' + sessionToken;
+  document.getElementById('inboxExportLink').href = BASE + '/api/export/inbox?token=' + sessionToken;
   loadStats();
   setInterval(loadStats, 30000);
 }
