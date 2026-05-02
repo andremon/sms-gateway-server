@@ -166,7 +166,7 @@ async function checkAutoReply(tenantId, from, body) {
 }
 
 function generateWelcomeMessage(tenant, serverUrl) {
-    return 'Hei!\n\nDu har tilgang til SMS Gateway.\n\nDashboard: ' + serverUrl + '/kunde/' + tenant.slug + '/dashboard\nPassord: (det du valgte)\n\nAndroid-app:\nServer URL: ' + serverUrl + '\nAPI-nokkel: ' + tenant.api_key + '\n\nTa kontakt ved sporsmal.';
+    return `Hei!\n\nDu har nå tilgang til SMS Gateway.\n\nDashboard: ${serverUrl}/kunde/${tenant.slug}/dashboard\nPassord: (det du valgte)\n\nAndroid-app innstillinger:\nServer URL: ${serverUrl}\nAPI-nøkkel: ${tenant.api_key}\n\nTa kontakt ved spørsmål.`;
 }
 
 // ── SESSIONS ──────────────────────────────────────────────────────────────────
@@ -400,15 +400,16 @@ app.post('/api/device/fcm-token', requireApiKey, (req, res) => {
 });
 
 // ── DASHBOARDS ────────────────────────────────────────────────────────────────
-app.get('/admin', (req, res) => res.send(adminDashboard()));
+app.use(express.static('public'));
+app.get('/admin', (req, res) => res.sendFile(__dirname + '/public/admin.html'));
 app.get('/kunde/:slug/dashboard', async (req, res) => {
     const tenant = await getTenantBySlug(req.params.slug);
     if (!tenant) return res.status(404).send('<h1 style="font-family:sans-serif;padding:40px">Kunde ikke funnet</h1>');
     res.send(tenantDashboard(tenant, req.params.slug));
 });
 
-// ── ADMIN DASHBOARD HTML ──────────────────────────────────────────────────────
-function adminDashboard() {
+// ── TENANT DASHBOARD HTML ─────────────────────────────────────────────────────
+function tenantDashboard_UNUSED() {
     return `<!DOCTYPE html><html lang="no"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SMS Gateway Admin</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}.login{display:flex;align-items:center;justify-content:center;min-height:100vh}.login-box{background:#1e293b;border-radius:16px;padding:40px;width:380px;text-align:center}.login-box h1{font-size:24px;margin-bottom:6px;color:#f8fafc}.login-box p{color:#94a3b8;margin-bottom:24px;font-size:14px}input{width:100%;padding:12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px;margin-bottom:12px}.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}.btn-primary{background:#3b82f6;color:white;width:100%}.btn-danger{background:#ef4444;color:white}.btn-green{background:#22c55e;color:white}.btn-gray{background:#334155;color:#e2e8f0}.btn-sm{padding:6px 12px;font-size:12px}.btn:hover{opacity:0.9}header{background:#1e293b;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155}.server-status{display:flex;align-items:center;gap:8px;font-size:13px;color:#94a3b8}.status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}.status-dot.offline{background:#ef4444;animation:none}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}header h1{font-size:18px;color:#f8fafc}.container{max-width:1100px;margin:32px auto;padding:0 16px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}.stat{background:#1e293b;border-radius:12px;padding:20px;border:1px solid #334155}.stat .num{font-size:32px;font-weight:700;color:#3b82f6}.stat .lbl{color:#94a3b8;font-size:13px;margin-top:4px}.card{background:#1e293b;border-radius:12px;padding:24px;border:1px solid #334155;margin-bottom:24px}.card h2{font-size:16px;font-weight:600;margin-bottom:16px;color:#f8fafc}.form-row{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-bottom:12px}.form-group{display:flex;flex-direction:column;gap:6px}.form-group label{font-size:13px;color:#94a3b8}table{width:100%;border-collapse:collapse}th{text-align:left;padding:10px 12px;background:#0f172a;font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase}td{padding:12px;border-top:1px solid #334155;font-size:14px}code{background:#0f172a;padding:3px 8px;border-radius:4px;font-size:11px;color:#7dd3fc;word-break:break-all}.welcome-box{background:#0f172a;border:1px solid #22c55e;border-radius:10px;padding:16px;margin-top:16px}.welcome-text{font-family:monospace;font-size:13px;color:#cbd5e1;white-space:pre-wrap;line-height:1.6;margin:8px 0}.hidden{display:none}#toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:8px;opacity:0;transition:opacity 0.3s;z-index:999;font-size:14px;font-weight:500}#toast.show{opacity:1}</style></head>
 <body>
