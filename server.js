@@ -166,7 +166,7 @@ async function checkAutoReply(tenantId, from, body) {
 }
 
 function generateWelcomeMessage(tenant, serverUrl) {
-    return `Hei!\n\nDu har nå tilgang til SMS Gateway.\n\nDashboard: ${serverUrl}/kunde/${tenant.slug}/dashboard\nPassord: (det du valgte)\n\nAndroid-app innstillinger:\nServer URL: ${serverUrl}\nAPI-nøkkel: ${tenant.api_key}\n\nTa kontakt ved spørsmål.`;
+    return 'Hei!\n\nDu har tilgang til SMS Gateway.\n\nDashboard: ' + serverUrl + '/kunde/' + tenant.slug + '/dashboard\nPassord: (det du valgte)\n\nAndroid-app:\nServer URL: ' + serverUrl + '\nAPI-nokkel: ' + tenant.api_key + '\n\nTa kontakt ved sporsmal.';
 }
 
 // ── SESSIONS ──────────────────────────────────────────────────────────────────
