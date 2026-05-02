@@ -1,6 +1,6 @@
 {
   "name": "sms-gateway-server",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "SMS Gateway Backend Server",
   "main": "server.js",
   "scripts": {
@@ -11,7 +11,8 @@
     "express": "^4.18.2",
     "uuid": "^9.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
