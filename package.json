@@ -1,7 +1,7 @@
 {
   "name": "sms-gateway-server",
-  "version": "2.0.1",
-  "description": "SMS Gateway Backend Server",
+  "version": "3.0.0",
+  "description": "SMS Gateway Multi-tenant Server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
