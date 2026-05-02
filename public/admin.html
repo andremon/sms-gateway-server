@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SMS Gateway Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.login{display:flex;align-items:center;justify-content:center;min-height:100vh}
+.login-box{background:#1e293b;border-radius:16px;padding:40px;width:380px;text-align:center}
+.login-box h1{font-size:24px;margin-bottom:6px;color:#f8fafc}
+.login-box p{color:#94a3b8;margin-bottom:24px;font-size:14px}
+input{width:100%;padding:12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px;margin-bottom:12px}
+.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.btn-primary{background:#3b82f6;color:white;width:100%}
+.btn-danger{background:#ef4444;color:white}
+.btn-green{background:#22c55e;color:white}
+.btn-gray{background:#334155;color:#e2e8f0}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn:hover{opacity:0.9}
+header{background:#1e293b;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155}
+.server-status{display:flex;align-items:center;gap:8px;font-size:13px;color:#94a3b8}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
+.status-dot.offline{background:#ef4444;animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+header h1{font-size:18px;color:#f8fafc}
+.container{max-width:1100px;margin:32px auto;padding:0 16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
+.stat{background:#1e293b;border-radius:12px;padding:20px;border:1px solid #334155}
+.stat .num{font-size:32px;font-weight:700;color:#3b82f6}
+.stat .lbl{color:#94a3b8;font-size:13px;margin-top:4px}
+.card{background:#1e293b;border-radius:12px;padding:24px;border:1px solid #334155;margin-bottom:24px}
+.card h2{font-size:16px;font-weight:600;margin-bottom:16px;color:#f8fafc}
+.form-row{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group label{font-size:13px;color:#94a3b8}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 12px;background:#0f172a;font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase}
+td{padding:12px;border-top:1px solid #334155;font-size:14px}
+code{background:#0f172a;padding:3px 8px;border-radius:4px;font-size:11px;color:#7dd3fc;word-break:break-all}
+.welcome-box{background:#0f172a;border:1px solid #22c55e;border-radius:10px;padding:16px;margin-top:16px}
+.welcome-text{font-family:monospace;font-size:13px;color:#cbd5e1;white-space:pre-wrap;line-height:1.6;margin:8px 0}
+.hidden{display:none}
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:8px;opacity:0;transition:opacity 0.3s;z-index:999;font-size:14px;font-weight:500}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="loginView" class="login">
+  <div class="login-box">
+    <h1>🔐 SMS Gateway</h1>
+    <p>Admin-panel</p>
+    <input type="password" id="adminPwd" placeholder="Admin-passord">
+    <button class="btn btn-primary" id="loginBtn">Logg inn</button>
+    <div id="loginErr" style="color:#f87171;margin-top:8px;font-size:13px"></div>
+  </div>
+</div>
+
+<div id="adminView" class="hidden">
+  <header>
+    <div style="display:flex;align-items:center;gap:16px">
+      <h1>🔧 SMS Gateway Admin</h1>
+      <div class="server-status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Sjekker...</span>
+      </div>
+    </div>
+    <button class="btn btn-danger btn-sm" id="logoutBtn">Logg ut</button>
+  </header>
+
+  <div class="container">
+    <div class="stats" id="adminStats"></div>
+
+    <div class="card">
+      <h2>➕ Opprett ny kunde</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Firmanavn</label>
+          <input type="text" id="newName" placeholder="F.eks. Firma AS">
+        </div>
+        <div class="form-group">
+          <label>Passord til dashboard</label>
+          <input type="password" id="newPwd" placeholder="Minimum 8 tegn">
+        </div>
+        <button class="btn btn-green" id="createBtn">Opprett</button>
+      </div>
+      <div id="welcomeResult" class="hidden">
+        <div class="welcome-box">
+          <div style="color:#4ade80;font-weight:600;margin-bottom:8px">✅ Kunde opprettet! Send denne meldingen til kunden:</div>
+          <div class="welcome-text" id="welcomeText"></div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-gray btn-sm" id="copyBtn">📋 Kopier melding</button>
+            <a id="dashLink" href="#" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;padding:6px 12px;font-size:12px">🔗 Åpne dashboard</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>👥 Kunder</h2>
+      <table>
+        <thead>
+          <tr><th>Firma</th><th>Dashboard</th><th>API-nøkkel</th><th>Statistikk</th><th>Handlinger</th></tr>
+        </thead>
+        <tbody id="tenantsTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var adminToken = localStorage.getItem('admin_token') || '';
+var BASE = window.location.origin;
+var lastWelcome = '';
+
+function adminApi(path, opts) {
+  opts = opts || {};
+  var headers = { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken };
+  if (opts.headers) Object.assign(headers, opts.headers);
+  return fetch(BASE + path, Object.assign({}, opts, { headers: headers })).then(function(r) { return r.json(); });
+}
+
+function adminLogin() {
+  var pwd = document.getElementById('adminPwd').value;
+  fetch(BASE + '/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pwd })
+  }).then(function(r) { return r.json(); }).then(function(res) {
+    if (res.token) {
+      adminToken = res.token;
+      localStorage.setItem('admin_token', adminToken);
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('adminView').classList.remove('hidden');
+      init();
+    } else {
+      document.getElementById('loginErr').textContent = 'Feil passord';
+    }
+  });
+}
+
+function adminLogout() {
+  localStorage.removeItem('admin_token');
+  location.reload();
+}
+
+function checkServerStatus() {
+  fetch(BASE + '/').then(function(r) {
+    document.getElementById('statusDot').className = 'status-dot';
+    document.getElementById('statusText').textContent = 'Server kjorer';
+  }).catch(function() {
+    document.getElementById('statusDot').className = 'status-dot offline';
+    document.getElementById('statusText').textContent = 'Server utilgjengelig';
+  });
+}
+
+function loadTenants() {
+  adminApi('/admin/tenants').then(function(data) {
+    var totI = 0, totS = 0;
+    data.forEach(function(t) { totI += t.stats.inbound; totS += t.stats.sent; });
+    document.getElementById('adminStats').innerHTML =
+      '<div class="stat"><div class="num">' + data.length + '</div><div class="lbl">Aktive kunder</div></div>' +
+      '<div class="stat"><div class="num">' + totI + '</div><div class="lbl">Totalt innkommende</div></div>' +
+      '<div class="stat"><div class="num">' + totS + '</div><div class="lbl">Totalt sendte</div></div>';
+
+    if (!data.length) {
+      document.getElementById('tenantsTable').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:32px">Ingen kunder ennå</td></tr>';
+      return;
+    }
+
+    var rows = data.map(function(t) {
+      return '<tr>' +
+        '<td><strong>' + t.name + '</strong><br><span style="color:#64748b;font-size:12px">' + new Date(t.createdAt).toLocaleDateString('nb-NO') + '</span></td>' +
+        '<td><a href="/kunde/' + t.slug + '/dashboard" target="_blank" style="color:#7dd3fc;font-size:13px">/kunde/' + t.slug + '</a></td>' +
+        '<td><code>' + t.apiKey + '</code></td>' +
+        '<td><span style="color:#4ade80">&#8595; ' + t.stats.inbound + '</span> <span style="color:#60a5fa">&#8593; ' + t.stats.sent + '</span>' + (t.stats.pending > 0 ? ' <span style="color:#fbbf24">&#9203; ' + t.stats.pending + '</span>' : '') + '</td>' +
+        '<td><div style="display:flex;gap:6px">' +
+          '<button class="btn btn-gray btn-sm" onclick="regenKey(\'' + t.id + '\',\'' + t.name + '\')">Ny nokkel</button>' +
+          '<button class="btn btn-danger btn-sm" onclick="deleteTenant(\'' + t.id + '\',\'' + t.name + '\')">Slett</button>' +
+        '</div></td>' +
+      '</tr>';
+    });
+    document.getElementById('tenantsTable').innerHTML = rows.join('');
+  });
+}
+
+function createTenant() {
+  var name = document.getElementById('newName').value.trim();
+  var password = document.getElementById('newPwd').value;
+  if (!name) { toast('Skriv firmanavn', false); return; }
+  if (!password || password.length < 8) { toast('Passord min 8 tegn', false); return; }
+  adminApi('/admin/tenants', { method: 'POST', body: JSON.stringify({ name: name, password: password }) }).then(function(res) {
+    if (res.id) {
+      lastWelcome = res.welcomeMessage;
+      document.getElementById('welcomeText').textContent = res.welcomeMessage;
+      document.getElementById('dashLink').href = res.dashboardUrl;
+      document.getElementById('welcomeResult').classList.remove('hidden');
+      document.getElementById('newName').value = '';
+      document.getElementById('newPwd').value = '';
+      loadTenants();
+      toast('Kunde opprettet!');
+    } else {
+      toast(res.error || 'Feil', false);
+    }
+  });
+}
+
+function copyWelcome() {
+  navigator.clipboard.writeText(lastWelcome).then(function() { toast('Kopiert!'); });
+}
+
+function deleteTenant(id, name) {
+  if (!confirm('Slette ' + name + '? Alle meldinger slettes permanent.')) return;
+  adminApi('/admin/tenants/' + id, { method: 'DELETE' }).then(function() {
+    document.getElementById('welcomeResult').classList.add('hidden');
+    loadTenants();
+    toast('Slettet');
+  });
+}
+
+function regenKey(id, name) {
+  if (!confirm('Ny API-nokkel for ' + name + '?')) return;
+  adminApi('/admin/tenants/' + id + '/regenerate-key', { method: 'POST' }).then(function(res) {
+    toast('Ny nokkel generert');
+    loadTenants();
+  });
+}
+
+function toast(msg, ok) {
+  if (ok === undefined) ok = true;
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = ok ? '#22c55e' : '#ef4444';
+  t.style.color = 'white';
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
+
+function init() {
+  checkServerStatus();
+  loadTenants();
+  setInterval(function() { checkServerStatus(); loadTenants(); }, 10000);
+}
+
+function checkAdminSession() {
+  if (!adminToken) return;
+  adminApi('/admin/tenants').then(function(res) {
+    if (res && !res.error) {
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('adminView').classList.remove('hidden');
+      init();
+    } else {
+      localStorage.removeItem('admin_token');
+    }
+  }).catch(function() {
+    localStorage.removeItem('admin_token');
+  });
+}
+
+// Event listeners
+document.getElementById('loginBtn').addEventListener('click', adminLogin);
+document.getElementById('logoutBtn').addEventListener('click', adminLogout);
+document.getElementById('createBtn').addEventListener('click', createTenant);
+document.getElementById('copyBtn').addEventListener('click', copyWelcome);
+document.getElementById('adminPwd').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') adminLogin();
+});
+
+checkAdminSession();
+</script>
+</body>
+</html>
