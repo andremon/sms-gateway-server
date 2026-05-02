@@ -405,7 +405,7 @@ app.get('/admin', (req, res) => res.sendFile(__dirname + '/public/admin.html'));
 app.get('/kunde/:slug/dashboard', async (req, res) => {
     const tenant = await getTenantBySlug(req.params.slug);
     if (!tenant) return res.status(404).send('<h1 style="font-family:sans-serif;padding:40px">Kunde ikke funnet</h1>');
-    res.send(tenantDashboard(tenant, req.params.slug));
+    res.sendFile(__dirname + '/public/dashboard.html');
 });
 
 // ── TENANT DASHBOARD HTML ─────────────────────────────────────────────────────
