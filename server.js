@@ -264,6 +264,18 @@ app.get('/kunde/:slug/api/contacts', requireTenantSession, (req, res) => {
     req.tenant.data.inboundMessages.forEach(m => {
         if (!contacts[m.from]) contacts[m.from] = { number: m.from, lastSeen: m.receivedAt, messageCount: 0 };
         contacts[m.from].messageCount++;
+        if (m.receivedAt > contacts[m.from].lastSeen) contacts[m.from].lastSeen = m.receivedAt;
+    });
+    req.tenant.data.sentMessages.forEach(m => {
+        if (m.to && !contacts[m.to]) contacts[m.to] = { number: m.to, lastSeen: m.sentAt || m.createdAt, messageCount: 0 };
+    });
+    res.json(Object.values(contacts).sort((a, b) => b.lastSeen - a.lastSeen));
+});
+app.get('/kunde/:slug/api/contacts', requireTenantSession, (req, res) => {
+    const contacts = {};
+    req.tenant.data.inboundMessages.forEach(m => {
+        if (!contacts[m.from]) contacts[m.from] = { number: m.from, lastSeen: m.receivedAt, messageCount: 0 };
+        contacts[m.from].messageCount++;
     });
     req.tenant.data.sentMessages.forEach(m => {
         if (m.to && !contacts[m.to]) contacts[m.to] = { number: m.to, lastSeen: m.sentAt || m.createdAt, messageCount: 0 };
