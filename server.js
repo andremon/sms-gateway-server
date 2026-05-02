@@ -1,3 +1,4 @@
+// SMS Gateway Server v2.0 - oppdatert 2026-05-02
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
