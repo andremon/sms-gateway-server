@@ -1,6 +1,6 @@
 {
   "name": "sms-gateway-server",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "SMS Gateway Backend Server",
   "main": "server.js",
   "scripts": {
