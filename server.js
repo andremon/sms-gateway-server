@@ -229,9 +229,28 @@ app.get('/admin/tenants', requireAdmin, async (req, res) => {
             pool.query("SELECT COUNT(*) FROM messages WHERE tenant_id=$1 AND status='sent'", [t.id]),
             pool.query("SELECT COUNT(*) FROM messages WHERE tenant_id=$1 AND status='pending'", [t.id])
         ]);
-        return { id: t.id, name: t.name, slug: t.slug, apiKey: t.api_key, createdAt: t.created_at, stats: { inbound: parseInt(inbound.rows[0].count), sent: parseInt(sent.rows[0].count), pending: parseInt(pending.rows[0].count) } };
+        return {
+            id: t.id, name: t.name, slug: t.slug, apiKey: t.api_key,
+            createdAt: t.created_at, phoneNumber: t.phone_number, maxDevices: t.max_devices || 1,
+            stats: { inbound: parseInt(inbound.rows[0].count), sent: parseInt(sent.rows[0].count), pending: parseInt(pending.rows[0].count) }
+        };
     }));
     res.json(result);
+});
+
+// Rediger kunde
+app.put('/admin/tenants/:id', requireAdmin, async (req, res) => {
+    const { name, password, phoneNumber, maxDevices } = req.body;
+    if (!name) return res.status(400).json({ error: 'Navn påkrevd' });
+    const updates = ['name=$1', 'phone_number=$2', 'max_devices=$3'];
+    const values = [name, phoneNumber || null, maxDevices || 1];
+    if (password && password.length >= 8) {
+        updates.push('password=$' + (values.length + 1));
+        values.push(password);
+    }
+    values.push(req.params.id);
+    await pool.query(`UPDATE tenants SET ${updates.join(',')} WHERE id=$${values.length}`, values);
+    res.json({ success: true });
 });
 
 app.post('/admin/tenants', requireAdmin, async (req, res) => {
