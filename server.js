@@ -26,8 +26,7 @@ async function initDB() {
             slug TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
             api_key TEXT UNIQUE NOT NULL,
-            created_at BIGINT NOT NULL,
-            max_devices INT DEFAULT 1
+            created_at BIGINT NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS messages (
@@ -66,30 +65,21 @@ async function initDB() {
             created_at BIGINT NOT NULL
         );
 
-        CREATE TABLE IF NOT EXISTS qr_tokens (
-            token TEXT PRIMARY KEY,
-            tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-            used BOOLEAN DEFAULT FALSE,
-            device_id TEXT,
-            created_at BIGINT NOT NULL,
-            expires_at BIGINT NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS devices (
-            id TEXT PRIMARY KEY,
-            tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-            device_id TEXT NOT NULL,
-            device_name TEXT,
-            registered_at BIGINT NOT NULL,
-            last_seen BIGINT,
-            UNIQUE(tenant_id, device_id)
-        );
-
         CREATE INDEX IF NOT EXISTS idx_messages_tenant ON messages(tenant_id);
         CREATE INDEX IF NOT EXISTS idx_messages_direction ON messages(direction);
         CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(status);
 
-        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS max_devices INT DEFAULT 1;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS phone_number TEXT;
+
+        CREATE TABLE IF NOT EXISTS reset_codes (
+            id TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+            code TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            used BOOLEAN DEFAULT FALSE,
+            created_at BIGINT NOT NULL,
+            expires_at BIGINT NOT NULL
+        );
     `);
     console.log('Database initialisert');
 }
@@ -98,100 +88,6 @@ async function initDB() {
 function generateApiKey() {
     return 'sk_' + crypto.randomBytes(24).toString('hex');
 }
-
-function generateQrToken() {
-    return crypto.randomBytes(32).toString('hex');
-}
-
-// ── 3. LEGG TIL disse endepunktene etter /admin/tenants/:id/regenerate-key ──
-
-// Generer ny QR-token for en kunde
-app.post('/admin/tenants/:id/qr-token', requireAdmin, async (req, res) => {
-    const tenant = await pool.query('SELECT * FROM tenants WHERE id=$1', [req.params.id]);
-    if (!tenant.rows[0]) return res.status(404).json({ error: 'Ikke funnet' });
-
-    // Slett gamle ubrukte tokens
-    await pool.query('DELETE FROM qr_tokens WHERE tenant_id=$1 AND used=FALSE', [req.params.id]);
-
-    const token = generateQrToken();
-    const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 timer
-
-    await pool.query(
-        'INSERT INTO qr_tokens (token, tenant_id, used, created_at, expires_at) VALUES ($1,$2,$3,$4,$5)',
-        [token, req.params.id, false, Date.now(), expiresAt]
-    );
-
-    const serverUrl = req.protocol + '://' + req.get('host');
-    const qrData = JSON.stringify({
-        serverUrl,
-        apiKey: tenant.rows[0].api_key,
-        tenantName: tenant.rows[0].name,
-        token
-    });
-
-    res.json({ token, qrData, expiresAt });
-});
-
-// Hent registrerte enheter for en kunde
-app.get('/admin/tenants/:id/devices', requireAdmin, async (req, res) => {
-    const result = await pool.query(
-        'SELECT * FROM devices WHERE tenant_id=$1 ORDER BY registered_at DESC',
-        [req.params.id]
-    );
-    res.json(result.rows);
-});
-
-// Slett en enhet
-app.delete('/admin/devices/:deviceId', requireAdmin, async (req, res) => {
-    await pool.query('DELETE FROM devices WHERE id=$1', [req.params.deviceId]);
-    res.json({ success: true });
-});
-
-// ── 4. REGISTRERINGSENDEPUNKT for Android-appen ──────────────────────
-// Appen kaller dette etter QR-skanning
-app.post('/api/register', async (req, res) => {
-    const { token, deviceId, deviceName } = req.body;
-    if (!token || !deviceId) return res.status(400).json({ error: 'token og deviceId er påkrevd' });
-
-    // Sjekk at token er gyldig og ikke brukt
-    const qr = await pool.query(
-        'SELECT * FROM qr_tokens WHERE token=$1 AND used=FALSE AND expires_at > $2',
-        [token, Date.now()]
-    );
-
-    if (!qr.rows[0]) return res.status(401).json({ error: 'Ugyldig eller utløpt QR-kode' });
-
-    const tenantId = qr.rows[0].tenant_id;
-
-    // Sjekk max antall enheter
-    const tenant = await pool.query('SELECT * FROM tenants WHERE id=$1', [tenantId]);
-    const maxDevices = tenant.rows[0].max_devices || 1;
-    const deviceCount = await pool.query('SELECT COUNT(*) FROM devices WHERE tenant_id=$1', [tenantId]);
-
-    if (parseInt(deviceCount.rows[0].count) >= maxDevices) {
-        return res.status(403).json({ error: 'Maks antall enheter nådd for denne kunden' });
-    }
-
-    // Registrer enheten
-    await pool.query(
-        'INSERT INTO devices (id, tenant_id, device_id, device_name, registered_at, last_seen) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (tenant_id, device_id) DO UPDATE SET last_seen=$6',
-        [uuidv4(), tenantId, deviceId, deviceName || 'Ukjent enhet', Date.now(), Date.now()]
-    );
-
-    // Marker QR-token som brukt
-    await pool.query(
-        'UPDATE qr_tokens SET used=TRUE, device_id=$1 WHERE token=$2',
-        [deviceId, token]
-    );
-
-    // Returner API-nøkkel til appen
-    res.json({
-        success: true,
-        apiKey: tenant.rows[0].api_key,
-        serverUrl: req.protocol + '://' + req.get('host'),
-        tenantName: tenant.rows[0].name
-    });
-});
 
 function slugify(name) {
     return name.toLowerCase()
@@ -308,28 +204,8 @@ async function requireTenantSession(req, res, next) {
 }
 
 async function requireApiKey(req, res, next) {
-    const key = req.headers['x-api-key'];
-    const deviceId = req.headers['x-device-id'];
-
-    const tenant = await getTenantByApiKey(key);
+    const tenant = await getTenantByApiKey(req.headers['x-api-key']);
     if (!tenant) return res.status(401).json({ error: 'Ugyldig API-nøkkel' });
-
-    // Sjekk at enheten er registrert (hvis deviceId er sendt)
-    if (deviceId) {
-        const device = await pool.query(
-            'SELECT * FROM devices WHERE tenant_id=$1 AND device_id=$2',
-            [tenant.id, deviceId]
-        );
-        if (!device.rows[0]) {
-            return res.status(403).json({ error: 'Enhet ikke registrert. Skann QR-kode på nytt.' });
-        }
-        // Oppdater last_seen
-        await pool.query(
-            'UPDATE devices SET last_seen=$1 WHERE tenant_id=$2 AND device_id=$3',
-            [Date.now(), tenant.id, deviceId]
-        );
-    }
-
     req.tenant = tenant;
     next();
 }
@@ -385,48 +261,6 @@ app.post('/admin/tenants/:id/regenerate-key', requireAdmin, async (req, res) => 
     res.json({ apiKey: newKey });
 });
 
-// Generer ny QR-token for en kunde
-app.post('/admin/tenants/:id/qr-token', requireAdmin, async (req, res) => {
-    const tenant = await pool.query('SELECT * FROM tenants WHERE id=$1', [req.params.id]);
-    if (!tenant.rows[0]) return res.status(404).json({ error: 'Ikke funnet' });
-
-    // Slett gamle ubrukte tokens
-    await pool.query('DELETE FROM qr_tokens WHERE tenant_id=$1 AND used=FALSE', [req.params.id]);
-
-    const token = generateQrToken();
-    const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 timer
-
-    await pool.query(
-        'INSERT INTO qr_tokens (token, tenant_id, used, created_at, expires_at) VALUES ($1,$2,$3,$4,$5)',
-        [token, req.params.id, false, Date.now(), expiresAt]
-    );
-
-    const serverUrl = req.protocol + '://' + req.get('host');
-    const qrData = JSON.stringify({
-        serverUrl,
-        apiKey: tenant.rows[0].api_key,
-        tenantName: tenant.rows[0].name,
-        token
-    });
-
-    res.json({ token, qrData, expiresAt });
-});
-
-// Hent registrerte enheter for en kunde
-app.get('/admin/tenants/:id/devices', requireAdmin, async (req, res) => {
-    const result = await pool.query(
-        'SELECT * FROM devices WHERE tenant_id=$1 ORDER BY registered_at DESC',
-        [req.params.id]
-    );
-    res.json(result.rows);
-});
-
-// Slett en enhet
-app.delete('/admin/devices/:deviceId', requireAdmin, async (req, res) => {
-    await pool.query('DELETE FROM devices WHERE id=$1', [req.params.deviceId]);
-    res.json({ success: true });
-});
-
 // ── TENANT AUTH ───────────────────────────────────────────────────────────────
 app.post('/kunde/:slug/auth/login', async (req, res) => {
     const tenant = await getTenantBySlug(req.params.slug);
@@ -442,6 +276,64 @@ app.post('/kunde/:slug/auth/change-password', requireTenantSession, async (req, 
     if (currentPassword !== req.tenant.password) return res.status(401).json({ error: 'Feil passord' });
     if (!newPassword || newPassword.length < 8) return res.status(400).json({ error: 'Min 8 tegn' });
     await pool.query('UPDATE tenants SET password=$1 WHERE id=$2', [newPassword, req.tenant.id]);
+    res.json({ success: true });
+});
+
+// Registrer telefonnummer for reset
+app.post('/kunde/:slug/auth/register-phone', requireTenantSession, async (req, res) => {
+    const { phoneNumber } = req.body;
+    if (!phoneNumber) return res.status(400).json({ error: 'Telefonnummer påkrevd' });
+    await pool.query('UPDATE tenants SET phone_number=$1 WHERE id=$2', [phoneNumber, req.tenant.id]);
+    res.json({ success: true });
+});
+
+// Be om reset-kode (kunden ber om kode fra reset-siden)
+app.post('/kunde/:slug/auth/request-reset', async (req, res) => {
+    const tenant = await getTenantBySlug(req.params.slug);
+    if (!tenant) return res.status(404).json({ error: 'Ikke funnet' });
+    if (!tenant.phone_number) return res.status(400).json({ error: 'Ingen telefon registrert. Kontakt administrator.' });
+
+    // Generer 6-sifret kode
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutter
+
+    // Slett gamle koder
+    await pool.query('DELETE FROM reset_codes WHERE tenant_id=$1', [tenant.id]);
+
+    await pool.query(
+        'INSERT INTO reset_codes (id, tenant_id, code, phone, used, created_at, expires_at) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [uuidv4(), tenant.id, code, tenant.phone_number, false, Date.now(), expiresAt]
+    );
+
+    // Legg reset-koden i meldingskøen som utgående SMS
+    const msgBody = `Ayno Connect: Din reset-kode er ${code}. Gyldig i 15 minutter.`;
+    await pool.query(
+        'INSERT INTO messages (id,tenant_id,direction,status,to_number,body,created_at,source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [uuidv4(), tenant.id, 'outbound', 'pending', tenant.phone_number, msgBody, Date.now(), 'reset']
+    );
+
+    res.json({ success: true, maskedPhone: tenant.phone_number.slice(0,-4).replace(/./g,'*') + tenant.phone_number.slice(-4) });
+});
+
+// Verifiser reset-kode og sett nytt passord
+app.post('/kunde/:slug/auth/verify-reset', async (req, res) => {
+    const { code, newPassword } = req.body;
+    if (!code || !newPassword) return res.status(400).json({ error: 'Kode og nytt passord påkrevd' });
+    if (newPassword.length < 8) return res.status(400).json({ error: 'Passord må være minst 8 tegn' });
+
+    const tenant = await getTenantBySlug(req.params.slug);
+    if (!tenant) return res.status(404).json({ error: 'Ikke funnet' });
+
+    const reset = await pool.query(
+        'SELECT * FROM reset_codes WHERE tenant_id=$1 AND code=$2 AND used=FALSE AND expires_at > $3',
+        [tenant.id, code, Date.now()]
+    );
+
+    if (!reset.rows[0]) return res.status(401).json({ error: 'Ugyldig eller utløpt kode' });
+
+    await pool.query('UPDATE tenants SET password=$1 WHERE id=$2', [newPassword, tenant.id]);
+    await pool.query('UPDATE reset_codes SET used=TRUE WHERE id=$1', [reset.rows[0].id]);
+
     res.json({ success: true });
 });
 
