@@ -70,6 +70,8 @@ async function initDB() {
         CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(status);
 
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS phone_number TEXT;
+        ALTER TABLE devices ADD COLUMN IF NOT EXISTS battery_level INT;
+        ALTER TABLE devices ADD COLUMN IF NOT EXISTS network_type TEXT;
 
         CREATE TABLE IF NOT EXISTS reset_codes (
             id TEXT PRIMARY KEY,
@@ -486,8 +488,39 @@ app.post('/api/sms/:id/status', requireApiKey, async (req, res) => {
 });
 
 app.post('/api/device/fcm-token', requireApiKey, (req, res) => {
-    // FCM token lagres i minnet (ikke kritisk å persistere)
     res.json({ success: true });
+});
+
+// Gateway ping — appen kaller dette hvert minutt for å vise at den er online
+app.post('/api/gateway/ping', requireApiKey, async (req, res) => {
+    const deviceId = req.headers['x-device-id'];
+    const { batteryLevel, networkType } = req.body;
+    if (deviceId) {
+        await pool.query(
+            'UPDATE devices SET last_seen=$1 WHERE tenant_id=$2 AND device_id=$3',
+            [Date.now(), req.tenant.id, deviceId]
+        );
+        // Lagre ekstra status-info
+        await pool.query(
+            `UPDATE devices SET battery_level=$1, network_type=$2 WHERE tenant_id=$3 AND device_id=$4`,
+            [batteryLevel || null, networkType || null, req.tenant.id, deviceId]
+        ).catch(() => {}); // Ignorer hvis kolonnene ikke finnes ennå
+    }
+    res.json({ success: true, serverTime: Date.now() });
+});
+
+// Admin: hent gateway-status for alle kunder
+app.get('/admin/gateway-status', requireAdmin, async (req, res) => {
+    const devices = await pool.query(`
+        SELECT d.*, t.name as tenant_name, t.slug,
+               (SELECT COUNT(*) FROM messages WHERE tenant_id=d.tenant_id AND status='pending' AND direction='outbound') as pending_count,
+               (SELECT MAX(received_at) FROM messages WHERE tenant_id=d.tenant_id AND direction='inbound') as last_inbound,
+               (SELECT MAX(sent_at) FROM messages WHERE tenant_id=d.tenant_id AND direction='outbound' AND status='sent') as last_sent
+        FROM devices d
+        JOIN tenants t ON t.id = d.tenant_id
+        ORDER BY d.last_seen DESC NULLS LAST
+    `);
+    res.json(devices.rows);
 });
 
 // ── DASHBOARDS ────────────────────────────────────────────────────────────────
