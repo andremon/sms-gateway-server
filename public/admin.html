@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SMS Gateway Admin</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
@@ -17,6 +18,7 @@ input{width:100%;padding:12px;background:#0f172a;border:1px solid #334155;border
 .btn-danger{background:#ef4444;color:white}
 .btn-green{background:#22c55e;color:white}
 .btn-gray{background:#334155;color:#e2e8f0}
+.btn-blue{background:#3b82f6;color:white}
 .btn-sm{padding:6px 12px;font-size:12px}
 .btn:hover{opacity:0.9}
 header{background:#1e293b;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155}
@@ -37,10 +39,17 @@ header h1{font-size:18px;color:#f8fafc}
 .form-group label{font-size:13px;color:#94a3b8}
 table{width:100%;border-collapse:collapse}
 th{text-align:left;padding:10px 12px;background:#0f172a;font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase}
-td{padding:12px;border-top:1px solid #334155;font-size:14px}
+td{padding:12px;border-top:1px solid #334155;font-size:14px;vertical-align:middle}
 code{background:#0f172a;padding:3px 8px;border-radius:4px;font-size:11px;color:#7dd3fc;word-break:break-all}
 .welcome-box{background:#0f172a;border:1px solid #22c55e;border-radius:10px;padding:16px;margin-top:16px}
 .welcome-text{font-family:monospace;font-size:13px;color:#cbd5e1;white-space:pre-wrap;line-height:1.6;margin:8px 0}
+.qr-box{background:#0f172a;border:1px solid #3b82f6;border-radius:10px;padding:20px;margin-top:12px;text-align:center}
+.qr-box h3{color:#93c5fd;font-size:14px;margin-bottom:12px;font-weight:600}
+#qrcode{display:inline-block;background:white;padding:12px;border-radius:8px;margin:8px auto}
+.qr-expires{color:#64748b;font-size:12px;margin-top:8px}
+.qr-instructions{color:#94a3b8;font-size:13px;margin-top:8px;line-height:1.5}
+.device-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-top:1px solid #334155}
+.device-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:6px}
 .hidden{display:none}
 #toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:8px;opacity:0;transition:opacity 0.3s;z-index:999;font-size:14px;font-weight:500}
 #toast.show{opacity:1}
@@ -86,14 +95,27 @@ code{background:#0f172a;padding:3px 8px;border-radius:4px;font-size:11px;color:#
         </div>
         <button class="btn btn-green" id="createBtn">Opprett</button>
       </div>
+
       <div id="welcomeResult" class="hidden">
         <div class="welcome-box">
-          <div style="color:#4ade80;font-weight:600;margin-bottom:8px">✅ Kunde opprettet! Send denne meldingen til kunden:</div>
+          <div style="color:#4ade80;font-weight:600;margin-bottom:8px">✅ Kunde opprettet!</div>
           <div class="welcome-text" id="welcomeText"></div>
           <div style="display:flex;gap:8px;margin-top:10px">
             <button class="btn btn-gray btn-sm" id="copyBtn">📋 Kopier melding</button>
             <a id="dashLink" href="#" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;padding:6px 12px;font-size:12px">🔗 Åpne dashboard</a>
           </div>
+        </div>
+
+        <!-- QR-kode boks -->
+        <div class="qr-box">
+          <h3>📱 QR-kode for Android-appen</h3>
+          <div id="qrcode"></div>
+          <div class="qr-expires" id="qrExpires"></div>
+          <div class="qr-instructions">
+            La kunden åpne SMS Gateway-appen → trykk "Skann QR-kode"<br>
+            QR-koden kan kun brukes <strong style="color:#f8fafc">én gang</strong> og utløper etter 24 timer
+          </div>
+          <button class="btn btn-blue btn-sm" id="newQrBtn" style="margin-top:12px">🔄 Generer ny QR-kode</button>
         </div>
       </div>
     </div>
@@ -102,7 +124,7 @@ code{background:#0f172a;padding:3px 8px;border-radius:4px;font-size:11px;color:#
       <h2>👥 Kunder</h2>
       <table>
         <thead>
-          <tr><th>Firma</th><th>Dashboard</th><th>API-nøkkel</th><th>Statistikk</th><th>Handlinger</th></tr>
+          <tr><th>Firma</th><th>Dashboard</th><th>Enheter</th><th>Statistikk</th><th>Handlinger</th></tr>
         </thead>
         <tbody id="tenantsTable"></tbody>
       </table>
@@ -116,6 +138,7 @@ code{background:#0f172a;padding:3px 8px;border-radius:4px;font-size:11px;color:#
 var adminToken = localStorage.getItem('admin_token') || '';
 var BASE = window.location.origin;
 var lastWelcome = '';
+var currentTenantId = '';
 
 function adminApi(path, opts) {
   opts = opts || {};
@@ -162,6 +185,7 @@ function loadTenants() {
   adminApi('/admin/tenants').then(function(data) {
     var totI = 0, totS = 0;
     data.forEach(function(t) { totI += t.stats.inbound; totS += t.stats.sent; });
+
     document.getElementById('adminStats').innerHTML =
       '<div class="stat"><div class="num">' + data.length + '</div><div class="lbl">Aktive kunder</div></div>' +
       '<div class="stat"><div class="num">' + totI + '</div><div class="lbl">Totalt innkommende</div></div>' +
@@ -176,15 +200,90 @@ function loadTenants() {
       return '<tr>' +
         '<td><strong>' + t.name + '</strong><br><span style="color:#64748b;font-size:12px">' + new Date(t.createdAt).toLocaleDateString('nb-NO') + '</span></td>' +
         '<td><a href="/kunde/' + t.slug + '/dashboard" target="_blank" style="color:#7dd3fc;font-size:13px">/kunde/' + t.slug + '</a></td>' +
-        '<td><code>' + t.apiKey + '</code></td>' +
-        '<td><span style="color:#4ade80">&#8595; ' + t.stats.inbound + '</span> <span style="color:#60a5fa">&#8593; ' + t.stats.sent + '</span>' + (t.stats.pending > 0 ? ' <span style="color:#fbbf24">&#9203; ' + t.stats.pending + '</span>' : '') + '</td>' +
-        '<td><div style="display:flex;gap:6px">' +
-          '<button class="btn btn-gray btn-sm" onclick="regenKey(\'' + t.id + '\',\'' + t.name + '\')">Ny nokkel</button>' +
-          '<button class="btn btn-danger btn-sm" onclick="deleteTenant(\'' + t.id + '\',\'' + t.name + '\')">Slett</button>' +
+        '<td id="devices-' + t.id + '"><span style="color:#64748b">Laster...</span></td>' +
+        '<td><span style="color:#4ade80">&#8595; ' + t.stats.inbound + '</span> <span style="color:#60a5fa">&#8593; ' + t.stats.sent + '</span>' +
+          (t.stats.pending > 0 ? ' <span style="color:#fbbf24">&#9203; ' + t.stats.pending + '</span>' : '') + '</td>' +
+        '<td><div style="display:flex;flex-direction:column;gap:6px">' +
+          '<button class="btn btn-blue btn-sm" onclick="showQrForTenant(\'' + t.id + '\',\'' + t.name + '\')">📱 QR-kode</button>' +
+          '<button class="btn btn-gray btn-sm" onclick="regenKey(\'' + t.id + '\',\'' + t.name + '\')">🔑 Ny nokkel</button>' +
+          '<button class="btn btn-danger btn-sm" onclick="deleteTenant(\'' + t.id + '\',\'' + t.name + '\')">🗑 Slett</button>' +
         '</div></td>' +
       '</tr>';
     });
     document.getElementById('tenantsTable').innerHTML = rows.join('');
+
+    // Last enheter for hver kunde
+    data.forEach(function(t) { loadDevices(t.id); });
+  });
+}
+
+function loadDevices(tenantId) {
+  adminApi('/admin/tenants/' + tenantId + '/devices').then(function(devices) {
+    var el = document.getElementById('devices-' + tenantId);
+    if (!el) return;
+    if (!devices.length) {
+      el.innerHTML = '<span style="color:#64748b;font-size:12px">Ingen enheter</span>';
+      return;
+    }
+    el.innerHTML = devices.map(function(d) {
+      var lastSeen = d.last_seen ? new Date(parseInt(d.last_seen)).toLocaleString('nb-NO') : 'Aldri';
+      return '<div class="device-item" style="font-size:12px">' +
+        '<span><span class="device-dot"></span>' + (d.device_name || 'Ukjent') + '</span>' +
+        '<button class="btn btn-danger btn-sm" style="font-size:10px;padding:3px 8px" onclick="deleteDevice(\'' + d.id + '\',\'' + tenantId + '\')">Fjern</button>' +
+        '</div>';
+    }).join('');
+  });
+}
+
+function showQrForTenant(tenantId, tenantName) {
+  currentTenantId = tenantId;
+  generateQr(tenantId, tenantName);
+}
+
+function generateQr(tenantId, tenantName) {
+  adminApi('/admin/tenants/' + tenantId + '/qr-token', { method: 'POST' }).then(function(res) {
+    if (res.error) { toast(res.error, false); return; }
+
+    // Vis QR i et popup eller i welcome-boksen
+    var modal = document.getElementById('qrModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'qrModal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:1000';
+      modal.innerHTML =
+        '<div style="background:#1e293b;border-radius:16px;padding:32px;text-align:center;max-width:380px;width:90%">' +
+          '<h2 style="color:#f8fafc;margin-bottom:8px">📱 QR-kode</h2>' +
+          '<p style="color:#94a3b8;font-size:13px;margin-bottom:16px" id="qrModalName"></p>' +
+          '<div id="qrModalCode" style="background:white;padding:12px;border-radius:8px;display:inline-block;margin-bottom:12px"></div>' +
+          '<p style="color:#64748b;font-size:12px;margin-bottom:16px" id="qrModalExpires"></p>' +
+          '<p style="color:#94a3b8;font-size:13px;margin-bottom:20px">La kunden åpne appen og trykke<br><strong style="color:#f8fafc">Skann QR-kode</strong></p>' +
+          '<p style="color:#fbbf24;font-size:12px;margin-bottom:16px">⚠️ Kan kun brukes én gang</p>' +
+          '<div style="display:flex;gap:8px;justify-content:center">' +
+            '<button class="btn btn-gray btn-sm" id="qrRegenBtn">🔄 Ny QR-kode</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="document.getElementById(\'qrModal\').remove()">Lukk</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(modal);
+    }
+
+    document.getElementById('qrModalName').textContent = tenantName;
+    document.getElementById('qrModalExpires').textContent = 'Utloper: ' + new Date(res.expiresAt).toLocaleString('nb-NO');
+
+    var qrContainer = document.getElementById('qrModalCode');
+    qrContainer.innerHTML = '';
+    new QRCode(qrContainer, {
+      text: res.qrData,
+      width: 220,
+      height: 220,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    document.getElementById('qrRegenBtn').onclick = function() {
+      qrContainer.innerHTML = '<div style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;color:#666">Genererer...</div>';
+      generateQr(tenantId, tenantName);
+    };
   });
 }
 
@@ -193,14 +292,35 @@ function createTenant() {
   var password = document.getElementById('newPwd').value;
   if (!name) { toast('Skriv firmanavn', false); return; }
   if (!password || password.length < 8) { toast('Passord min 8 tegn', false); return; }
+
   adminApi('/admin/tenants', { method: 'POST', body: JSON.stringify({ name: name, password: password }) }).then(function(res) {
     if (res.id) {
       lastWelcome = res.welcomeMessage;
+      currentTenantId = res.id;
       document.getElementById('welcomeText').textContent = res.welcomeMessage;
       document.getElementById('dashLink').href = res.dashboardUrl;
       document.getElementById('welcomeResult').classList.remove('hidden');
       document.getElementById('newName').value = '';
       document.getElementById('newPwd').value = '';
+
+      // Generer QR-kode automatisk
+      var qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = '<div style="width:200px;height:200px;display:flex;align-items:center;justify-content:center;color:#666">Genererer QR...</div>';
+
+      adminApi('/admin/tenants/' + res.id + '/qr-token', { method: 'POST' }).then(function(qr) {
+        if (qr.error) { toast(qr.error, false); return; }
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, {
+          text: qr.qrData,
+          width: 200,
+          height: 200,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        document.getElementById('qrExpires').textContent = 'Utloper: ' + new Date(qr.expiresAt).toLocaleString('nb-NO');
+      });
+
       loadTenants();
       toast('Kunde opprettet!');
     } else {
@@ -223,10 +343,18 @@ function deleteTenant(id, name) {
 }
 
 function regenKey(id, name) {
-  if (!confirm('Ny API-nokkel for ' + name + '?')) return;
-  adminApi('/admin/tenants/' + id + '/regenerate-key', { method: 'POST' }).then(function(res) {
-    toast('Ny nokkel generert');
+  if (!confirm('Ny API-nokkel for ' + name + '? Alle registrerte enheter mister tilgang.')) return;
+  adminApi('/admin/tenants/' + id + '/regenerate-key', { method: 'POST' }).then(function() {
+    toast('Ny nokkel generert — kunden må skanne ny QR-kode');
     loadTenants();
+  });
+}
+
+function deleteDevice(deviceId, tenantId) {
+  if (!confirm('Fjerne enheten? Kunden må skanne QR-kode igjen.')) return;
+  adminApi('/admin/devices/' + deviceId, { method: 'DELETE' }).then(function() {
+    loadDevices(tenantId);
+    toast('Enhet fjernet');
   });
 }
 
@@ -243,7 +371,7 @@ function toast(msg, ok) {
 function init() {
   checkServerStatus();
   loadTenants();
-  setInterval(function() { checkServerStatus(); loadTenants(); }, 10000);
+  setInterval(function() { checkServerStatus(); loadTenants(); }, 15000);
 }
 
 function checkAdminSession() {
@@ -256,16 +384,23 @@ function checkAdminSession() {
     } else {
       localStorage.removeItem('admin_token');
     }
-  }).catch(function() {
-    localStorage.removeItem('admin_token');
-  });
+  }).catch(function() { localStorage.removeItem('admin_token'); });
 }
 
-// Event listeners
 document.getElementById('loginBtn').addEventListener('click', adminLogin);
 document.getElementById('logoutBtn').addEventListener('click', adminLogout);
 document.getElementById('createBtn').addEventListener('click', createTenant);
 document.getElementById('copyBtn').addEventListener('click', copyWelcome);
+document.getElementById('newQrBtn').addEventListener('click', function() {
+  if (!currentTenantId) return;
+  var qrContainer = document.getElementById('qrcode');
+  qrContainer.innerHTML = 'Genererer...';
+  adminApi('/admin/tenants/' + currentTenantId + '/qr-token', { method: 'POST' }).then(function(qr) {
+    qrContainer.innerHTML = '';
+    new QRCode(qrContainer, { text: qr.qrData, width: 200, height: 200, colorDark: '#000000', colorLight: '#ffffff' });
+    document.getElementById('qrExpires').textContent = 'Utloper: ' + new Date(qr.expiresAt).toLocaleString('nb-NO');
+  });
+});
 document.getElementById('adminPwd').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') adminLogin();
 });
