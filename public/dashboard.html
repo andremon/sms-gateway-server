@@ -65,6 +65,18 @@ nav{flex:1;display:flex;flex-direction:column;gap:2px}
 .send-feedback{padding:10px 14px;border-radius:var(--radius2);font-size:13px;margin-top:10px;display:none}
 .send-feedback.ok{background:var(--green-dim);color:var(--green);display:block}
 .send-feedback.err{background:#f8717114;color:var(--red);display:block}
+.send-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.editor-toolbar{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);padding:10px 12px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
+.toolbar-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.toolbar-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;min-width:56px;flex-shrink:0}
+.symbol-btns{display:flex;gap:4px;flex-wrap:wrap}
+.sym-btn{padding:4px 8px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit}.sym-btn:hover{background:var(--accent-dim);border-color:var(--accent);color:var(--accent2)}
+.var-btn{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent2);border-color:var(--accent-dim)}
+.quick-tpl{width:100%;text-align:left;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;font-family:inherit;line-height:1.4}.quick-tpl:hover{background:var(--accent-dim);border-color:var(--accent);color:var(--text)}
+.tpl-item{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);gap:8px;margin-bottom:6px}
+.tpl-text{font-size:12px;color:var(--text2);flex:1;line-height:1.4;cursor:pointer}.tpl-text:hover{color:var(--text)}
+.tpl-use{padding:4px 10px;background:var(--accent-dim);color:var(--accent2);border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}.tpl-use:hover{background:var(--accent);color:white}
+.tpl-del{padding:4px 8px;background:transparent;color:var(--text3);border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit}.tpl-del:hover{color:var(--red)}
 .contacts-panel{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);max-height:280px;overflow-y:auto}
 .contact-row{padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);transition:background .15s}.contact-row:last-child{border-bottom:none}.contact-row:hover{background:var(--accent-dim)}
 .contact-num{font-size:13px;font-weight:500;font-family:'DM Mono',monospace}.contact-meta{font-size:11px;color:var(--text3)}
@@ -104,13 +116,41 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
 <body>
 
 <div class="login-screen" id="loginScreen">
-  <div class="login-card">
+  <div class="login-card" id="loginCard">
     <div class="login-logo">📱</div>
     <h1>SMS Gateway</h1>
     <p class="sub" id="loginSub">Logg inn for å fortsette</p>
-    <input type="password" id="loginPwd" placeholder="Passord" autocomplete="current-password">
+    <input type="text" name="username" autocomplete="username" style="display:none">
+    <input type="password" id="loginPwd" placeholder="Passord" autocomplete="current-password" name="password">
     <button class="login-btn" id="loginBtn">Logg inn</button>
     <div class="login-err" id="loginErr"></div>
+    <button id="forgotBtn" style="background:none;border:none;color:var(--accent2);font-size:12px;cursor:pointer;margin-top:10px;font-family:inherit;width:100%">Glemt passord?</button>
+  </div>
+
+  <!-- Reset passord -->
+  <div class="login-card hidden" id="resetCard" style="margin-top:16px">
+    <div style="font-size:18px;margin-bottom:4px">🔑</div>
+    <h1 style="font-size:18px">Tilbakestill passord</h1>
+
+    <!-- Steg 1: Be om kode -->
+    <div id="resetStep1">
+      <p class="sub" style="margin-bottom:20px">Vi sender en kode til ditt registrerte mobilnummer.</p>
+      <button class="login-btn" id="requestResetBtn">Send reset-kode via SMS</button>
+      <div class="login-err" id="resetErr1"></div>
+    </div>
+
+    <!-- Steg 2: Skriv inn kode -->
+    <div id="resetStep2" class="hidden">
+      <p class="sub" id="resetSentMsg" style="margin-bottom:20px"></p>
+      <input type="text" id="resetCode" placeholder="6-sifret kode" maxlength="6" autocomplete="one-time-code" style="letter-spacing:8px;text-align:center;font-size:20px">
+      <input type="password" id="resetNewPwd" placeholder="Nytt passord (min. 8 tegn)" autocomplete="new-password">
+      <input type="password" id="resetCfmPwd" placeholder="Bekreft nytt passord" autocomplete="new-password">
+      <button class="login-btn" id="verifyResetBtn">Sett nytt passord</button>
+      <div class="login-err" id="resetErr2"></div>
+    </div>
+
+    <!-- Tilbake -->
+    <button id="backToLoginBtn" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;margin-top:12px;font-family:inherit;width:100%">← Tilbake til innlogging</button>
   </div>
 </div>
 
@@ -159,31 +199,98 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
       </div>
 
       <div id="tab-send" class="tab-content">
-        <div class="card"><div class="card-header"><span class="card-title">Ny melding</span></div>
-        <div class="card-body"><div class="send-grid">
+        <div class="send-grid">
+
+          <!-- VENSTRE: Editor -->
           <div>
-            <div class="field">
-              <label>Mottaker</label>
-              <div class="recipient-wrap">
-                <input type="tel" id="sendTo" placeholder="+47 xxx xx xxx" autocomplete="off">
-                <div class="contact-dropdown" id="contactDropdown"></div>
+            <div class="card"><div class="card-header"><span class="card-title">Ny melding</span></div>
+            <div class="card-body">
+              <div class="field">
+                <label>Mottaker</label>
+                <div class="recipient-wrap">
+                  <input type="tel" id="sendTo" placeholder="+47 xxx xx xxx" autocomplete="off">
+                  <div class="contact-dropdown" id="contactDropdown"></div>
+                </div>
               </div>
+
+              <!-- Verktøylinje -->
+              <div class="editor-toolbar">
+                <!-- Symboler -->
+                <div class="toolbar-group">
+                  <span class="toolbar-label">Symboler</span>
+                  <div class="symbol-btns">
+                    <button class="sym-btn" data-insert="✓" title="Hake">✓</button>
+                    <button class="sym-btn" data-insert="✗" title="Kryss">✗</button>
+                    <button class="sym-btn" data-insert="→" title="Pil">→</button>
+                    <button class="sym-btn" data-insert="•" title="Punkt">•</button>
+                    <button class="sym-btn" data-insert="★" title="Stjerne">★</button>
+                    <button class="sym-btn" data-insert="⚠" title="Advarsel">⚠</button>
+                    <button class="sym-btn" data-insert="📞" title="Telefon">📞</button>
+                    <button class="sym-btn" data-insert="📅" title="Dato">📅</button>
+                    <button class="sym-btn" data-insert="💼" title="Bedrift">💼</button>
+                    <button class="sym-btn" data-insert="🔔" title="Påminnelse">🔔</button>
+                    <button class="sym-btn" data-insert="✅" title="OK">✅</button>
+                    <button class="sym-btn" data-insert="❌" title="Avvist">❌</button>
+                  </div>
+                </div>
+                <!-- Variabler -->
+                <div class="toolbar-group">
+                  <span class="toolbar-label">Variabler</span>
+                  <div class="symbol-btns">
+                    <button class="sym-btn var-btn" data-insert="{navn}" title="Sett inn navn">{navn}</button>
+                    <button class="sym-btn var-btn" data-insert="{dato}" title="Sett inn dato">{dato}</button>
+                    <button class="sym-btn var-btn" data-insert="{tid}" title="Sett inn tid">{tid}</button>
+                    <button class="sym-btn var-btn" data-insert="{beløp}" title="Sett inn beløp">{beløp}</button>
+                    <button class="sym-btn var-btn" data-insert="{ref}" title="Referansenummer">{ref}</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>Melding</label>
+                <textarea id="sendBody" placeholder="Skriv meldingen din..."></textarea>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+                  <span style="font-size:11px;color:var(--text3)">Tip: Klikk symboler eller variabler for å sette inn i teksten</span>
+                  <div class="char-count" id="charCount">0 / 160</div>
+                </div>
+              </div>
+
+              <button class="send-btn" id="sendBtn">📤 Send SMS</button>
+              <div class="send-feedback" id="sendFeedback"></div>
+            </div></div>
+
+            <!-- Lagrede maler -->
+            <div class="card"><div class="card-header">
+              <span class="card-title">Lagrede maler</span>
+              <button class="btn-ghost" id="newTemplateBtn" style="font-size:11px;padding:4px 10px">+ Ny mal</button>
             </div>
-            <div class="field">
-              <label>Melding</label>
-              <textarea id="sendBody" placeholder="Skriv meldingen din..."></textarea>
-              <div class="char-count" id="charCount">0 / 160</div>
-            </div>
-            <button class="send-btn" id="sendBtn">📤 Send SMS</button>
-            <div class="send-feedback" id="sendFeedback"></div>
+            <div class="card-body" style="padding-top:12px">
+              <div id="templatesList"><div style="color:var(--text3);font-size:13px;padding:8px 0">Ingen maler lagret ennå. Skriv en melding og lagre den som mal.</div></div>
+            </div></div>
           </div>
+
+          <!-- HØYRE: Kontakter + Hurtigmaler -->
           <div>
-            <div class="field">
-              <label>Kontakter</label>
+            <div class="card"><div class="card-header"><span class="card-title">Kontakter</span></div>
+            <div class="card-body" style="padding-top:12px">
               <div class="contacts-panel" id="contactsList"><div class="contacts-empty">Ingen kontakter ennå</div></div>
-            </div>
+            </div></div>
+
+            <div class="card"><div class="card-header"><span class="card-title">Hurtigmaler</span></div>
+            <div class="card-body" style="padding-top:12px">
+              <div style="display:flex;flex-direction:column;gap:6px" id="quickTemplates">
+                <button class="quick-tpl" data-text="Hei {navn}, vi bekrefter din avtale {dato} kl. {tid}. Ta kontakt ved spørsmål. Mvh {firma}">📅 Avtale bekreftet</button>
+                <button class="quick-tpl" data-text="Hei {navn}, din faktura på {beløp} kr er sendt til din e-post. Forfallsdato: {dato}. Ref: {ref}">💼 Faktura sendt</button>
+                <button class="quick-tpl" data-text="Hei {navn}, vi minner om din avtale {dato} kl. {tid}. Svar JA for å bekrefte eller NEI for å avbestille.">🔔 Påminnelse om avtale</button>
+                <button class="quick-tpl" data-text="Hei {navn}, vi har mottatt din henvendelse og vil kontakte deg innen {dato}. Ref: {ref}">✓ Henvendelse mottatt</button>
+                <button class="quick-tpl" data-text="Hei {navn}, din bestilling er klar til henting. Åpningstider: man-fre 08-16.">✅ Bestilling klar</button>
+                <button class="quick-tpl" data-text="Hei {navn}, dessverre må vi avlyse avtalen {dato} kl. {tid}. Vi tar kontakt for ny tid.">❌ Avlysning</button>
+                <button class="quick-tpl" data-text="Hei {navn}, betalingen på {beløp} kr er mottatt. Takk! Ref: {ref}">★ Betaling mottatt</button>
+              </div>
+            </div></div>
           </div>
-        </div></div></div>
+
+        </div>
       </div>
 
       <div id="tab-inbox" class="tab-content">
@@ -256,11 +363,19 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
       <div id="tab-settings" class="tab-content">
         <div class="card" style="max-width:440px"><div class="card-header"><span class="card-title">Bytt passord</span></div>
         <div class="card-body">
-          <div class="field"><label>Nåværende passord</label><input type="password" id="curPwd"></div>
-          <div class="field"><label>Nytt passord</label><input type="password" id="newPwdField" placeholder="Minimum 8 tegn"></div>
-          <div class="field"><label>Bekreft nytt passord</label><input type="password" id="cfmPwd"></div>
+          <div class="field"><label>Nåværende passord</label><input type="password" id="curPwd" autocomplete="current-password"></div>
+          <div class="field"><label>Nytt passord</label><input type="password" id="newPwdField" placeholder="Minimum 8 tegn" autocomplete="new-password"></div>
+          <div class="field"><label>Bekreft nytt passord</label><input type="password" id="cfmPwd" autocomplete="new-password"></div>
           <button class="submit-btn" id="changePwdBtn">Lagre nytt passord</button>
           <div id="pwdStatus" style="margin-top:10px;font-size:13px"></div>
+        </div></div>
+
+        <div class="card" style="max-width:440px;margin-top:16px"><div class="card-header"><span class="card-title">Gjenopprett passord via SMS</span></div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Registrer ditt mobilnummer for å motta reset-kode via SMS hvis du glemmer passordet.</p>
+          <div class="field"><label>Mobilnummer</label><input type="tel" id="phoneNumber" placeholder="+47 xxx xx xxx" autocomplete="tel"></div>
+          <button class="submit-btn" id="savePhoneBtn">Lagre mobilnummer</button>
+          <div id="phoneStatus" style="margin-top:10px;font-size:13px"></div>
         </div></div>
       </div>
 
@@ -334,7 +449,119 @@ document.getElementById('addRuleBtn').addEventListener('click',function(){var na
 
 document.getElementById('changePwdBtn').addEventListener('click',function(){var cur=document.getElementById('curPwd').value,nw=document.getElementById('newPwdField').value,cf=document.getElementById('cfmPwd').value,st=document.getElementById('pwdStatus');if(nw!==cf){st.style.color='var(--red)';st.textContent='✕ Passordene er ikke like';return;}api('/auth/change-password',{method:'POST',body:JSON.stringify({currentPassword:cur,newPassword:nw})}).then(function(res){if(res.success){st.style.color='var(--green)';st.textContent='✓ Passord endret!';toast('Passord endret!');}else{st.style.color='var(--red)';st.textContent='✕ '+(res.error||'Feil');}});});
 
-function init(){loadStats();loadContacts();setInterval(function(){if(activeTab==='overview')loadStats();if(activeTab==='inbox')loadInbox();},10000);}
+document.getElementById('savePhoneBtn').addEventListener('click',function(){
+  var phone=document.getElementById('phoneNumber').value.trim();
+  var st=document.getElementById('phoneStatus');
+  if(!phone){st.style.color='var(--red)';st.textContent='✕ Skriv inn mobilnummer';return;}
+  api('/auth/register-phone',{method:'POST',body:JSON.stringify({phoneNumber:phone})}).then(function(res){
+    if(res.success){st.style.color='var(--green)';st.textContent='✓ Mobilnummer lagret!';toast('Mobilnummer lagret!');}
+    else{st.style.color='var(--red)';st.textContent='✕ '+(res.error||'Feil');}
+  });
+});
+
+// GLEMT PASSORD
+document.getElementById('forgotBtn').addEventListener('click',function(){
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('resetCard').classList.remove('hidden');
+});
+
+document.getElementById('backToLoginBtn').addEventListener('click',function(){
+  document.getElementById('resetCard').classList.add('hidden');
+  document.getElementById('loginCard').classList.remove('hidden');
+  document.getElementById('resetStep1').classList.remove('hidden');
+  document.getElementById('resetStep2').classList.add('hidden');
+  document.getElementById('resetErr1').textContent='';
+  document.getElementById('resetErr2').textContent='';
+});
+
+document.getElementById('requestResetBtn').addEventListener('click',function(){
+  var err=document.getElementById('resetErr1');
+  err.textContent='Sender kode...';
+  err.style.color='var(--text2)';
+  fetch(BASE+'/kunde/'+SLUG+'/auth/request-reset',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(r){return r.json();}).then(function(res){
+    if(res.success){
+      document.getElementById('resetSentMsg').textContent='Kode sendt til '+res.maskedPhone+'. Sjekk SMS-en din.';
+      document.getElementById('resetStep1').classList.add('hidden');
+      document.getElementById('resetStep2').classList.remove('hidden');
+    } else {
+      err.style.color='var(--red)';
+      err.textContent=res.error||'Feil — kontakt administrator';
+    }
+  });
+});
+
+document.getElementById('verifyResetBtn').addEventListener('click',function(){
+  var code=document.getElementById('resetCode').value.trim();
+  var nw=document.getElementById('resetNewPwd').value;
+  var cf=document.getElementById('resetCfmPwd').value;
+  var err=document.getElementById('resetErr2');
+  if(nw!==cf){err.style.color='var(--red)';err.textContent='Passordene er ikke like';return;}
+  fetch(BASE+'/kunde/'+SLUG+'/auth/verify-reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code,newPassword:nw})}).then(function(r){return r.json();}).then(function(res){
+    if(res.success){
+      document.getElementById('resetCard').classList.add('hidden');
+      document.getElementById('loginCard').classList.remove('hidden');
+      document.getElementById('loginErr').style.color='var(--green)';
+      document.getElementById('loginErr').textContent='✓ Passord endret! Logg inn med nytt passord.';
+      document.getElementById('resetStep1').classList.remove('hidden');
+      document.getElementById('resetStep2').classList.add('hidden');
+    } else {
+      err.style.color='var(--red)';
+      err.textContent=res.error||'Feil kode';
+    }
+  });
+});
+
+function init(){loadStats();loadContacts();loadTemplates();setInterval(function(){if(activeTab==='overview')loadStats();if(activeTab==='inbox')loadInbox();},10000);}
+
+// SYMBOL OG VARIABEL-KNAPPER
+document.querySelectorAll('.sym-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var insert=btn.getAttribute('data-insert');
+    var ta=document.getElementById('sendBody');
+    var start=ta.selectionStart,end=ta.selectionEnd;
+    ta.value=ta.value.substring(0,start)+insert+ta.value.substring(end);
+    ta.selectionStart=ta.selectionEnd=start+insert.length;
+    ta.focus();
+    ta.dispatchEvent(new Event('input'));
+  });
+});
+
+// HURTIGMALER
+document.querySelectorAll('.quick-tpl').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.getElementById('sendBody').value=btn.getAttribute('data-text');
+    document.getElementById('sendBody').dispatchEvent(new Event('input'));
+    document.getElementById('sendBody').focus();
+  });
+});
+
+// LAGREDE MALER — bruker localStorage per SLUG
+function getTemplates(){try{return JSON.parse(localStorage.getItem('tpl_'+SLUG)||'[]');}catch(e){return[];}}
+function saveTemplatesLocal(tpls){localStorage.setItem('tpl_'+SLUG,JSON.stringify(tpls));}
+
+function loadTemplates(){
+  var tpls=getTemplates();
+  var el=document.getElementById('templatesList');
+  if(!tpls.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">Ingen maler lagret ennå. Skriv en melding og klikk "Lagre som mal".</div>';return;}
+  el.innerHTML=tpls.map(function(t,i){
+    return'<div class="tpl-item"><div class="tpl-text" data-i="'+i+'">'+esc(t.name)+'<br><span style="color:var(--text3);font-size:11px">'+esc(t.text.substring(0,60))+(t.text.length>60?'...':'')+'</span></div>'+
+    '<div class="tpl-actions"><button class="tpl-use" data-i="'+i+'">Bruk</button><button class="tpl-del" data-i="'+i+'">✕</button></div></div>';
+  }).join('');
+  el.querySelectorAll('.tpl-use').forEach(function(b){b.addEventListener('click',function(){document.getElementById('sendBody').value=getTemplates()[b.getAttribute('data-i')].text;document.getElementById('sendBody').dispatchEvent(new Event('input'));document.getElementById('sendBody').focus();});});
+  el.querySelectorAll('.tpl-del').forEach(function(b){b.addEventListener('click',function(){var t=getTemplates();t.splice(b.getAttribute('data-i'),1);saveTemplatesLocal(t);loadTemplates();toast('Mal slettet');});});
+}
+
+document.getElementById('newTemplateBtn').addEventListener('click',function(){
+  var body=document.getElementById('sendBody').value.trim();
+  if(!body){toast('Skriv en melding først','err');return;}
+  var name=prompt('Gi malen et navn:');
+  if(!name)return;
+  var tpls=getTemplates();
+  tpls.unshift({name:name,text:body});
+  saveTemplatesLocal(tpls);
+  loadTemplates();
+  toast('Mal lagret!');
+});
 
 (function(){if(!token)return;api('/api/stats').then(function(res){if(res&&!res.error){document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('sidebarTenant').textContent=SLUG;init();}else{localStorage.removeItem('sms_token_'+SLUG);token='';}}).catch(function(){localStorage.removeItem('sms_token_'+SLUG);token='';});})();
 </script>
