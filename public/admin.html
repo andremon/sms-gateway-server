@@ -208,14 +208,16 @@ function loadTenants() {
 
     var rows = data.map(function(t) {
       return '<tr>' +
-        '<td><strong>' + t.name + '</strong><br><span style="color:#64748b;font-size:12px">' + new Date(t.createdAt).toLocaleDateString('nb-NO') + '</span></td>' +
+        '<td><strong>' + t.name + '</strong><br><span style="color:#64748b;font-size:12px">' + new Date(t.createdAt).toLocaleDateString('nb-NO') + '</span>' +
+        (t.phoneNumber ? '<br><span style="color:#94a3b8;font-size:11px">📱 ' + t.phoneNumber + '</span>' : '') + '</td>' +
         '<td><a href="/kunde/' + t.slug + '/dashboard" target="_blank" style="color:#7dd3fc;font-size:13px">/kunde/' + t.slug + '</a></td>' +
         '<td id="devices-' + t.id + '"><span style="color:#64748b">Laster...</span></td>' +
         '<td><span style="color:#4ade80">&#8595; ' + t.stats.inbound + '</span> <span style="color:#60a5fa">&#8593; ' + t.stats.sent + '</span>' +
           (t.stats.pending > 0 ? ' <span style="color:#fbbf24">&#9203; ' + t.stats.pending + '</span>' : '') + '</td>' +
         '<td><div style="display:flex;flex-direction:column;gap:6px">' +
           '<button class="btn btn-blue btn-sm" onclick="showQrForTenant(\'' + t.id + '\',\'' + t.name + '\')">📱 QR-kode</button>' +
-          '<button class="btn btn-gray btn-sm" onclick="regenKey(\'' + t.id + '\',\'' + t.name + '\')">🔑 Ny nokkel</button>' +
+          '<button class="btn btn-gray btn-sm" onclick="editTenant(\'' + t.id + '\',\'' + t.name + '\',\'' + (t.phoneNumber||'') + '\',' + (t.maxDevices||1) + ')">✏️ Rediger</button>' +
+          '<button class="btn btn-gray btn-sm" onclick="regenKey(\'' + t.id + '\',\'' + t.name + '\')">🔑 Ny nøkkel</button>' +
           '<button class="btn btn-danger btn-sm" onclick="deleteTenant(\'' + t.id + '\',\'' + t.name + '\')">🗑 Slett</button>' +
         '</div></td>' +
       '</tr>';
@@ -362,6 +364,51 @@ function regenKey(id, name) {
     toast('Ny nokkel generert — kunden må skanne ny QR-kode');
     loadTenants();
   });
+}
+
+function editTenant(id, name, phone, maxDevices) {
+  var modal = document.getElementById('editModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'editModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:1000';
+    modal.innerHTML =
+      '<div style="background:#1e293b;border-radius:16px;padding:32px;width:440px;max-width:95vw">' +
+        '<h2 style="color:#f8fafc;margin-bottom:20px;font-size:18px">✏️ Rediger kunde</h2>' +
+        '<div style="display:flex;flex-direction:column;gap:12px">' +
+          '<div><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">Firmanavn</label>' +
+          '<input id="editName" type="text" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px"></div>' +
+          '<div><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">Mobilnummer (reset-kode)</label>' +
+          '<input id="editPhone" type="tel" placeholder="+47 xxx xx xxx" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px"></div>' +
+          '<div><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">Maks gateway-enheter</label>' +
+          '<input id="editMaxDevices" type="number" min="1" max="10" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px"></div>' +
+          '<div><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">Nytt passord (la stå tomt for å beholde)</label>' +
+          '<input id="editPwd" type="password" placeholder="Min. 8 tegn" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px"></div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:20px">' +
+          '<button id="saveEditBtn" class="btn btn-green" style="flex:1">Lagre</button>' +
+          '<button class="btn btn-gray" onclick="document.getElementById(\'editModal\').remove()">Avbryt</button>' +
+        '</div>' +
+        '<div id="editErr" style="color:#f87171;font-size:13px;margin-top:8px"></div>' +
+      '</div>';
+    document.body.appendChild(modal);
+  }
+  document.getElementById('editName').value = name;
+  document.getElementById('editPhone').value = phone || '';
+  document.getElementById('editMaxDevices').value = maxDevices || 1;
+  document.getElementById('editPwd').value = '';
+  document.getElementById('editErr').textContent = '';
+  document.getElementById('saveEditBtn').onclick = function() {
+    var newName = document.getElementById('editName').value.trim();
+    var newPhone = document.getElementById('editPhone').value.trim();
+    var newMax = parseInt(document.getElementById('editMaxDevices').value) || 1;
+    var newPwd = document.getElementById('editPwd').value;
+    if (!newName) { document.getElementById('editErr').textContent = 'Navn kan ikke være tomt'; return; }
+    adminApi('/admin/tenants/' + id, { method: 'PUT', body: JSON.stringify({ name: newName, phoneNumber: newPhone, maxDevices: newMax, password: newPwd || undefined }) }).then(function(res) {
+      if (res.success) { modal.remove(); loadTenants(); toast('Kunde oppdatert!'); }
+      else { document.getElementById('editErr').textContent = res.error || 'Feil'; }
+    });
+  };
 }
 
 function deleteDevice(deviceId, tenantId) {
