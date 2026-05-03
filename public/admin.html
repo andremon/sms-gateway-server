@@ -50,6 +50,10 @@ code{background:#0f172a;padding:3px 8px;border-radius:4px;font-size:11px;color:#
 .qr-instructions{color:#94a3b8;font-size:13px;margin-top:8px;line-height:1.5}
 .device-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-top:1px solid #334155}
 .device-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:6px}
+.device-dot.offline{background:#ef4444}.device-dot.warn{background:#fbbf24}
+.gateway-card{background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.gateway-online{border-left:3px solid #22c55e}.gateway-warn{border-left:3px solid #fbbf24}.gateway-offline{border-left:3px solid #ef4444}
+.gw-meta{font-size:11px;color:#64748b;margin-top:3px}
 .hidden{display:none}
 #toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:8px;opacity:0;transition:opacity 0.3s;z-index:999;font-size:14px;font-weight:500}
 #toast.show{opacity:1}
@@ -128,6 +132,11 @@ code{background:#0f172a;padding:3px 8px;border-radius:4px;font-size:11px;color:#
           <button class="btn btn-blue btn-sm" id="newQrBtn" style="margin-top:12px">🔄 Generer ny QR-kode</button>
         </div>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>📡 Gateway-status</h2>
+      <div id="gatewayStatus"><div style="color:#64748b;font-size:13px">Laster...</div></div>
     </div>
 
     <div class="card">
@@ -429,10 +438,55 @@ function toast(msg, ok) {
   setTimeout(function() { t.classList.remove('show'); }, 3000);
 }
 
+function loadGatewayStatus() {
+  adminApi('/admin/gateway-status').then(function(devices) {
+    var el = document.getElementById('gatewayStatus');
+    if (!devices.length) {
+      el.innerHTML = '<div style="color:#64748b;font-size:13px">Ingen gateway-enheter registrert ennå.</div>';
+      return;
+    }
+    var now = Date.now();
+    el.innerHTML = devices.map(function(d) {
+      var lastSeen = parseInt(d.last_seen) || 0;
+      var age = now - lastSeen;
+      var isOnline = age < 2 * 60 * 1000;       // < 2 min = online
+      var isWarn = age < 10 * 60 * 1000;         // < 10 min = advarsel
+      var statusClass = isOnline ? 'gateway-online' : (isWarn ? 'gateway-warn' : 'gateway-offline');
+      var dotClass = isOnline ? '' : (isWarn ? 'warn' : 'offline');
+      var statusText = isOnline ? '🟢 Online' : (isWarn ? '🟡 Inaktiv' : '🔴 Offline');
+      var lastSeenText = lastSeen ? timeAgoAdmin(lastSeen) : 'Aldri';
+      var lastInbound = d.last_inbound ? timeAgoAdmin(parseInt(d.last_inbound)) : '–';
+      var lastSent = d.last_sent ? timeAgoAdmin(parseInt(d.last_sent)) : '–';
+      var battery = d.battery_level ? d.battery_level + '%' : '–';
+      var batteryIcon = d.battery_level > 50 ? '🔋' : d.battery_level > 20 ? '🪫' : '⚠️';
+      return '<div class="gateway-card ' + statusClass + '">' +
+        '<div>' +
+          '<div style="font-weight:600;font-size:14px"><span class="device-dot ' + dotClass + '"></span>' + (d.device_name || 'Ukjent enhet') + '</div>' +
+          '<div class="gw-meta">Kunde: <strong style="color:#94a3b8">' + d.tenant_name + '</strong> · Sist sett: ' + lastSeenText + '</div>' +
+          '<div class="gw-meta">Inn: ' + lastInbound + ' · Ut: ' + lastSent + ' · Kø: ' + (d.pending_count || 0) + ' · Nett: ' + (d.network_type || '–') + '</div>' +
+        '</div>' +
+        '<div style="text-align:right">' +
+          '<div style="font-size:13px;font-weight:600">' + statusText + '</div>' +
+          '<div class="gw-meta">' + batteryIcon + ' ' + battery + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  });
+}
+
+function timeAgoAdmin(ts) {
+  var d = Math.floor((Date.now() - ts) / 1000);
+  if (d < 60) return d + 's siden';
+  if (d < 3600) return Math.floor(d/60) + 'm siden';
+  if (d < 86400) return Math.floor(d/3600) + 't siden';
+  return new Date(ts).toLocaleString('nb-NO');
+}
+
 function init() {
   checkServerStatus();
   loadTenants();
-  setInterval(function() { checkServerStatus(); loadTenants(); }, 15000);
+  loadGatewayStatus();
+  setInterval(function() { checkServerStatus(); loadTenants(); loadGatewayStatus(); }, 15000);
 }
 
 function checkAdminSession() {
