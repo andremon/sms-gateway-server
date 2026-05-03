@@ -93,6 +93,16 @@ code{background:#0f172a;padding:3px 8px;border-radius:4px;font-size:11px;color:#
           <label>Passord til dashboard</label>
           <input type="password" id="newPwd" placeholder="Minimum 8 tegn">
         </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mobilnummer (for reset-kode)</label>
+          <input type="tel" id="newPhone" placeholder="+47 xxx xx xxx">
+        </div>
+        <div class="form-group">
+          <label>Maks antall gateway-enheter</label>
+          <input type="number" id="newMaxDevices" placeholder="1" value="1" min="1" max="10" style="width:100%">
+        </div>
         <button class="btn btn-green" id="createBtn">Opprett</button>
       </div>
 
@@ -290,10 +300,12 @@ function generateQr(tenantId, tenantName) {
 function createTenant() {
   var name = document.getElementById('newName').value.trim();
   var password = document.getElementById('newPwd').value;
+  var phone = document.getElementById('newPhone').value.trim();
+  var maxDevices = parseInt(document.getElementById('newMaxDevices').value) || 1;
   if (!name) { toast('Skriv firmanavn', false); return; }
   if (!password || password.length < 8) { toast('Passord min 8 tegn', false); return; }
 
-  adminApi('/admin/tenants', { method: 'POST', body: JSON.stringify({ name: name, password: password }) }).then(function(res) {
+  adminApi('/admin/tenants', { method: 'POST', body: JSON.stringify({ name: name, password: password, phoneNumber: phone, maxDevices: maxDevices }) }).then(function(res) {
     if (res.id) {
       lastWelcome = res.welcomeMessage;
       currentTenantId = res.id;
@@ -302,6 +314,8 @@ function createTenant() {
       document.getElementById('welcomeResult').classList.remove('hidden');
       document.getElementById('newName').value = '';
       document.getElementById('newPwd').value = '';
+      document.getElementById('newPhone').value = '';
+      document.getElementById('newMaxDevices').value = '1';
 
       // Generer QR-kode automatisk
       var qrContainer = document.getElementById('qrcode');
