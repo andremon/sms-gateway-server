@@ -4,624 +4,339 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SMS Gateway</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#ffffff0f;--border2:#ffffff18;--accent:#6366f1;--accent2:#818cf8;--accent-dim:#6366f114;--green:#34d399;--green-dim:#34d39914;--amber:#fbbf24;--red:#f87171;--text:#f1f5f9;--text2:#94a3b8;--text3:#475569;--radius:12px;--radius2:8px}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f8;color:#1a202c}
-.login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#0057A8,#0096c7);display:flex;align-items:center;justify-content:center;z-index:1000}
-.login-box{background:white;border-radius:20px;padding:48px 40px;width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
-.login-logo{font-size:48px;margin-bottom:12px}
-.login-box h1{font-size:22px;margin-bottom:4px}
-.login-box p{color:#718096;margin-bottom:28px;font-size:14px}
-.login-box input{width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:10px;font-size:15px;margin-bottom:12px;color:#1a202c;transition:border-color 0.2s}
-.login-box input:focus{outline:none;border-color:#0057A8}
-.login-btn{width:100%;padding:14px;background:#0057A8;color:white;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer}
-header{background:white;padding:0 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;height:64px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-.header-left{display:flex;align-items:center;gap:12px}
-header h1{font-size:17px;font-weight:700}
-.header-subtitle{font-size:12px;color:#718096}
-.header-right button{background:#f7fafc;color:#4a5568;border:1px solid #e2e8f0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px}
-nav{background:white;border-bottom:1px solid #e2e8f0;display:flex;padding:0 24px;overflow-x:auto;gap:4px}
-nav button{padding:16px 16px 14px;border:none;background:none;cursor:pointer;font-size:14px;color:#718096;border-bottom:3px solid transparent;white-space:nowrap;font-weight:500}
-nav button.active{color:#0057A8;border-bottom-color:#0057A8;font-weight:600}
-.container{max-width:1200px;margin:28px auto;padding:0 20px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px}
-.stat{background:white;border-radius:14px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid #f0f4f8}
-.stat .num{font-size:30px;font-weight:800;color:#0057A8;line-height:1}
-.stat .lbl{color:#a0aec0;font-size:12px;margin-top:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
-.stat .trend{font-size:12px;margin-top:4px;color:#48BB78}
-.card{background:white;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:20px;border:1px solid #f0f4f8}
-.card h2{font-size:16px;font-weight:700;margin-bottom:16px;color:#2d3748}
-.toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-.search-box{flex:1;min-width:200px;max-width:300px;padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px}
-.send-form{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-.form-label{font-size:13px;font-weight:600;color:#4a5568;margin-bottom:8px;display:block}
-.recipient-input-wrap{position:relative}
-.recipient-input{width:100%;padding:14px 16px;border:2px solid #e2e8f0;border-radius:10px;font-size:15px;color:#1a202c;transition:border-color 0.2s}
-.recipient-input:focus{outline:none;border-color:#0057A8;box-shadow:0 0 0 3px rgba(0,87,168,0.1)}
-.contact-dropdown{position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:100;max-height:240px;overflow-y:auto;margin-top:4px}
-.contact-item{padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f7fafc}
-.contact-item:hover{background:#f0f4f8}
-.contact-number{font-weight:600;font-size:14px;color:#2d3748}
-.contact-meta{font-size:12px;color:#a0aec0}
-.message-area{width:100%;padding:14px 16px;border:2px solid #e2e8f0;border-radius:10px;font-size:15px;resize:vertical;min-height:120px;color:#1a202c;font-family:inherit;transition:border-color 0.2s;line-height:1.5}
-.message-area:focus{outline:none;border-color:#0057A8;box-shadow:0 0 0 3px rgba(0,87,168,0.1)}
-.char-count{font-size:12px;color:#a0aec0;text-align:right;margin-top:6px}
-.send-btn{width:100%;padding:16px;background:#0057A8;color:white;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;transition:all 0.2s}
-.send-btn:hover{background:#004494;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,87,168,0.3)}
-.send-btn:disabled{background:#a0aec0;transform:none;box-shadow:none}
-.send-status{margin-top:12px;padding:12px;border-radius:8px;font-size:14px;text-align:center}
-.send-status.success{background:#f0fff4;color:#276749;border:1px solid #c6f6d5}
-.send-status.error{background:#fff5f5;color:#9b2c2c;border:1px solid #fed7d7}
-.contacts-list{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;max-height:400px;overflow-y:auto}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:1000}
+.login-screen::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 0%,#6366f122 0%,transparent 70%)}
+.login-card{position:relative;width:360px;padding:40px;background:var(--surface);border:1px solid var(--border2);border-radius:20px;box-shadow:0 24px 80px #0006,0 0 0 1px #ffffff08}
+.login-logo{font-size:32px;margin-bottom:4px}.login-card h1{font-size:22px;font-weight:600;letter-spacing:-0.5px;margin-bottom:4px}.login-card .sub{color:var(--text2);font-size:13px;margin-bottom:28px}
+.login-card input{width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius2);color:var(--text);font-size:14px;font-family:inherit;margin-bottom:12px;outline:none;transition:border-color .2s,box-shadow .2s}
+.login-card input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.login-btn{width:100%;padding:13px;background:var(--accent);color:white;border:none;border-radius:var(--radius2);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;letter-spacing:.2px;transition:opacity .2s}.login-btn:hover{opacity:.9}
+.login-err{color:var(--red);font-size:12px;margin-top:8px;text-align:center;min-height:18px}
+#app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 12px}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:24px}
+.sidebar-logo-icon{font-size:22px}.sidebar-logo-text{font-size:15px;font-weight:600;letter-spacing:-0.3px}.sidebar-tenant{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+nav{flex:1;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius2);cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.nav-item:hover{background:var(--surface2);color:var(--text)}.nav-item.active{background:var(--accent-dim);color:var(--accent2);font-weight:600}
+.nav-item .icon{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
+.logout-btn{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius2);cursor:pointer;color:var(--text3);font-size:13px;transition:all .15s;border:none;background:none;width:100%;font-family:inherit}.logout-btn:hover{color:var(--red);background:#f8717110}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{padding:20px 28px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar h1{font-size:18px;font-weight:600;letter-spacing:-0.4px}
+.status-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;background:var(--green-dim);border-radius:20px;font-size:12px;color:var(--green);font-weight:500}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.content{padding:20px 28px 32px;flex:1}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px}
+.card-header{padding:18px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px}
+.card-body{padding:16px 20px 20px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;transition:border-color .2s}.stat-card:hover{border-color:var(--border2)}
+.stat-num{font-size:28px;font-weight:600;letter-spacing:-1px;line-height:1;margin-bottom:6px}
+.stat-lbl{font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.6px}
+.stat-trend{font-size:11px;margin-top:6px;color:var(--green)}
+.stat-accent{color:var(--accent2)}.stat-green{color:var(--green)}.stat-amber{color:var(--amber)}
+.chart-wrap{padding:16px 20px 20px}
+.chart-bars{height:120px;display:flex;align-items:flex-end;gap:6px}
+.chart-bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.chart-bars-inner{width:100%;display:flex;gap:3px;align-items:flex-end;height:90px}
+.chart-bar{flex:1;border-radius:4px 4px 0 0;min-height:2px;transition:height .4s ease}
+.bar-in{background:var(--accent)}.bar-out{background:var(--green)}
+.chart-lbl{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;text-align:center}
+.chart-legend{display:flex;gap:16px;margin-top:12px}.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)}.legend-dot{width:8px;height:8px;border-radius:50%}
+.send-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.field input,.field textarea{padding:11px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius2);color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.field textarea{resize:vertical;min-height:110px;line-height:1.6}
+.char-count{font-size:11px;color:var(--text3);text-align:right;margin-top:4px;font-family:'DM Mono',monospace}
+.send-btn{width:100%;padding:13px;background:var(--accent);color:white;border:none;border-radius:var(--radius2);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:4px;transition:opacity .2s}.send-btn:hover{opacity:.9}.send-btn:disabled{opacity:.4;cursor:not-allowed}
+.send-feedback{padding:10px 14px;border-radius:var(--radius2);font-size:13px;margin-top:10px;display:none}
+.send-feedback.ok{background:var(--green-dim);color:var(--green);display:block}
+.send-feedback.err{background:#f8717114;color:var(--red);display:block}
+.contacts-panel{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);max-height:280px;overflow-y:auto}
+.contact-row{padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);transition:background .15s}.contact-row:last-child{border-bottom:none}.contact-row:hover{background:var(--accent-dim)}
+.contact-num{font-size:13px;font-weight:500;font-family:'DM Mono',monospace}.contact-meta{font-size:11px;color:var(--text3)}
+.contacts-empty{padding:32px;text-align:center;color:var(--text3);font-size:13px}
+.recipient-wrap{position:relative}
+.contact-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius2);box-shadow:0 12px 40px #0008;z-index:100;max-height:200px;overflow-y:auto;margin-top:4px;display:none}
+.contact-dropdown.open{display:block}
+.dd-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}.dd-item:last-child{border-bottom:none}.dd-item:hover{background:var(--accent-dim)}
+.dd-num{font-size:13px;font-weight:500;font-family:'DM Mono',monospace}.dd-meta{font-size:11px;color:var(--text3)}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.search-input{flex:1;min-width:180px;max-width:280px;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s}.search-input:focus{border-color:var(--accent)}.search-input::placeholder{color:var(--text3)}
+.btn-ghost{padding:8px 14px;background:transparent;border:1px solid var(--border2);border-radius:var(--radius2);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit}.btn-ghost:hover{border-color:var(--accent);color:var(--accent2);background:var(--accent-dim)}
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:10px 16px;background:#f7fafc;font-size:11px;color:#a0aec0;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
-td{padding:14px 16px;border-top:1px solid #f7fafc;font-size:14px;vertical-align:middle}
-tr:hover td{background:#fafbff}
-.badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
-.badge-green{background:#f0fff4;color:#276749}
-.chart-bar{height:180px;display:flex;align-items:flex-end;gap:6px;padding:8px 0}
-.bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
-.bar-wrap{width:100%;display:flex;gap:3px;align-items:flex-end;height:140px}
-.bar{flex:1;border-radius:6px 6px 0 0;min-height:3px;transition:height 0.5s ease}
-.bar.inbound{background:#0057A8}
-.bar.sent{background:#48BB78}
-.bar-label{font-size:10px;color:#a0aec0;text-align:center}
-.legend{display:flex;gap:16px;margin-top:12px}
-.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#718096}
-.legend-dot{width:10px;height:10px;border-radius:50%}
-.tab-content{display:none}
-.tab-content.active{display:block}
-.switch{position:relative;display:inline-block;width:44px;height:24px}
+thead th{padding:8px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--border)}
+tbody td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:var(--surface2)}
+.mono{font-family:'DM Mono',monospace;font-size:12px}
+.badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;display:inline-block}
+.badge-green{background:var(--green-dim);color:var(--green)}.badge-red{background:#f8717114;color:var(--red)}
+.empty-row td{text-align:center;color:var(--text3);padding:40px!important}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.checkbox-group{display:flex;gap:16px;margin-top:8px}.checkbox-group label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer}.checkbox-group input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
+.submit-btn{padding:10px 20px;background:var(--accent);color:white;border:none;border-radius:var(--radius2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .2s}.submit-btn:hover{opacity:.85}
+.del-btn{padding:5px 12px;background:#f8717114;color:var(--red);border:1px solid #f8717122;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}.del-btn:hover{background:#f8717130}
+.switch{position:relative;display:inline-block;width:38px;height:20px}
 .switch input{opacity:0;width:0;height:0}
-.slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e0;border-radius:24px;transition:.3s}
-.slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s}
-input:checked + .slider{background:#0057A8}
-input:checked + .slider:before{transform:translateX(20px)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.form-group{display:flex;flex-direction:column;gap:6px}
-.form-group label{font-size:13px;font-weight:600;color:#4a5568}
-.form-group input,.form-group textarea{padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;color:#1a202c}
-.form-group textarea{height:80px;resize:vertical}
-.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
-.btn-primary{background:#0057A8;color:white}
-.btn-danger{background:#fc8181;color:#9b2c2c}
-.btn-outline{background:white;border:1px solid #e2e8f0;color:#4a5568}
-.btn-sm{padding:6px 14px;font-size:12px}
-.btn:hover{opacity:0.85}
-.hidden{display:none}
-#toast{position:fixed;bottom:28px;right:28px;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:500;opacity:0;transition:opacity 0.3s;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
-#toast.show{opacity:1}
-@media(max-width:700px){.send-form{grid-template-columns:1fr}}
+.slider{position:absolute;cursor:pointer;inset:0;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;transition:.25s}
+.slider:before{position:absolute;content:'';height:14px;width:14px;left:2px;bottom:2px;background:var(--text3);border-radius:50%;transition:.25s}
+input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:checked+.slider:before{transform:translateX(18px);background:white}
+.tab-content{display:none}.tab-content.active{display:block}
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius2);font-size:13px;font-weight:500;box-shadow:0 8px 32px #0006;opacity:0;transition:opacity .25s,transform .25s;transform:translateY(8px);z-index:9999}
+#toast.show{opacity:1;transform:translateY(0)}#toast.ok{border-color:#34d39930;color:var(--green)}#toast.err{border-color:#f8717130;color:var(--red)}
+.hidden{display:none!important}
+@media(max-width:768px){.sidebar{display:none}.stats-grid{grid-template-columns:repeat(2,1fr)}.send-grid{grid-template-columns:1fr}.form-2col{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<div class="login-overlay" id="loginOverlay">
-  <div class="login-box">
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
     <div class="login-logo">📱</div>
     <h1>SMS Gateway</h1>
-    <p id="tenantNameLogin">Laster...</p>
-    <input type="password" id="loginPwd" placeholder="Passord">
+    <p class="sub" id="loginSub">Logg inn for å fortsette</p>
+    <input type="password" id="loginPwd" placeholder="Passord" autocomplete="current-password">
     <button class="login-btn" id="loginBtn">Logg inn</button>
-    <div id="loginErr" style="color:#e53e3e;margin-top:10px;font-size:13px"></div>
+    <div class="login-err" id="loginErr"></div>
   </div>
 </div>
 
 <div id="app" class="hidden">
-  <header>
-    <div class="header-left">
-      <span style="font-size:24px">📱</span>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-icon">📱</span>
       <div>
-        <h1>SMS Gateway</h1>
-        <div class="header-subtitle" id="tenantNameHeader">Laster...</div>
+        <div class="sidebar-logo-text">SMS Gateway</div>
+        <div class="sidebar-tenant" id="sidebarTenant">Laster...</div>
       </div>
     </div>
-    <div class="header-right">
-      <button id="logoutBtn">Logg ut</button>
+    <nav>
+      <button class="nav-item active" data-tab="overview"><span class="icon">📊</span>Oversikt</button>
+      <button class="nav-item" data-tab="send"><span class="icon">✉️</span>Send SMS</button>
+      <button class="nav-item" data-tab="inbox"><span class="icon">📨</span>Innkommende</button>
+      <button class="nav-item" data-tab="sent"><span class="icon">✅</span>Sendte</button>
+      <button class="nav-item" data-tab="webhooks"><span class="icon">🔗</span>Webhooks</button>
+      <button class="nav-item" data-tab="rules"><span class="icon">🤖</span>Auto-svar</button>
+      <button class="nav-item" data-tab="settings"><span class="icon">⚙️</span>Innstillinger</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" id="logoutBtn"><span class="icon">→</span>Logg ut</button>
     </div>
-  </header>
+  </aside>
 
-  <nav>
-    <button class="active" data-tab="overview">📊 Oversikt</button>
-    <button data-tab="send">✉️ Send SMS</button>
-    <button data-tab="inbox">📨 Innkommende</button>
-    <button data-tab="sent">✅ Sendte</button>
-    <button data-tab="webhooks">🔗 Webhooks</button>
-    <button data-tab="rules">🤖 Auto-svar</button>
-    <button data-tab="settings">⚙️ Innstillinger</button>
-  </nav>
-
-  <div class="container">
-
-    <!-- OVERSIKT -->
-    <div id="tab-overview" class="tab-content active">
-      <div class="stats" id="statsGrid"></div>
-      <div class="card">
-        <h2>Meldinger siste 7 dager</h2>
-        <div class="chart-bar" id="chart"></div>
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:#0057A8"></div>Innkommende</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#48BB78"></div>Sendte</div>
-        </div>
-      </div>
+  <main class="main">
+    <div class="topbar">
+      <h1 id="pageTitle">Oversikt</h1>
+      <div class="status-pill"><div class="status-dot"></div>Tilkoblet</div>
     </div>
+    <div class="content">
 
-    <!-- SEND SMS -->
-    <div id="tab-send" class="tab-content">
-      <div class="card">
-        <h2>✉️ Send ny SMS</h2>
-        <div class="send-form">
-          <div>
-            <label class="form-label">Mottaker</label>
-            <div class="recipient-input-wrap">
-              <input type="tel" id="sendTo" class="recipient-input" placeholder="+47 xxx xx xxx">
-              <div class="contact-dropdown hidden" id="contactDropdown"></div>
+      <div id="tab-overview" class="tab-content active">
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Aktivitet — siste 7 dager</span></div>
+          <div class="chart-wrap">
+            <div class="chart-bars" id="chart"></div>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Innkommende</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Sendte</div>
             </div>
-            <div style="margin-top:20px">
-              <label class="form-label">Melding</label>
-              <textarea id="sendBody" class="message-area" placeholder="Skriv meldingen din her..."></textarea>
-              <div class="char-count" id="charCount">0 tegn</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-send" class="tab-content">
+        <div class="card"><div class="card-header"><span class="card-title">Ny melding</span></div>
+        <div class="card-body"><div class="send-grid">
+          <div>
+            <div class="field">
+              <label>Mottaker</label>
+              <div class="recipient-wrap">
+                <input type="tel" id="sendTo" placeholder="+47 xxx xx xxx" autocomplete="off">
+                <div class="contact-dropdown" id="contactDropdown"></div>
+              </div>
             </div>
-            <button class="send-btn" id="sendBtn">
-              <span>📤</span> Send SMS
-            </button>
-            <div id="sendStatus" class="hidden send-status"></div>
+            <div class="field">
+              <label>Melding</label>
+              <textarea id="sendBody" placeholder="Skriv meldingen din..."></textarea>
+              <div class="char-count" id="charCount">0 / 160</div>
+            </div>
+            <button class="send-btn" id="sendBtn">📤 Send SMS</button>
+            <div class="send-feedback" id="sendFeedback"></div>
           </div>
           <div>
-            <label class="form-label">📋 Tidligere kontakter</label>
-            <div class="contacts-list" id="contactsList"></div>
-            <div style="margin-top:10px;font-size:12px;color:#a0aec0">Klikk for å velge mottaker</div>
+            <div class="field">
+              <label>Kontakter</label>
+              <div class="contacts-panel" id="contactsList"><div class="contacts-empty">Ingen kontakter ennå</div></div>
+            </div>
           </div>
-        </div>
+        </div></div></div>
       </div>
-    </div>
 
-    <!-- INNKOMMENDE -->
-    <div id="tab-inbox" class="tab-content">
-      <div class="card">
-        <h2>Innkommende meldinger</h2>
-        <div class="toolbar">
-          <input type="text" class="search-box" id="inboxSearch" placeholder="🔍 Søk...">
-          <button class="btn btn-outline" id="inboxExport">⬇ CSV</button>
-          <button class="btn btn-outline" id="inboxRefresh">↻ Oppdater</button>
-        </div>
-        <table>
-          <thead><tr><th>Fra</th><th>Melding</th><th>Tidspunkt</th><th></th></tr></thead>
-          <tbody id="inboxTable"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- SENDTE -->
-    <div id="tab-sent" class="tab-content">
-      <div class="card">
-        <h2>Sendte meldinger</h2>
-        <div class="toolbar">
-          <input type="text" class="search-box" id="sentSearch" placeholder="🔍 Søk...">
-          <button class="btn btn-outline" id="sentExport">⬇ CSV</button>
-          <button class="btn btn-outline" id="sentRefresh">↻ Oppdater</button>
-        </div>
-        <table>
-          <thead><tr><th>Til</th><th>Melding</th><th>Status</th><th>Tidspunkt</th></tr></thead>
-          <tbody id="sentTable"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- WEBHOOKS -->
-    <div id="tab-webhooks" class="tab-content">
-      <div class="card">
-        <h2>Legg til webhook</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>URL</label>
-            <input type="url" id="webhookUrl" placeholder="https://ditt-system.no/webhook">
+      <div id="tab-inbox" class="tab-content">
+        <div class="card"><div class="card-header"><span class="card-title">Innkommende meldinger</span></div>
+        <div class="card-body">
+          <div class="toolbar">
+            <input type="text" class="search-input" id="inboxSearch" placeholder="🔍 Søk...">
+            <button class="btn-ghost" id="inboxRefresh">↻ Oppdater</button>
+            <button class="btn-ghost" id="inboxExport">⬇ CSV</button>
           </div>
-          <div class="form-group">
-            <label>Hemmelig nøkkel (valgfri)</label>
-            <input type="text" id="webhookSecret">
-          </div>
-        </div>
-        <div class="form-group" style="margin-bottom:16px">
-          <label>Hendelser</label>
-          <div style="display:flex;gap:20px;margin-top:8px;font-size:14px">
-            <label><input type="checkbox" value="sms.received" checked> Innkommende</label>
-            <label><input type="checkbox" value="sms.sent" checked> Sendt</label>
-            <label><input type="checkbox" value="sms.failed"> Mislykket</label>
-          </div>
-        </div>
-        <button class="btn btn-primary" id="addWebhookBtn">Legg til</button>
+          <table><thead><tr><th>Fra</th><th>Melding</th><th>Tidspunkt</th><th></th></tr></thead>
+          <tbody id="inboxTable"><tr class="empty-row"><td colspan="4">Ingen meldinger</td></tr></tbody></table>
+        </div></div>
       </div>
-      <div class="card">
-        <h2>Aktive webhooks</h2>
-        <table><thead><tr><th>URL</th><th>Hendelser</th><th>Status</th><th></th></tr></thead>
-        <tbody id="webhooksTable"></tbody></table>
-      </div>
-    </div>
 
-    <!-- AUTO-SVAR -->
-    <div id="tab-rules" class="tab-content">
-      <div class="card">
-        <h2>Ny auto-svar regel</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Navn</label>
-            <input type="text" id="ruleName" placeholder="F.eks. Velkomstmelding">
+      <div id="tab-sent" class="tab-content">
+        <div class="card"><div class="card-header"><span class="card-title">Sendte meldinger</span></div>
+        <div class="card-body">
+          <div class="toolbar">
+            <input type="text" class="search-input" id="sentSearch" placeholder="🔍 Søk...">
+            <button class="btn-ghost" id="sentRefresh">↻ Oppdater</button>
+            <button class="btn-ghost" id="sentExport">⬇ CSV</button>
           </div>
-          <div class="form-group">
-            <label>Trigger</label>
-            <input type="text" id="ruleTrigger" placeholder="F.eks. HJELP">
+          <table><thead><tr><th>Til</th><th>Melding</th><th>Status</th><th>Tidspunkt</th></tr></thead>
+          <tbody id="sentTable"><tr class="empty-row"><td colspan="4">Ingen meldinger</td></tr></tbody></table>
+        </div></div>
+      </div>
+
+      <div id="tab-webhooks" class="tab-content">
+        <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Legg til webhook</span></div>
+        <div class="card-body">
+          <div class="form-2col">
+            <div class="field"><label>URL</label><input type="url" id="webhookUrl" placeholder="https://ditt-system.no/webhook"></div>
+            <div class="field"><label>Hemmelig nøkkel (valgfri)</label><input type="text" id="webhookSecret" placeholder="Genereres automatisk"></div>
           </div>
-        </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <label>Svar</label>
-          <textarea id="ruleResponse" placeholder="Automatisk svar..."></textarea>
-        </div>
-        <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:14px">
-          <input type="checkbox" id="ruleIsRegex"> Bruk regex
-        </label>
-        <button class="btn btn-primary" id="addRuleBtn">Lagre regel</button>
+          <div class="field" style="margin-bottom:14px"><label>Hendelser</label>
+            <div class="checkbox-group">
+              <label><input type="checkbox" value="sms.received" checked> Innkommende</label>
+              <label><input type="checkbox" value="sms.sent" checked> Sendt</label>
+              <label><input type="checkbox" value="sms.failed"> Mislykket</label>
+            </div>
+          </div>
+          <button class="submit-btn" id="addWebhookBtn">Legg til webhook</button>
+        </div></div>
+        <div class="card"><div class="card-header"><span class="card-title">Aktive webhooks</span></div>
+        <div class="card-body">
+          <table><thead><tr><th>URL</th><th>Hendelser</th><th>Status</th><th></th></tr></thead>
+          <tbody id="webhooksTable"><tr class="empty-row"><td colspan="4">Ingen webhooks</td></tr></tbody></table>
+        </div></div>
       </div>
-      <div class="card">
-        <h2>Aktive regler</h2>
-        <table><thead><tr><th>Navn</th><th>Trigger</th><th>Svar</th><th>Aktiv</th><th></th></tr></thead>
-        <tbody id="rulesTable"></tbody></table>
-      </div>
-    </div>
 
-    <!-- INNSTILLINGER -->
-    <div id="tab-settings" class="tab-content">
-      <div class="card" style="max-width:480px">
-        <h2>🔑 Bytt passord</h2>
-        <div class="form-group" style="margin-bottom:12px">
-          <label>Nåværende passord</label>
-          <input type="password" id="curPwd">
-        </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <label>Nytt passord</label>
-          <input type="password" id="newPwdField" placeholder="Minimum 8 tegn">
-        </div>
-        <div class="form-group" style="margin-bottom:16px">
-          <label>Bekreft nytt passord</label>
-          <input type="password" id="cfmPwd">
-        </div>
-        <button class="btn btn-primary" id="changePwdBtn">Lagre</button>
-        <div id="pwdStatus" style="margin-top:12px;font-size:14px"></div>
+      <div id="tab-rules" class="tab-content">
+        <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Ny auto-svar regel</span></div>
+        <div class="card-body">
+          <div class="form-2col">
+            <div class="field"><label>Navn</label><input type="text" id="ruleName" placeholder="F.eks. Velkomstmelding"></div>
+            <div class="field"><label>Trigger</label><input type="text" id="ruleTrigger" placeholder="F.eks. HJELP"></div>
+          </div>
+          <div class="field" style="margin-bottom:12px"><label>Automatisk svar</label><textarea id="ruleResponse" placeholder="Teksten som sendes tilbake..."></textarea></div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:14px;cursor:pointer"><input type="checkbox" id="ruleIsRegex" style="accent-color:var(--accent)"> Bruk regex</label>
+          <button class="submit-btn" id="addRuleBtn">Lagre regel</button>
+        </div></div>
+        <div class="card"><div class="card-header"><span class="card-title">Aktive regler</span></div>
+        <div class="card-body">
+          <table><thead><tr><th>Navn</th><th>Trigger</th><th>Svar</th><th>Aktiv</th><th></th></tr></thead>
+          <tbody id="rulesTable"><tr class="empty-row"><td colspan="5">Ingen regler</td></tr></tbody></table>
+        </div></div>
       </div>
-    </div>
 
-  </div>
+      <div id="tab-settings" class="tab-content">
+        <div class="card" style="max-width:440px"><div class="card-header"><span class="card-title">Bytt passord</span></div>
+        <div class="card-body">
+          <div class="field"><label>Nåværende passord</label><input type="password" id="curPwd"></div>
+          <div class="field"><label>Nytt passord</label><input type="password" id="newPwdField" placeholder="Minimum 8 tegn"></div>
+          <div class="field"><label>Bekreft nytt passord</label><input type="password" id="cfmPwd"></div>
+          <button class="submit-btn" id="changePwdBtn">Lagre nytt passord</button>
+          <div id="pwdStatus" style="margin-top:10px;font-size:13px"></div>
+        </div></div>
+      </div>
+
+    </div>
+  </main>
 </div>
-
 <div id="toast"></div>
 
 <script>
-var BASE = window.location.origin;
-var SLUG = window.location.pathname.split('/')[2];
-var token = localStorage.getItem('sms_token_' + SLUG) || '';
-var allContacts = [];
+var BASE=window.location.origin,SLUG=window.location.pathname.split('/')[2];
+var token=localStorage.getItem('sms_token_'+SLUG)||'',allContacts=[],activeTab='overview';
+var pageTitles={overview:'Oversikt',send:'Send SMS',inbox:'Innkommende',sent:'Sendte',webhooks:'Webhooks',rules:'Auto-svar',settings:'Innstillinger'};
 
-// Sett sidetittel
-document.title = 'SMS Gateway - ' + SLUG;
+function api(path,opts){opts=opts||{};return fetch(BASE+'/kunde/'+SLUG+path,Object.assign({},opts,{headers:Object.assign({'Content-Type':'application/json','X-Session-Token':token},opts.headers||{})})).then(function(r){return r.json();});}
 
-function api(path, opts) {
-  opts = opts || {};
-  var headers = { 'Content-Type': 'application/json', 'X-Session-Token': token };
-  if (opts.headers) Object.assign(headers, opts.headers);
-  return fetch(BASE + '/kunde/' + SLUG + path, Object.assign({}, opts, { headers: headers })).then(function(r) { return r.json(); });
-}
+document.getElementById('loginSub').textContent=SLUG;
+document.getElementById('loginBtn').addEventListener('click',doLogin);
+document.getElementById('loginPwd').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
 
-// ── Innlogging ────────────────────────────────────────────────────────────────
-function doLogin() {
-  var pwd = document.getElementById('loginPwd').value;
-  fetch(BASE + '/kunde/' + SLUG + '/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password: pwd })
-  }).then(function(r) { return r.json(); }).then(function(res) {
-    if (res.token) {
-      token = res.token;
-      localStorage.setItem('sms_token_' + SLUG, token);
-      document.getElementById('tenantNameHeader').textContent = res.tenantName || SLUG;
-      document.getElementById('loginOverlay').style.display = 'none';
-      document.getElementById('app').classList.remove('hidden');
-      init();
-    } else {
-      document.getElementById('loginErr').textContent = 'Feil passord. Prøv igjen.';
-    }
-  });
-}
+function doLogin(){var pwd=document.getElementById('loginPwd').value;fetch(BASE+'/kunde/'+SLUG+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})}).then(function(r){return r.json();}).then(function(res){if(res.token){token=res.token;localStorage.setItem('sms_token_'+SLUG,token);document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('sidebarTenant').textContent=res.tenantName||SLUG;init();}else{document.getElementById('loginErr').textContent='Feil passord. Prøv igjen.';}});}
 
-function doLogout() {
-  localStorage.removeItem('sms_token_' + SLUG);
-  location.reload();
-}
+document.getElementById('logoutBtn').addEventListener('click',function(){localStorage.removeItem('sms_token_'+SLUG);location.reload();});
+document.querySelectorAll('.nav-item[data-tab]').forEach(function(btn){btn.addEventListener('click',function(){switchTab(btn.getAttribute('data-tab'));});});
 
-// ── Navigasjon ────────────────────────────────────────────────────────────────
-function switchTab(name) {
-  document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
-  document.querySelectorAll('nav button').forEach(function(b) { b.classList.remove('active'); });
-  document.getElementById('tab-' + name).classList.add('active');
-  document.querySelector('nav button[data-tab="' + name + '"]').classList.add('active');
-  if (name === 'inbox') loadInbox();
-  if (name === 'sent') loadSent();
-  if (name === 'webhooks') loadWebhooks();
-  if (name === 'rules') loadRules();
-  if (name === 'overview') loadStats();
-  if (name === 'send') loadContactsList();
-}
+function switchTab(name){activeTab=name;document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});document.getElementById('tab-'+name).classList.add('active');document.querySelector('.nav-item[data-tab="'+name+'"]').classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[name]||name;if(name==='overview')loadStats();if(name==='inbox')loadInbox();if(name==='sent')loadSent();if(name==='webhooks')loadWebhooks();if(name==='rules')loadRules();if(name==='send')loadContacts();}
 
-// ── Hjelpere ──────────────────────────────────────────────────────────────────
-function timeAgo(ts) {
-  var d = Math.floor((Date.now() - ts) / 1000);
-  if (d < 60) return d + 's siden';
-  if (d < 3600) return Math.floor(d / 60) + 'm siden';
-  if (d < 86400) return Math.floor(d / 3600) + 't siden';
-  return new Date(ts).toLocaleString('nb-NO');
-}
+function timeAgo(ts){var d=Math.floor((Date.now()-ts)/1000);if(d<60)return d+'s siden';if(d<3600)return Math.floor(d/60)+'m siden';if(d<86400)return Math.floor(d/3600)+'t siden';return new Date(ts).toLocaleString('nb-NO');}
 
-function toast(msg, ok) {
-  if (ok === undefined) ok = true;
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.background = ok ? '#1a202c' : '#e53e3e';
-  t.style.color = 'white';
-  t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, 3000);
-}
+function toast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='show '+(type||'ok');clearTimeout(t._timer);t._timer=setTimeout(function(){t.className='';},3000);}
 
-// ── Statistikk ────────────────────────────────────────────────────────────────
-function loadStats() {
-  api('/api/stats').then(function(s) {
-    document.getElementById('statsGrid').innerHTML =
-      '<div class="stat"><div class="num">' + s.total.inbound + '</div><div class="lbl">Totalt innkommende</div><div class="trend">&#8593; ' + s.last24h.inbound + ' siste 24t</div></div>' +
-      '<div class="stat"><div class="num">' + s.total.sent + '</div><div class="lbl">Totalt sendte</div><div class="trend">&#8593; ' + s.last24h.sent + ' siste 24t</div></div>' +
-      '<div class="stat"><div class="num">' + s.last24h.inbound + '</div><div class="lbl">Innkommende 24t</div></div>' +
-      '<div class="stat"><div class="num">' + s.total.pending + '</div><div class="lbl">I kø</div></div>';
+function esc(str){return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-    var max = 1;
-    s.dailyBreakdown.forEach(function(d) { if (d.inbound > max) max = d.inbound; if (d.sent > max) max = d.sent; });
-    document.getElementById('chart').innerHTML = s.dailyBreakdown.map(function(d) {
-      var ih = Math.max(d.inbound / max * 100, 2);
-      var sh = Math.max(d.sent / max * 100, 2);
-      return '<div class="bar-group"><div class="bar-wrap"><div class="bar inbound" style="height:' + ih + '%"></div><div class="bar sent" style="height:' + sh + '%"></div></div><div class="bar-label">' + d.date + '</div></div>';
-    }).join('');
-  });
-}
+function loadStats(){api('/api/stats').then(function(s){document.getElementById('statsGrid').innerHTML=mkStat(s.total.inbound,'Totalt innkommende','↑ '+s.last24h.inbound+' siste 24t','accent')+mkStat(s.total.sent,'Totalt sendte','↑ '+s.last24h.sent+' siste 24t','green')+mkStat(s.last24h.inbound,'Innkommende 24t','','accent')+mkStat(s.total.pending,'I kø','',s.total.pending>0?'amber':'accent');var max=1;s.dailyBreakdown.forEach(function(d){if(d.inbound>max)max=d.inbound;if(d.sent>max)max=d.sent;});document.getElementById('chart').innerHTML=s.dailyBreakdown.map(function(d){return'<div class="chart-bar-group"><div class="chart-bars-inner"><div class="chart-bar bar-in" style="height:'+Math.max(d.inbound/max*100,2)+'%"></div><div class="chart-bar bar-out" style="height:'+Math.max(d.sent/max*100,2)+'%"></div></div><div class="chart-lbl">'+d.date.split(' ')[0]+'</div></div>';}).join('');});}
 
-// ── Kontakter og Send SMS ─────────────────────────────────────────────────────
-function loadContactsList() {
-  api('/api/contacts').then(function(contacts) {
-    allContacts = contacts;
-    renderContactsList(contacts);
-  });
-}
+function mkStat(num,lbl,trend,color){return'<div class="stat-card"><div class="stat-num stat-'+color+'">'+num+'</div><div class="stat-lbl">'+lbl+'</div>'+(trend?'<div class="stat-trend">'+trend+'</div>':'')+'</div>';}
 
-function renderContactsList(contacts) {
-  var el = document.getElementById('contactsList');
-  if (!contacts.length) {
-    el.innerHTML = '<div style="padding:24px;text-align:center;color:#a0aec0;font-size:14px">Ingen kontakter ennå</div>';
-    return;
-  }
-  el.innerHTML = contacts.map(function(c) {
-    return '<div class="contact-item" data-number="' + c.number + '">' +
-      '<div><div class="contact-number">' + c.number + '</div><div class="contact-meta">' + c.messageCount + ' meldinger · ' + timeAgo(c.lastSeen) + '</div></div>' +
-      '<span style="color:#a0aec0">&#8594;</span></div>';
-  }).join('');
-  el.querySelectorAll('.contact-item').forEach(function(item) {
-    item.addEventListener('click', function() { selectContact(item.getAttribute('data-number')); });
-  });
-}
+function loadContacts(){api('/api/contacts').then(function(data){allContacts=data;var el=document.getElementById('contactsList');if(!data.length){el.innerHTML='<div class="contacts-empty">Ingen kontakter ennå.<br>Kontakter hentes fra meldingshistorikken.</div>';return;}el.innerHTML=data.map(function(c){return'<div class="contact-row" data-num="'+c.number+'"><div><div class="contact-num">'+c.number+'</div><div class="contact-meta">'+c.messageCount+' meldinger · '+timeAgo(c.lastSeen)+'</div></div><span style="color:var(--text3);font-size:12px">→</span></div>';}).join('');el.querySelectorAll('.contact-row').forEach(function(row){row.addEventListener('click',function(){selectContact(row.getAttribute('data-num'));});});});}
 
-function selectContact(number) {
-  document.getElementById('sendTo').value = number;
-  document.getElementById('contactDropdown').classList.add('hidden');
-  document.getElementById('sendBody').focus();
-}
+function selectContact(num){document.getElementById('sendTo').value=num;document.getElementById('contactDropdown').classList.remove('open');document.getElementById('sendBody').focus();}
 
-function renderDropdown(contacts) {
-  var dd = document.getElementById('contactDropdown');
-  if (!contacts.length) { dd.classList.add('hidden'); return; }
-  dd.classList.remove('hidden');
-  dd.innerHTML = contacts.slice(0, 8).map(function(c) {
-    return '<div class="contact-item" data-number="' + c.number + '"><div><div class="contact-number">' + c.number + '</div><div class="contact-meta">' + timeAgo(c.lastSeen) + '</div></div></div>';
-  }).join('');
-  dd.querySelectorAll('.contact-item').forEach(function(item) {
-    item.addEventListener('mousedown', function() { selectContact(item.getAttribute('data-number')); });
-  });
-}
+var sendToEl=document.getElementById('sendTo');
+sendToEl.addEventListener('input',function(){var v=this.value,dd=document.getElementById('contactDropdown');if(!v||!allContacts.length){dd.classList.remove('open');return;}var f=allContacts.filter(function(c){return c.number.includes(v);}).slice(0,6);if(!f.length){dd.classList.remove('open');return;}dd.innerHTML=f.map(function(c){return'<div class="dd-item" data-num="'+c.number+'"><div class="dd-num">'+c.number+'</div><div class="dd-meta">'+timeAgo(c.lastSeen)+'</div></div>';}).join('');dd.querySelectorAll('.dd-item').forEach(function(item){item.addEventListener('mousedown',function(e){e.preventDefault();selectContact(item.getAttribute('data-num'));});});dd.classList.add('open');});
+sendToEl.addEventListener('blur',function(){setTimeout(function(){document.getElementById('contactDropdown').classList.remove('open');},150);});
 
-function updateCharCount() {
-  var len = document.getElementById('sendBody').value.length;
-  var parts = len > 0 ? Math.ceil(len / 160) : 0;
-  document.getElementById('charCount').textContent = len === 0 ? '0 tegn' : len <= 160 ? len + ' tegn' : len + ' tegn (' + parts + ' SMS-deler)';
-}
+var sendBodyEl=document.getElementById('sendBody');
+sendBodyEl.addEventListener('input',function(){var len=this.value.length;document.getElementById('charCount').textContent=len+' / 160'+(len>160?' · '+Math.ceil(len/160)+' deler':'');});
 
-function sendSms() {
-  var to = document.getElementById('sendTo').value.trim();
-  var body = document.getElementById('sendBody').value.trim();
-  var st = document.getElementById('sendStatus');
-  var btn = document.getElementById('sendBtn');
-  if (!to) { toast('Skriv inn mottaker', false); return; }
-  if (!body) { toast('Skriv inn melding', false); return; }
-  btn.disabled = true;
-  btn.innerHTML = '<span>⏳</span> Sender...';
-  api('/api/sms/send', { method: 'POST', body: JSON.stringify({ to: to, body: body }) }).then(function(res) {
-    btn.disabled = false;
-    btn.innerHTML = '<span>📤</span> Send SMS';
-    if (res.success) {
-      st.className = 'send-status success';
-      st.textContent = '✅ Lagt i kø! Gateway-telefonen sender snart.';
-      st.classList.remove('hidden');
-      document.getElementById('sendTo').value = '';
-      document.getElementById('sendBody').value = '';
-      updateCharCount();
-      loadContactsList();
-      setTimeout(function() { st.classList.add('hidden'); }, 4000);
-      toast('Sendt!');
-    } else {
-      st.className = 'send-status error';
-      st.textContent = '❌ ' + (res.error || 'Feil');
-      st.classList.remove('hidden');
-    }
-  });
-}
+document.getElementById('sendBtn').addEventListener('click',function(){var to=sendToEl.value.trim(),body=sendBodyEl.value.trim(),fb=document.getElementById('sendFeedback');fb.className='send-feedback';if(!to){toast('Skriv inn mottaker','err');return;}if(!body){toast('Skriv inn melding','err');return;}var btn=this;btn.disabled=true;btn.textContent='⏳ Sender...';api('/api/sms/send',{method:'POST',body:JSON.stringify({to:to,body:body})}).then(function(res){btn.disabled=false;btn.textContent='📤 Send SMS';if(res.success){fb.className='send-feedback ok';fb.textContent='✓ Melding lagt i kø — gateway sender snart';sendToEl.value='';sendBodyEl.value='';document.getElementById('charCount').textContent='0 / 160';loadContacts();setTimeout(function(){fb.className='send-feedback';},4000);toast('Melding sendt!');}else{fb.className='send-feedback err';fb.textContent='✕ '+(res.error||'Feil');}});});
 
-// ── Innkommende ───────────────────────────────────────────────────────────────
-function loadInbox() {
-  var search = document.getElementById('inboxSearch').value || '';
-  api('/api/sms/inbox?limit=100&search=' + encodeURIComponent(search)).then(function(data) {
-    document.getElementById('inboxTable').innerHTML = data.length ? data.map(function(m) {
-      return '<tr><td><strong>' + m.from + '</strong></td><td style="max-width:400px;word-break:break-word;line-height:1.5">' + m.body + '</td><td style="white-space:nowrap;color:#a0aec0;font-size:13px">' + timeAgo(m.receivedAt) + '</td><td><button class="btn btn-outline btn-sm reply-btn" data-number="' + m.from + '">Svar</button></td></tr>';
-    }).join('') : '<tr><td colspan="4" style="text-align:center;color:#a0aec0;padding:40px">Ingen innkommende meldinger</td></tr>';
-    document.querySelectorAll('.reply-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        document.getElementById('sendTo').value = btn.getAttribute('data-number');
-        switchTab('send');
-      });
-    });
-  });
-}
+function loadInbox(){var s=document.getElementById('inboxSearch').value||'';api('/api/sms/inbox?limit=100&search='+encodeURIComponent(s)).then(function(data){document.getElementById('inboxTable').innerHTML=data.length?data.map(function(m){return'<tr><td><span class="mono">'+esc(m.from)+'</span></td><td style="max-width:360px">'+esc(m.body)+'</td><td style="white-space:nowrap;color:var(--text3)">'+timeAgo(m.receivedAt)+'</td><td><button class="btn-ghost" style="font-size:11px;padding:5px 10px" onclick="replyTo(\''+esc(m.from)+'\')">Svar</button></td></tr>';}).join(''):'<tr class="empty-row"><td colspan="4">Ingen innkommende meldinger</td></tr>';});}
 
-// ── Sendte ────────────────────────────────────────────────────────────────────
-function loadSent() {
-  var search = document.getElementById('sentSearch').value || '';
-  api('/api/sms/sent?limit=100&search=' + encodeURIComponent(search)).then(function(data) {
-    document.getElementById('sentTable').innerHTML = data.length ? data.map(function(m) {
-      return '<tr><td><strong>' + m.to + '</strong></td><td style="max-width:400px;word-break:break-word;line-height:1.5">' + (m.body || '') + '</td><td><span class="badge badge-green">&#10003; Sendt</span></td><td style="white-space:nowrap;color:#a0aec0;font-size:13px">' + timeAgo(m.sentAt || m.createdAt) + '</td></tr>';
-    }).join('') : '<tr><td colspan="4" style="text-align:center;color:#a0aec0;padding:40px">Ingen sendte meldinger</td></tr>';
-  });
-}
+function replyTo(num){document.getElementById('sendTo').value=num;switchTab('send');}
 
-// ── Webhooks ──────────────────────────────────────────────────────────────────
-function loadWebhooks() {
-  api('/api/webhooks').then(function(data) {
-    document.getElementById('webhooksTable').innerHTML = data.length ? data.map(function(w) {
-      var events = Array.isArray(w.events) ? w.events.join(', ') : w.events;
-      return '<tr><td style="word-break:break-all;font-size:13px">' + w.url + '</td><td style="font-size:13px">' + events + '</td><td><span class="badge badge-green">Aktiv</span></td><td><button class="btn btn-danger btn-sm del-webhook" data-id="' + w.id + '">Slett</button></td></tr>';
-    }).join('') : '<tr><td colspan="4" style="text-align:center;color:#a0aec0;padding:32px">Ingen webhooks</td></tr>';
-    document.querySelectorAll('.del-webhook').forEach(function(btn) {
-      btn.addEventListener('click', function() { deleteWebhook(btn.getAttribute('data-id')); });
-    });
-  });
-}
+document.getElementById('inboxSearch').addEventListener('input',loadInbox);
+document.getElementById('inboxRefresh').addEventListener('click',loadInbox);
+document.getElementById('inboxExport').addEventListener('click',function(){window.location.href=BASE+'/kunde/'+SLUG+'/api/export/inbox?token='+token;});
 
-function addWebhook() {
-  var url = document.getElementById('webhookUrl').value.trim();
-  var secret = document.getElementById('webhookSecret').value.trim();
-  var events = Array.from(document.querySelectorAll('#tab-webhooks input[type=checkbox]:checked')).map(function(c) { return c.value; });
-  if (!url) { toast('Skriv inn URL', false); return; }
-  api('/api/webhooks', { method: 'POST', body: JSON.stringify({ url: url, secret: secret, events: events }) }).then(function() {
-    document.getElementById('webhookUrl').value = '';
-    loadWebhooks();
-    toast('Webhook lagt til!');
-  });
-}
+function loadSent(){var s=document.getElementById('sentSearch').value||'';api('/api/sms/sent?limit=100&search='+encodeURIComponent(s)).then(function(data){document.getElementById('sentTable').innerHTML=data.length?data.map(function(m){return'<tr><td><span class="mono">'+esc(m.to)+'</span></td><td style="max-width:360px">'+esc(m.body||'')+'</td><td><span class="badge badge-green">Sendt</span></td><td style="white-space:nowrap;color:var(--text3)">'+timeAgo(m.sentAt||m.createdAt)+'</td></tr>';}).join(''):'<tr class="empty-row"><td colspan="4">Ingen sendte meldinger</td></tr>';});}
 
-function deleteWebhook(id) {
-  api('/api/webhooks/' + id, { method: 'DELETE' }).then(function() {
-    loadWebhooks();
-    toast('Webhook slettet');
-  });
-}
+document.getElementById('sentSearch').addEventListener('input',loadSent);
+document.getElementById('sentRefresh').addEventListener('click',loadSent);
+document.getElementById('sentExport').addEventListener('click',function(){window.location.href=BASE+'/kunde/'+SLUG+'/api/export/sent?token='+token;});
 
-// ── Auto-svar regler ──────────────────────────────────────────────────────────
-function loadRules() {
-  api('/api/rules').then(function(data) {
-    document.getElementById('rulesTable').innerHTML = data.length ? data.map(function(r) {
-      return '<tr><td><strong>' + r.name + '</strong></td><td><code style="background:#f7fafc;padding:2px 6px;border-radius:4px;font-size:12px">' + r.trigger + '</code></td><td style="max-width:200px;word-break:break-word;font-size:13px">' + r.response + '</td><td><label class="switch"><input type="checkbox" ' + (r.enabled ? 'checked' : '') + ' data-id="' + r.id + '" class="rule-toggle"><span class="slider"></span></label></td><td><button class="btn btn-danger btn-sm del-rule" data-id="' + r.id + '">Slett</button></td></tr>';
-    }).join('') : '<tr><td colspan="5" style="text-align:center;color:#a0aec0;padding:32px">Ingen regler</td></tr>';
-    document.querySelectorAll('.rule-toggle').forEach(function(cb) {
-      cb.addEventListener('change', function() { api('/api/rules/' + cb.getAttribute('data-id'), { method: 'PUT', body: JSON.stringify({ enabled: cb.checked }) }); });
-    });
-    document.querySelectorAll('.del-rule').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        api('/api/rules/' + btn.getAttribute('data-id'), { method: 'DELETE' }).then(function() { loadRules(); toast('Regel slettet'); });
-      });
-    });
-  });
-}
+function loadWebhooks(){api('/api/webhooks').then(function(data){document.getElementById('webhooksTable').innerHTML=data.length?data.map(function(w){var ev=Array.isArray(w.events)?w.events.join(', '):w.events;return'<tr><td style="max-width:240px;word-break:break-all;font-size:12px">'+esc(w.url)+'</td><td style="font-size:12px">'+esc(ev)+'</td><td><span class="badge badge-green">Aktiv</span></td><td><button class="del-btn" data-id="'+w.id+'">Slett</button></td></tr>';}).join(''):'<tr class="empty-row"><td colspan="4">Ingen webhooks</td></tr>';document.querySelectorAll('#webhooksTable .del-btn').forEach(function(btn){btn.addEventListener('click',function(){api('/api/webhooks/'+btn.getAttribute('data-id'),{method:'DELETE'}).then(function(){loadWebhooks();toast('Webhook slettet');});});});});}
 
-function addRule() {
-  var name = document.getElementById('ruleName').value.trim();
-  var trigger = document.getElementById('ruleTrigger').value.trim();
-  var response = document.getElementById('ruleResponse').value.trim();
-  var isRegex = document.getElementById('ruleIsRegex').checked;
-  if (!name || !trigger || !response) { toast('Fyll inn alle felter', false); return; }
-  api('/api/rules', { method: 'POST', body: JSON.stringify({ name: name, trigger: trigger, response: response, isRegex: isRegex }) }).then(function() {
-    document.getElementById('ruleName').value = '';
-    document.getElementById('ruleTrigger').value = '';
-    document.getElementById('ruleResponse').value = '';
-    loadRules();
-    toast('Regel lagt til!');
-  });
-}
+document.getElementById('addWebhookBtn').addEventListener('click',function(){var url=document.getElementById('webhookUrl').value.trim(),secret=document.getElementById('webhookSecret').value.trim(),events=Array.from(document.querySelectorAll('#tab-webhooks input[type=checkbox]:checked')).map(function(c){return c.value;});if(!url){toast('Skriv inn URL','err');return;}api('/api/webhooks',{method:'POST',body:JSON.stringify({url:url,secret:secret,events:events})}).then(function(){document.getElementById('webhookUrl').value='';loadWebhooks();toast('Webhook lagt til!');});});
 
-// ── Passord ───────────────────────────────────────────────────────────────────
-function changePassword() {
-  var cur = document.getElementById('curPwd').value;
-  var nw = document.getElementById('newPwdField').value;
-  var cf = document.getElementById('cfmPwd').value;
-  var st = document.getElementById('pwdStatus');
-  if (nw !== cf) { st.innerHTML = '<span style="color:#e53e3e">Passordene er ikke like</span>'; return; }
-  api('/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword: cur, newPassword: nw }) }).then(function(res) {
-    if (res.success) { st.innerHTML = '<span style="color:#276749">&#10003; Passord endret!</span>'; toast('Passord endret!'); }
-    else { st.innerHTML = '<span style="color:#e53e3e">&#10007; ' + (res.error || 'Feil') + '</span>'; }
-  });
-}
+function loadRules(){api('/api/rules').then(function(data){document.getElementById('rulesTable').innerHTML=data.length?data.map(function(r){return'<tr><td>'+esc(r.name)+'</td><td><span class="mono">'+esc(r.trigger)+'</span></td><td style="max-width:180px;font-size:12px">'+esc(r.response)+'</td><td><label class="switch"><input type="checkbox" '+(r.enabled?'checked':'')+' data-id="'+r.id+'"><span class="slider"></span></label></td><td><button class="del-btn" data-id="'+r.id+'">Slett</button></td></tr>';}).join(''):'<tr class="empty-row"><td colspan="5">Ingen regler</td></tr>';document.querySelectorAll('#rulesTable input[type=checkbox]').forEach(function(cb){cb.addEventListener('change',function(){api('/api/rules/'+cb.getAttribute('data-id'),{method:'PUT',body:JSON.stringify({enabled:cb.checked})});});});document.querySelectorAll('#rulesTable .del-btn').forEach(function(btn){btn.addEventListener('click',function(){api('/api/rules/'+btn.getAttribute('data-id'),{method:'DELETE'}).then(function(){loadRules();toast('Regel slettet');});});});});}
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-function init() {
-  loadStats();
-  loadContactsList();
-  setInterval(function() { loadStats(); }, 5000);
-}
+document.getElementById('addRuleBtn').addEventListener('click',function(){var name=document.getElementById('ruleName').value.trim(),trigger=document.getElementById('ruleTrigger').value.trim(),response=document.getElementById('ruleResponse').value.trim(),isRegex=document.getElementById('ruleIsRegex').checked;if(!name||!trigger||!response){toast('Fyll inn alle felter','err');return;}api('/api/rules',{method:'POST',body:JSON.stringify({name:name,trigger:trigger,response:response,isRegex:isRegex})}).then(function(){document.getElementById('ruleName').value='';document.getElementById('ruleTrigger').value='';document.getElementById('ruleResponse').value='';loadRules();toast('Regel lagt til!');});});
 
-function checkSession() {
-  if (!token) return;
-  api('/api/stats').then(function(res) {
-    if (res && !res.error) {
-      document.getElementById('loginOverlay').style.display = 'none';
-      document.getElementById('app').classList.remove('hidden');
-      init();
-    } else {
-      localStorage.removeItem('sms_token_' + SLUG);
-      token = '';
-    }
-  }).catch(function() {
-    localStorage.removeItem('sms_token_' + SLUG);
-    token = '';
-  });
-}
+document.getElementById('changePwdBtn').addEventListener('click',function(){var cur=document.getElementById('curPwd').value,nw=document.getElementById('newPwdField').value,cf=document.getElementById('cfmPwd').value,st=document.getElementById('pwdStatus');if(nw!==cf){st.style.color='var(--red)';st.textContent='✕ Passordene er ikke like';return;}api('/auth/change-password',{method:'POST',body:JSON.stringify({currentPassword:cur,newPassword:nw})}).then(function(res){if(res.success){st.style.color='var(--green)';st.textContent='✓ Passord endret!';toast('Passord endret!');}else{st.style.color='var(--red)';st.textContent='✕ '+(res.error||'Feil');}});});
 
-// ── Event listeners ───────────────────────────────────────────────────────────
-document.getElementById('loginBtn').addEventListener('click', doLogin);
-document.getElementById('logoutBtn').addEventListener('click', doLogout);
-document.getElementById('loginPwd').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
-document.getElementById('sendBtn').addEventListener('click', sendSms);
-document.getElementById('sendBody').addEventListener('input', updateCharCount);
-document.getElementById('sendTo').addEventListener('input', function() {
-  var v = this.value;
-  if (!v) { renderDropdown(allContacts); return; }
-  renderDropdown(allContacts.filter(function(c) { return c.number.includes(v); }));
-});
-document.getElementById('sendTo').addEventListener('focus', function() { if (allContacts.length) renderDropdown(allContacts); });
-document.getElementById('sendTo').addEventListener('blur', function() { setTimeout(function() { document.getElementById('contactDropdown').classList.add('hidden'); }, 200); });
-document.getElementById('inboxSearch').addEventListener('input', loadInbox);
-document.getElementById('sentSearch').addEventListener('input', loadSent);
-document.getElementById('inboxRefresh').addEventListener('click', loadInbox);
-document.getElementById('sentRefresh').addEventListener('click', loadSent);
-document.getElementById('inboxExport').addEventListener('click', function() { window.location.href = BASE + '/kunde/' + SLUG + '/api/export/inbox?token=' + token; });
-document.getElementById('sentExport').addEventListener('click', function() { window.location.href = BASE + '/kunde/' + SLUG + '/api/export/sent?token=' + token; });
-document.getElementById('addWebhookBtn').addEventListener('click', addWebhook);
-document.getElementById('addRuleBtn').addEventListener('click', addRule);
-document.getElementById('changePwdBtn').addEventListener('click', changePassword);
+function init(){loadStats();loadContacts();setInterval(function(){if(activeTab==='overview')loadStats();if(activeTab==='inbox')loadInbox();},10000);}
 
-document.querySelectorAll('nav button[data-tab]').forEach(function(btn) {
-  btn.addEventListener('click', function() { switchTab(btn.getAttribute('data-tab')); });
-});
-
-checkSession();
+(function(){if(!token)return;api('/api/stats').then(function(res){if(res&&!res.error){document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('sidebarTenant').textContent=SLUG;init();}else{localStorage.removeItem('sms_token_'+SLUG);token='';}}).catch(function(){localStorage.removeItem('sms_token_'+SLUG);token='';});})();
 </script>
 </body>
 </html>
