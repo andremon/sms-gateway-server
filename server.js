@@ -235,15 +235,17 @@ app.get('/admin/tenants', requireAdmin, async (req, res) => {
 });
 
 app.post('/admin/tenants', requireAdmin, async (req, res) => {
-    const { name, password } = req.body;
+    const { name, password, phoneNumber, maxDevices } = req.body;
     if (!name || !password) return res.status(400).json({ error: 'name og password er påkrevd' });
     const slug = slugify(name);
     const existing = await getTenantBySlug(slug);
     if (existing) return res.status(400).json({ error: 'Kunde med dette navnet finnes allerede' });
 
     const tenant = { id: uuidv4(), name, slug, password, api_key: generateApiKey(), created_at: Date.now() };
-    await pool.query('INSERT INTO tenants (id,name,slug,password,api_key,created_at) VALUES ($1,$2,$3,$4,$5,$6)',
-        [tenant.id, tenant.name, tenant.slug, tenant.password, tenant.api_key, tenant.created_at]);
+    await pool.query(
+        'INSERT INTO tenants (id,name,slug,password,api_key,created_at,phone_number,max_devices) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [tenant.id, tenant.name, tenant.slug, tenant.password, tenant.api_key, tenant.created_at, phoneNumber || null, maxDevices || 1]
+    );
 
     const serverUrl = req.protocol + '://' + req.get('host');
     const dashboardUrl = `${serverUrl}/kunde/${slug}/dashboard`;
