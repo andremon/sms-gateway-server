@@ -108,6 +108,19 @@ td{padding:12px 14px;border-top:1px solid #ffffff0f;font-size:13px;vertical-alig
       <div id="gatewayStatus"><div style="color:#475569;font-size:13px">Laster...</div></div>
     </div>
 
+    <!-- ADMIN INNBOKS -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="margin:0">📨 Admin-innboks</h2>
+        <button class="btn btn-gray btn-sm" onclick="loadAdminInbox()">↻ Oppdater</button>
+      </div>
+      <p style="font-size:12px;color:#475569;margin-bottom:12px">Meldinger mottatt på gateway-telefonen som ikke tilhører noen kunde.</p>
+      <table>
+        <thead><tr><th>Fra</th><th>Melding</th><th>Type</th><th>Tidspunkt</th></tr></thead>
+        <tbody id="adminInboxTable"><tr><td colspan="4" style="text-align:center;color:#475569;padding:24px">Laster...</td></tr></tbody>
+      </table>
+    </div>
+
     <!-- OPPRETT KUNDE -->
     <div class="card">
       <h2>➕ Opprett ny kunde</h2>
@@ -511,6 +524,28 @@ function deleteDevice(deviceId,tenantId){
 }
 
 // GATEWAY STATUS
+function loadAdminInbox() {
+  adminApi('/admin/inbox').then(function(data) {
+    var el = document.getElementById('adminInboxTable');
+    if (!data.length) {
+      el.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#475569;padding:24px">Ingen meldinger ennå</td></tr>';
+      return;
+    }
+    el.innerHTML = data.map(function(m) {
+      var typeLabel = m.source === 'reset' ? '<span style="background:#6366f114;color:#818cf8;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">🔑 RESET</span>' :
+        m.direction === 'inbound' ? '<span style="background:#34d39914;color:#34d399;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">↓ Inn</span>' :
+        '<span style="background:#3b82f614;color:#60a5fa;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">↑ Ut</span>';
+      var num = m.direction === 'inbound' ? m.from : m.to;
+      return '<tr>'+
+        '<td style="font-family:monospace;font-size:12px">'+(num||'–')+'</td>'+
+        '<td style="font-size:13px;max-width:360px">'+m.body+'</td>'+
+        '<td>'+typeLabel+'</td>'+
+        '<td style="font-size:12px;color:#475569;white-space:nowrap">'+timeAgo(m.createdAt)+'</td>'+
+      '</tr>';
+    }).join('');
+  });
+}
+
 function loadGatewayStatus() {
   adminApi('/admin/gateway-status').then(function(devices){
     var el = document.getElementById('gatewayStatus');
@@ -612,7 +647,8 @@ function init() {
   checkServerStatus();
   loadTenants();
   loadGatewayStatus();
-  setInterval(function(){checkServerStatus();loadTenants();loadGatewayStatus();},15000);
+  loadAdminInbox();
+  setInterval(function(){checkServerStatus();loadTenants();loadGatewayStatus();loadAdminInbox();},15000);
 }
 
 // SESSION CHECK
