@@ -69,6 +69,14 @@ async function initDB() {
         CREATE INDEX IF NOT EXISTS idx_messages_direction ON messages(direction);
         CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(status);
 
+        CREATE TABLE IF NOT EXISTS admin_settings (
+            id TEXT PRIMARY KEY DEFAULT 'main',
+            admin_password TEXT,
+            gateway_phone TEXT,
+            welcome_template TEXT,
+            updated_at BIGINT
+        );
+
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS phone_number TEXT;
         ALTER TABLE devices ADD COLUMN IF NOT EXISTS battery_level INT;
         ALTER TABLE devices ADD COLUMN IF NOT EXISTS network_type TEXT;
@@ -84,6 +92,13 @@ async function initDB() {
         );
     `);
     console.log('Database initialisert');
+
+    // Last lagret admin-passord fra database
+    const savedSettings = await pool.query('SELECT * FROM admin_settings WHERE id=$1', ['main']).catch(() => ({ rows: [] }));
+    if (savedSettings.rows[0]?.admin_password) {
+        process.env.ADMIN_PASSWORD = savedSettings.rows[0].admin_password;
+        console.log('Admin-passord lastet fra database');
+    }
 }
 
 // ── HJELPEFUNKSJONER ──────────────────────────────────────────────────────────
@@ -284,7 +299,48 @@ app.post('/admin/tenants/:id/regenerate-key', requireAdmin, async (req, res) => 
     res.json({ apiKey: newKey });
 });
 
-// ── TENANT AUTH ───────────────────────────────────────────────────────────────
+// ── ADMIN INNSTILLINGER ───────────────────────────────────────────────────────
+
+// Hent admin-innstillinger
+app.get('/admin/settings', requireAdmin, async (req, res) => {
+    const result = await pool.query('SELECT * FROM admin_settings LIMIT 1').catch(() => ({ rows: [] }));
+    res.json(result.rows[0] || {});
+});
+
+// Endre admin-passord
+app.post('/admin/settings/password', requireAdmin, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    if (currentPassword !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Feil nåværende passord' });
+    if (!newPassword || newPassword.length < 8) return res.status(400).json({ error: 'Minimum 8 tegn' });
+    // Oppdater miljøvariabel i minnet
+    process.env.ADMIN_PASSWORD = newPassword;
+    // Lagre i database for persistering
+    await pool.query(`
+        INSERT INTO admin_settings (id, admin_password) VALUES ('main', $1)
+        ON CONFLICT (id) DO UPDATE SET admin_password = $1
+    `, [newPassword]).catch(() => {});
+    res.json({ success: true });
+});
+
+// Lagre gateway-telefonnummer
+app.post('/admin/settings/gateway-phone', requireAdmin, async (req, res) => {
+    const { phoneNumber } = req.body;
+    await pool.query(`
+        INSERT INTO admin_settings (id, gateway_phone) VALUES ('main', $1)
+        ON CONFLICT (id) DO UPDATE SET gateway_phone = $1
+    `, [phoneNumber]).catch(() => {});
+    res.json({ success: true });
+});
+
+// Lagre velkomstmal
+app.post('/admin/settings/welcome-template', requireAdmin, async (req, res) => {
+    const { template } = req.body;
+    await pool.query(`
+        INSERT INTO admin_settings (id, welcome_template) VALUES ('main', $1)
+        ON CONFLICT (id) DO UPDATE SET welcome_template = $1
+    `, [template]).catch(() => {});
+    res.json({ success: true });
+});
 app.post('/kunde/:slug/auth/login', async (req, res) => {
     const tenant = await getTenantBySlug(req.params.slug);
     if (!tenant) return res.status(404).json({ error: 'Ikke funnet' });
