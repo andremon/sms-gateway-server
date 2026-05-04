@@ -238,6 +238,10 @@ async function requireApiKey(req, res, next) {
     const key = req.headers['x-api-key'];
     const deviceId = req.headers['x-device-id'];
 
+    console.log('Mottatt key:', JSON.stringify(key));
+    console.log('GATEWAY_API_KEY:', JSON.stringify(GATEWAY_API_KEY));
+    console.log('Er lik:', key === GATEWAY_API_KEY);
+
     if (!key) return res.status(401).json({ error: 'API-nøkkel mangler' });
 
     // Sjekk om det er admin-gateway-nøkkelen
