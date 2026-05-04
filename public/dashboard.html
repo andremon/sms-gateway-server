@@ -415,7 +415,8 @@ document.getElementById('logoutBtn').addEventListener('click',function(){localSt
 document.querySelectorAll('.nav-item[data-tab]').forEach(function(btn){btn.addEventListener('click',function(){switchTab(btn.getAttribute('data-tab'));});});
 
 function switchTab(name){activeTab=name;document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});document.getElementById('tab-'+name).classList.add('active');document.querySelector('.nav-item[data-tab="'+name+'"]').classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[name]||name;if(name==='overview')loadStats();if(name==='inbox')loadInbox();if(name==='sent')loadSent();if(name==='webhooks')loadWebhooks();if(name==='rules')loadRules();if(name==='send')loadContacts();
-  if(name==='failed')loadFailed();}
+  if(name==='failed')loadFailed();
+  if(name==='settings')initSettingsListeners();}
 
 function timeAgo(ts){var d=Math.floor((Date.now()-ts)/1000);if(d<60)return d+'s siden';if(d<3600)return Math.floor(d/60)+'m siden';if(d<86400)return Math.floor(d/3600)+'t siden';return new Date(ts).toLocaleString('nb-NO');}
 
@@ -503,17 +504,26 @@ function loadRules(){api('/api/rules').then(function(data){document.getElementBy
 
 document.getElementById('addRuleBtn').addEventListener('click',function(){var name=document.getElementById('ruleName').value.trim(),trigger=document.getElementById('ruleTrigger').value.trim(),response=document.getElementById('ruleResponse').value.trim(),isRegex=document.getElementById('ruleIsRegex').checked;if(!name||!trigger||!response){toast('Fyll inn alle felter','err');return;}api('/api/rules',{method:'POST',body:JSON.stringify({name:name,trigger:trigger,response:response,isRegex:isRegex})}).then(function(){document.getElementById('ruleName').value='';document.getElementById('ruleTrigger').value='';document.getElementById('ruleResponse').value='';loadRules();toast('Regel lagt til!');});});
 
-document.getElementById('changePwdBtn').addEventListener('click',function(){var cur=document.getElementById('curPwd').value,nw=document.getElementById('newPwdField').value,cf=document.getElementById('cfmPwd').value,st=document.getElementById('pwdStatus');if(nw!==cf){st.style.color='var(--red)';st.textContent='✕ Passordene er ikke like';return;}api('/auth/change-password',{method:'POST',body:JSON.stringify({currentPassword:cur,newPassword:nw})}).then(function(res){if(res.success){st.style.color='var(--green)';st.textContent='✓ Passord endret!';toast('Passord endret!');}else{st.style.color='var(--red)';st.textContent='✕ '+(res.error||'Feil');}});});
-
-document.getElementById('savePhoneBtn').addEventListener('click',function(){
-  var phone=document.getElementById('phoneNumber').value.trim();
-  var st=document.getElementById('phoneStatus');
-  if(!phone){st.style.color='var(--red)';st.textContent='✕ Skriv inn mobilnummer';return;}
-  api('/auth/register-phone',{method:'POST',body:JSON.stringify({phoneNumber:phone})}).then(function(res){
-    if(res.success){st.style.color='var(--green)';st.textContent='✓ Mobilnummer lagret!';toast('Mobilnummer lagret!');}
-    else{st.style.color='var(--red)';st.textContent='✕ '+(res.error||'Feil');}
-  });
-});
+function initSettingsListeners() {
+  var changePwdBtn = document.getElementById('changePwdBtn');
+  var savePhoneBtn = document.getElementById('savePhoneBtn');
+  if (changePwdBtn && !changePwdBtn._init) {
+    changePwdBtn._init = true;
+    changePwdBtn.addEventListener('click',function(){var cur=document.getElementById('curPwd').value,nw=document.getElementById('newPwdField').value,cf=document.getElementById('cfmPwd').value,st=document.getElementById('pwdStatus');if(nw!==cf){st.style.color='var(--red)';st.textContent='✕ Passordene er ikke like';return;}api('/auth/change-password',{method:'POST',body:JSON.stringify({currentPassword:cur,newPassword:nw})}).then(function(res){if(res.success){st.style.color='var(--green)';st.textContent='✓ Passord endret!';toast('Passord endret!');}else{st.style.color='var(--red)';st.textContent='✕ '+(res.error||'Feil');}});});
+  }
+  if (savePhoneBtn && !savePhoneBtn._init) {
+    savePhoneBtn._init = true;
+    savePhoneBtn.addEventListener('click',function(){
+      var phone=document.getElementById('phoneNumber').value.trim();
+      var st=document.getElementById('phoneStatus');
+      if(!phone){st.style.color='var(--red)';st.textContent='✕ Skriv inn mobilnummer';return;}
+      api('/auth/register-phone',{method:'POST',body:JSON.stringify({phoneNumber:phone})}).then(function(res){
+        if(res.success){st.style.color='var(--green)';st.textContent='✓ Mobilnummer lagret!';toast('Mobilnummer lagret!');}
+        else{st.style.color='var(--red)';st.textContent='✕ '+(res.error||'Feil');}
+      });
+    });
+  }
+}
 
 // GLEMT PASSORD
 document.getElementById('forgotBtn').addEventListener('click',function(){
