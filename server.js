@@ -75,7 +75,11 @@ async function initDB() {
             admin_password TEXT,
             gateway_phone TEXT,
             welcome_template TEXT,
-            updated_at BIGINT
+            updated_at BIGINT,
+            gateway_last_seen BIGINT,
+            gateway_device_id TEXT,
+            gateway_battery INT,
+            gateway_network TEXT
         );
 
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS phone_number TEXT;
@@ -689,16 +693,27 @@ app.post('/api/device/fcm-token', requireApiKey, (req, res) => {
 app.post('/api/gateway/ping', requireApiKey, async (req, res) => {
     const deviceId = req.headers['x-device-id'];
     const { batteryLevel, networkType } = req.body;
+
+    if (req.isAdminGateway) {
+        // Admin-gateway: lagre status i admin_settings
+        await pool.query(`
+            INSERT INTO admin_settings (id, gateway_last_seen, gateway_device_id, gateway_battery, gateway_network)
+            VALUES ('main', $1, $2, $3, $4)
+            ON CONFLICT (id) DO UPDATE SET
+                gateway_last_seen=$1, gateway_device_id=$2, gateway_battery=$3, gateway_network=$4
+        `, [Date.now(), deviceId || null, batteryLevel || null, networkType || null]).catch(() => {});
+        return res.json({ success: true, serverTime: Date.now() });
+    }
+
     if (deviceId) {
         await pool.query(
             'UPDATE devices SET last_seen=$1 WHERE tenant_id=$2 AND device_id=$3',
             [Date.now(), req.tenant.id, deviceId]
         );
-        // Lagre ekstra status-info
         await pool.query(
-            `UPDATE devices SET battery_level=$1, network_type=$2 WHERE tenant_id=$3 AND device_id=$4`,
+            'UPDATE devices SET battery_level=$1, network_type=$2 WHERE tenant_id=$3 AND device_id=$4',
             [batteryLevel || null, networkType || null, req.tenant.id, deviceId]
-        ).catch(() => {}); // Ignorer hvis kolonnene ikke finnes ennå
+        ).catch(() => {});
     }
     res.json({ success: true, serverTime: Date.now() });
 });
@@ -714,6 +729,30 @@ app.get('/admin/inbox', requireAdmin, async (req, res) => {
         status: m.status, createdAt: parseInt(m.created_at)
     })));
 });
+
+// Send melding til utvalgte kunder
+app.post('/admin/send-to-customers', requireAdmin, async (req, res) => {
+    const { tenantIds, body } = req.body;
+    if (!tenantIds || !tenantIds.length) return res.status(400).json({ error: 'Velg minst én kunde' });
+    if (!body || !body.trim()) return res.status(400).json({ error: 'Skriv en melding' });
+
+    let sent = 0, failed = 0;
+    for (const tenantId of tenantIds) {
+        const tenant = await pool.query('SELECT * FROM tenants WHERE id=$1', [tenantId]);
+        if (!tenant.rows[0]) continue;
+        const t = tenant.rows[0];
+        const phone = t.contact_phone || t.phone_number;
+        if (!phone) { failed++; continue; }
+
+        // Legg melding i admin-utgående kø
+        await pool.query(
+            'INSERT INTO messages (id,tenant_id,direction,status,to_number,body,created_at,source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+            [uuidv4(), 'admin', 'outbound', 'pending', phone, body.trim(), Date.now(), 'admin-broadcast']
+        );
+        sent++;
+    }
+    res.json({ success: true, sent, failed });
+});
 app.get('/admin/gateway-status', requireAdmin, async (req, res) => {
     const devices = await pool.query(`
         SELECT d.*, t.name as tenant_name, t.slug,
@@ -724,7 +763,30 @@ app.get('/admin/gateway-status', requireAdmin, async (req, res) => {
         JOIN tenants t ON t.id = d.tenant_id
         ORDER BY d.last_seen DESC NULLS LAST
     `);
-    res.json(devices.rows);
+
+    const adminSettings = await pool.query('SELECT * FROM admin_settings WHERE id=$1', ['main']);
+    const adminGw = adminSettings.rows[0];
+    var result = devices.rows;
+
+    if (adminGw && adminGw.gateway_last_seen) {
+        const adminPending = await pool.query(
+            "SELECT COUNT(*) FROM messages WHERE tenant_id='admin' AND status='pending' AND direction='outbound'"
+        );
+        result = [{
+            id: 'admin-gateway',
+            tenant_id: 'admin',
+            tenant_name: 'Admin Gateway ⭐',
+            slug: 'admin',
+            device_name: adminGw.gateway_device_id || 'Admin Gateway',
+            last_seen: adminGw.gateway_last_seen,
+            battery_level: adminGw.gateway_battery,
+            network_type: adminGw.gateway_network,
+            pending_count: adminPending.rows[0].count,
+            isAdmin: true
+        }, ...result];
+    }
+
+    res.json(result);
 });
 
 // ── DASHBOARDS ────────────────────────────────────────────────────────────────
