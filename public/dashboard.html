@@ -168,6 +168,7 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
       <button class="nav-item" data-tab="send"><span class="icon">✉️</span>Send SMS</button>
       <button class="nav-item" data-tab="inbox"><span class="icon">📨</span>Innkommende</button>
       <button class="nav-item" data-tab="sent"><span class="icon">✅</span>Sendte</button>
+      <button class="nav-item" data-tab="failed"><span class="icon">⚠️</span>Feilede</button>
       <button class="nav-item" data-tab="webhooks"><span class="icon">🔗</span>Webhooks</button>
       <button class="nav-item" data-tab="rules"><span class="icon">🤖</span>Auto-svar</button>
       <button class="nav-item" data-tab="settings"><span class="icon">⚙️</span>Innstillinger</button>
@@ -319,7 +320,20 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
         </div></div>
       </div>
 
-      <div id="tab-webhooks" class="tab-content">
+      <div id="tab-failed" class="tab-content">
+        <div class="card"><div class="card-header">
+          <span class="card-title">Feilede meldinger</span>
+          <button class="btn-ghost" id="retryAllBtn" style="font-size:11px;padding:5px 12px">↻ Prøv alle på nytt</button>
+        </div>
+        <div class="card-body">
+          <div class="toolbar">
+            <button class="btn-ghost" id="failedRefresh">↻ Oppdater</button>
+          </div>
+          <table><thead><tr><th>Til/Fra</th><th>Melding</th><th>Feil</th><th>Forsøk</th><th>Tidspunkt</th><th></th></tr></thead>
+          <tbody id="failedTable"><tr class="empty-row"><td colspan="6">Ingen feilede meldinger</td></tr></tbody>
+          </table>
+        </div></div>
+      </div>
         <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Legg til webhook</span></div>
         <div class="card-body">
           <div class="form-2col">
@@ -387,7 +401,7 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
 <script>
 var BASE=window.location.origin,SLUG=window.location.pathname.split('/')[2];
 var token=localStorage.getItem('sms_token_'+SLUG)||'',allContacts=[],activeTab='overview';
-var pageTitles={overview:'Oversikt',send:'Send SMS',inbox:'Innkommende',sent:'Sendte',webhooks:'Webhooks',rules:'Auto-svar',settings:'Innstillinger'};
+var pageTitles={overview:'Oversikt',send:'Send SMS',inbox:'Innkommende',sent:'Sendte',failed:'Feilede meldinger',webhooks:'Webhooks',rules:'Auto-svar',settings:'Innstillinger'};
 
 function api(path,opts){opts=opts||{};return fetch(BASE+'/kunde/'+SLUG+path,Object.assign({},opts,{headers:Object.assign({'Content-Type':'application/json','X-Session-Token':token},opts.headers||{})})).then(function(r){return r.json();});}
 
@@ -400,7 +414,8 @@ function doLogin(){var pwd=document.getElementById('loginPwd').value;fetch(BASE+
 document.getElementById('logoutBtn').addEventListener('click',function(){localStorage.removeItem('sms_token_'+SLUG);location.reload();});
 document.querySelectorAll('.nav-item[data-tab]').forEach(function(btn){btn.addEventListener('click',function(){switchTab(btn.getAttribute('data-tab'));});});
 
-function switchTab(name){activeTab=name;document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});document.getElementById('tab-'+name).classList.add('active');document.querySelector('.nav-item[data-tab="'+name+'"]').classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[name]||name;if(name==='overview')loadStats();if(name==='inbox')loadInbox();if(name==='sent')loadSent();if(name==='webhooks')loadWebhooks();if(name==='rules')loadRules();if(name==='send')loadContacts();}
+function switchTab(name){activeTab=name;document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});document.getElementById('tab-'+name).classList.add('active');document.querySelector('.nav-item[data-tab="'+name+'"]').classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[name]||name;if(name==='overview')loadStats();if(name==='inbox')loadInbox();if(name==='sent')loadSent();if(name==='webhooks')loadWebhooks();if(name==='rules')loadRules();if(name==='send')loadContacts();
+  if(name==='failed')loadFailed();}
 
 function timeAgo(ts){var d=Math.floor((Date.now()-ts)/1000);if(d<60)return d+'s siden';if(d<3600)return Math.floor(d/60)+'m siden';if(d<86400)return Math.floor(d/3600)+'t siden';return new Date(ts).toLocaleString('nb-NO');}
 
@@ -408,9 +423,12 @@ function toast(msg,type){var t=document.getElementById('toast');t.textContent=ms
 
 function esc(str){return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-function loadStats(){api('/api/stats').then(function(s){document.getElementById('statsGrid').innerHTML=mkStat(s.total.inbound,'Totalt innkommende','↑ '+s.last24h.inbound+' siste 24t','accent')+mkStat(s.total.sent,'Totalt sendte','↑ '+s.last24h.sent+' siste 24t','green')+mkStat(s.last24h.inbound,'Innkommende 24t','','accent')+mkStat(s.total.pending,'I kø','',s.total.pending>0?'amber':'accent');var max=1;s.dailyBreakdown.forEach(function(d){if(d.inbound>max)max=d.inbound;if(d.sent>max)max=d.sent;});document.getElementById('chart').innerHTML=s.dailyBreakdown.map(function(d){return'<div class="chart-bar-group"><div class="chart-bars-inner"><div class="chart-bar bar-in" style="height:'+Math.max(d.inbound/max*100,2)+'%"></div><div class="chart-bar bar-out" style="height:'+Math.max(d.sent/max*100,2)+'%"></div></div><div class="chart-lbl">'+d.date.split(' ')[0]+'</div></div>';}).join('');});}
+function loadStats(){api('/api/stats').then(function(s){document.getElementById('statsGrid').innerHTML=mkStat(s.total.inbound,'Totalt innkommende','↑ '+s.last24h.inbound+' siste 24t','accent')+mkStat(s.total.sent,'Totalt sendte','↑ '+s.last24h.sent+' siste 24t','green')+mkStat(s.last24h.inbound,'Innkommende 24t','','accent')+mkStat(s.total.failed||s.total.pending,'Feilede',s.total.failed>0?'⚠ Klikk for å se':'','amber',s.total.failed>0?'failed':null);var max=1;s.dailyBreakdown.forEach(function(d){if(d.inbound>max)max=d.inbound;if(d.sent>max)max=d.sent;});document.getElementById('chart').innerHTML=s.dailyBreakdown.map(function(d){return'<div class="chart-bar-group"><div class="chart-bars-inner"><div class="chart-bar bar-in" style="height:'+Math.max(d.inbound/max*100,2)+'%"></div><div class="chart-bar bar-out" style="height:'+Math.max(d.sent/max*100,2)+'%"></div></div><div class="chart-lbl">'+d.date.split(' ')[0]+'</div></div>';}).join('');});}
 
-function mkStat(num,lbl,trend,color){return'<div class="stat-card"><div class="stat-num stat-'+color+'">'+num+'</div><div class="stat-lbl">'+lbl+'</div>'+(trend?'<div class="stat-trend">'+trend+'</div>':'')+'</div>';}
+function mkStat(num,lbl,trend,color,tab){
+  var click=tab?'style="cursor:pointer" onclick="switchTab(\''+tab+'\')"':'';
+  return'<div class="stat-card" '+click+'><div class="stat-num stat-'+color+'">'+num+'</div><div class="stat-lbl">'+lbl+'</div>'+(trend?'<div class="stat-trend">'+trend+'</div>':'')+'</div>';
+}
 
 function loadContacts(){api('/api/contacts').then(function(data){allContacts=data;var el=document.getElementById('contactsList');if(!data.length){el.innerHTML='<div class="contacts-empty">Ingen kontakter ennå.<br>Kontakter hentes fra meldingshistorikken.</div>';return;}el.innerHTML=data.map(function(c){return'<div class="contact-row" data-num="'+c.number+'"><div><div class="contact-num">'+c.number+'</div><div class="contact-meta">'+c.messageCount+' meldinger · '+timeAgo(c.lastSeen)+'</div></div><span style="color:var(--text3);font-size:12px">→</span></div>';}).join('');el.querySelectorAll('.contact-row').forEach(function(row){row.addEventListener('click',function(){selectContact(row.getAttribute('data-num'));});});});}
 
@@ -425,7 +443,44 @@ sendBodyEl.addEventListener('input',function(){var len=this.value.length;documen
 
 document.getElementById('sendBtn').addEventListener('click',function(){var to=sendToEl.value.trim(),body=sendBodyEl.value.trim(),fb=document.getElementById('sendFeedback');fb.className='send-feedback';if(!to){toast('Skriv inn mottaker','err');return;}if(!body){toast('Skriv inn melding','err');return;}var btn=this;btn.disabled=true;btn.textContent='⏳ Sender...';api('/api/sms/send',{method:'POST',body:JSON.stringify({to:to,body:body})}).then(function(res){btn.disabled=false;btn.textContent='📤 Send SMS';if(res.success){fb.className='send-feedback ok';fb.textContent='✓ Melding lagt i kø — gateway sender snart';sendToEl.value='';sendBodyEl.value='';document.getElementById('charCount').textContent='0 / 160';loadContacts();setTimeout(function(){fb.className='send-feedback';},4000);toast('Melding sendt!');}else{fb.className='send-feedback err';fb.textContent='✕ '+(res.error||'Feil');}});});
 
-function loadInbox(){var s=document.getElementById('inboxSearch').value||'';api('/api/sms/inbox?limit=100&search='+encodeURIComponent(s)).then(function(data){document.getElementById('inboxTable').innerHTML=data.length?data.map(function(m){return'<tr><td><span class="mono">'+esc(m.from)+'</span></td><td style="max-width:360px">'+esc(m.body)+'</td><td style="white-space:nowrap;color:var(--text3)">'+timeAgo(m.receivedAt)+'</td><td><button class="btn-ghost" style="font-size:11px;padding:5px 10px" onclick="replyTo(\''+esc(m.from)+'\')">Svar</button></td></tr>';}).join(''):'<tr class="empty-row"><td colspan="4">Ingen innkommende meldinger</td></tr>';});}
+function loadFailed(){
+  api('/api/sms/failed').then(function(data){
+    var el=document.getElementById('failedTable');
+    if(!data.length){el.innerHTML='<tr class="empty-row"><td colspan="6" style="color:var(--green)">✓ Ingen feilede meldinger</td></tr>';return;}
+    el.innerHTML=data.map(function(m){
+      var num=m.direction==='outbound'?m.to:m.from;
+      return'<tr>'+
+        '<td><span class="mono">'+(num||'–')+'</span></td>'+
+        '<td style="max-width:200px;font-size:12px">'+esc(m.body||'')+'</td>'+
+        '<td style="max-width:180px;font-size:11px;color:var(--red)">'+esc(m.errorMessage||'Ukjent feil')+'</td>'+
+        '<td style="text-align:center"><span class="badge badge-red">'+( m.retryCount||0)+'x</span></td>'+
+        '<td style="white-space:nowrap;color:var(--text3)">'+timeAgo(m.createdAt)+'</td>'+
+        '<td><button class="btn-ghost" style="font-size:11px;padding:5px 10px" data-id="'+m.id+'">↻ Prøv igjen</button></td>'+
+      '</tr>';
+    }).join('');
+    el.querySelectorAll('[data-id]').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        btn.textContent='...';btn.disabled=true;
+        api('/api/sms/'+btn.getAttribute('data-id')+'/retry',{method:'POST'}).then(function(res){
+          if(res.success){toast('Melding lagt i kø på nytt!');loadFailed();}
+          else{toast(res.error||'Feil','err');btn.textContent='↻ Prøv igjen';btn.disabled=false;}
+        });
+      });
+    });
+    // Oppdater stats-kort med antall feilede
+    var failedStat=document.querySelector('.stat-card .stat-amber');
+    if(failedStat)failedStat.textContent=data.length;
+  });
+}
+
+document.getElementById('failedRefresh').addEventListener('click',loadFailed);
+document.getElementById('retryAllBtn').addEventListener('click',function(){
+  if(!confirm('Prøve alle feilede meldinger på nytt?'))return;
+  api('/api/sms/retry-all',{method:'POST'}).then(function(res){
+    if(res.success){toast(res.count+' meldinger lagt i kø på nytt!');loadFailed();}
+    else toast(res.error||'Feil','err');
+  });
+});var s=document.getElementById('inboxSearch').value||'';api('/api/sms/inbox?limit=100&search='+encodeURIComponent(s)).then(function(data){document.getElementById('inboxTable').innerHTML=data.length?data.map(function(m){return'<tr><td><span class="mono">'+esc(m.from)+'</span></td><td style="max-width:360px">'+esc(m.body)+'</td><td style="white-space:nowrap;color:var(--text3)">'+timeAgo(m.receivedAt)+'</td><td><button class="btn-ghost" style="font-size:11px;padding:5px 10px" onclick="replyTo(\''+esc(m.from)+'\')">Svar</button></td></tr>';}).join(''):'<tr class="empty-row"><td colspan="4">Ingen innkommende meldinger</td></tr>';});}
 
 function replyTo(num){document.getElementById('sendTo').value=num;switchTab('send');}
 
