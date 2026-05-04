@@ -480,7 +480,7 @@ document.getElementById('retryAllBtn').addEventListener('click',function(){
     if(res.success){toast(res.count+' meldinger lagt i kø på nytt!');loadFailed();}
     else toast(res.error||'Feil','err');
   });
-}
+});
 
 function loadInbox(){var s=document.getElementById('inboxSearch').value||'';api('/api/sms/inbox?limit=100&search='+encodeURIComponent(s)).then(function(data){document.getElementById('inboxTable').innerHTML=data.length?data.map(function(m){return'<tr><td><span class="mono">'+esc(m.from)+'</span></td><td style="max-width:360px">'+esc(m.body)+'</td><td style="white-space:nowrap;color:var(--text3)">'+timeAgo(m.receivedAt)+'</td><td><button class="btn-ghost" style="font-size:11px;padding:5px 10px" onclick="replyTo(\''+esc(m.from)+'\')">Svar</button></td></tr>';}).join(''):'<tr class="empty-row"><td colspan="4">Ingen innkommende meldinger</td></tr>';});}
 function replyTo(num){document.getElementById('sendTo').value=num;switchTab('send');}
