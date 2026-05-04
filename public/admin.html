@@ -168,8 +168,36 @@ td{padding:12px 14px;border-top:1px solid #ffffff0f;font-size:13px;vertical-alig
       </div>
     </div>
 
-    <!-- KUNDER -->
+    <!-- SEND TIL KUNDER -->
     <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="margin:0">📤 Send melding til kunder</h2>
+      </div>
+      <p style="font-size:12px;color:#475569;margin-bottom:14px">Send SMS til kontaktpersonens mobilnummer hos én eller flere kunder via gateway-telefonen.</p>
+
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Mottakere</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <button class="btn btn-gray btn-sm" id="selectAllCustomers">✓ Velg alle</button>
+          <button class="btn btn-gray btn-sm" id="selectNoneCustomers">✕ Fjern alle</button>
+        </div>
+        <div id="customerCheckboxes" style="display:flex;flex-direction:column;gap:6px;background:#0a0a0f;border:1px solid #ffffff0f;border-radius:8px;padding:12px;max-height:200px;overflow-y:auto">
+          <div style="color:#475569;font-size:13px">Laster kunder...</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Melding</div>
+        <textarea id="adminSendBody" rows="4" placeholder="Skriv meldingen her..." style="width:100%;padding:10px 14px;background:#0a0a0f;border:1px solid #ffffff18;border-radius:8px;color:#f8fafc;font-size:14px;font-family:inherit;resize:vertical;line-height:1.5;outline:none"></textarea>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="font-size:11px;color:#475569">Sendes til kontaktpersonens telefonnummer</span>
+          <span id="adminSendCharCount" style="font-size:11px;color:#475569;font-family:monospace">0 / 160</span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="adminSendBtn">📤 Send til valgte kunder</button>
+      <div id="adminSendStatus" style="font-size:13px;margin-top:10px;min-height:16px"></div>
+    </div>
       <h2>👥 Kunder</h2>
       <table>
         <thead><tr><th>Firma</th><th>Dashboard</th><th>Enheter</th><th>Statistikk</th><th>Handlinger</th></tr></thead>
@@ -339,6 +367,23 @@ function loadTenants() {
       '<div class="stat"><div class="num">'+data.length+'</div><div class="lbl">Kunder</div></div>'+
       '<div class="stat"><div class="num">'+totI+'</div><div class="lbl">Totalt innkommende</div></div>'+
       '<div class="stat"><div class="num">'+totS+'</div><div class="lbl">Totalt sendte</div></div>';
+
+    // Oppdater kunde-avkrysningsbokser
+    var cb = document.getElementById('customerCheckboxes');
+    if(data.length) {
+      cb.innerHTML = data.map(function(t){
+        var phone = t.contactPhone || t.phoneNumber;
+        return '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0;border-bottom:1px solid #ffffff0f">'+
+          '<input type="checkbox" class="customer-cb" value="'+t.id+'" style="accent-color:#6366f1;width:14px;height:14px">'+
+          '<span style="flex:1">'+
+            '<strong style="font-size:13px">'+t.name+'</strong>'+
+            (phone?'<span style="color:#475569;font-size:11px;margin-left:8px">📱 '+phone+'</span>':'<span style="color:#ef4444;font-size:11px;margin-left:8px">⚠ Ingen telefon</span>')+
+          '</span>'+
+        '</label>';
+      }).join('');
+    } else {
+      cb.innerHTML = '<div style="color:#475569;font-size:13px">Ingen kunder</div>';
+    }
 
     if(!data.length) {
       document.getElementById('tenantsTable').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#475569;padding:32px">Ingen kunder ennå</td></tr>';
@@ -524,6 +569,40 @@ function deleteDevice(deviceId,tenantId){
 }
 
 // GATEWAY STATUS
+document.getElementById('selectAllCustomers').addEventListener('click', function(){
+  document.querySelectorAll('.customer-cb').forEach(function(cb){cb.checked=true;});
+});
+document.getElementById('selectNoneCustomers').addEventListener('click', function(){
+  document.querySelectorAll('.customer-cb').forEach(function(cb){cb.checked=false;});
+});
+document.getElementById('adminSendBody').addEventListener('input', function(){
+  var len = this.value.length;
+  document.getElementById('adminSendCharCount').textContent = len+' / 160'+(len>160?' · '+Math.ceil(len/160)+' deler':'');
+});
+document.getElementById('adminSendBtn').addEventListener('click', function(){
+  var selected = Array.from(document.querySelectorAll('.customer-cb:checked')).map(function(cb){return cb.value;});
+  var body = document.getElementById('adminSendBody').value.trim();
+  var st = document.getElementById('adminSendStatus');
+  if(!selected.length){st.style.color='#f87171';st.textContent='✕ Velg minst én kunde';return;}
+  if(!body){st.style.color='#f87171';st.textContent='✕ Skriv en melding';return;}
+  if(!confirm('Send melding til '+selected.length+' kunde(r)?')) return;
+  var btn = this;
+  btn.disabled = true; btn.textContent = '⏳ Sender...';
+  adminApi('/admin/send-to-customers', {method:'POST', body:JSON.stringify({tenantIds:selected, body:body})}).then(function(res){
+    btn.disabled = false; btn.textContent = '📤 Send til valgte kunder';
+    if(res.success){
+      st.style.color='#34d399';
+      st.textContent='✓ Sendt til '+res.sent+' kunde(r)'+(res.failed>0?' · '+res.failed+' uten telefonnummer':'');
+      document.getElementById('adminSendBody').value='';
+      document.getElementById('adminSendCharCount').textContent='0 / 160';
+      document.querySelectorAll('.customer-cb').forEach(function(cb){cb.checked=false;});
+      setTimeout(function(){st.textContent='';},5000);
+    } else {
+      st.style.color='#f87171'; st.textContent='✕ '+(res.error||'Feil');
+    }
+  });
+});
+
 function loadAdminInbox() {
   adminApi('/admin/inbox').then(function(data) {
     var el = document.getElementById('adminInboxTable');
