@@ -617,6 +617,7 @@ function timeAgoAdmin(ts) {
 }
 
 function init() {
+  initAdminListeners();
   checkServerStatus();
   loadTenants();
   loadGatewayStatus();
@@ -636,12 +637,79 @@ function checkAdminSession() {
   }).catch(function() { localStorage.removeItem('admin_token'); });
 }
 
-// INNSTILLINGER
-document.getElementById('settingsBtn').addEventListener('click', function() {
-  document.getElementById('settingsModal').classList.remove('hidden');
-  loadServerInfo();
-  loadAdminSettings();
-});
+function initAdminListeners() {
+  if (window._adminListenersInit) return;
+  window._adminListenersInit = true;
+
+  document.getElementById('settingsBtn').addEventListener('click', function() {
+    document.getElementById('settingsModal').classList.remove('hidden');
+    loadServerInfo();
+    loadAdminSettings();
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', adminLogout);
+  document.getElementById('createBtn').addEventListener('click', createTenant);
+  document.getElementById('copyBtn').addEventListener('click', copyWelcome);
+
+  document.getElementById('newQrBtn').addEventListener('click', function() {
+    if (!currentTenantId) return;
+    var qrContainer = document.getElementById('qrcode');
+    qrContainer.innerHTML = 'Genererer...';
+    adminApi('/admin/tenants/' + currentTenantId + '/qr-token', { method: 'POST' }).then(function(qr) {
+      qrContainer.innerHTML = '';
+      new QRCode(qrContainer, { text: qr.qrData, width: 200, height: 200, colorDark: '#000000', colorLight: '#ffffff' });
+      document.getElementById('qrExpires').textContent = 'Utloper: ' + new Date(qr.expiresAt).toLocaleString('nb-NO');
+    });
+  });
+
+  document.getElementById('changeAdminPwdBtn').addEventListener('click', function() {
+    var cur = document.getElementById('curAdminPwd').value;
+    var nw = document.getElementById('newAdminPwd').value;
+    var cf = document.getElementById('cfmAdminPwd').value;
+    var st = document.getElementById('adminPwdStatus');
+    if (!nw || nw.length < 8) { st.style.color = '#f87171'; st.textContent = '✕ Minimum 8 tegn'; return; }
+    if (nw !== cf) { st.style.color = '#f87171'; st.textContent = '✕ Passordene er ikke like'; return; }
+    adminApi('/admin/settings/password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword: cur, newPassword: nw })
+    }).then(function(res) {
+      if (res.success) {
+        st.style.color = '#4ade80'; st.textContent = '✓ Passord endret!';
+        document.getElementById('curAdminPwd').value = '';
+        document.getElementById('newAdminPwd').value = '';
+        document.getElementById('cfmAdminPwd').value = '';
+        toast('Admin-passord endret!');
+      } else {
+        st.style.color = '#f87171'; st.textContent = '✕ ' + (res.error || 'Feil passord');
+      }
+    });
+  });
+
+  document.getElementById('saveGatewayPhoneBtn').addEventListener('click', function() {
+    var phone = document.getElementById('gatewayPhoneNumber').value.trim();
+    var st = document.getElementById('gatewayPhoneStatus');
+    if (!phone) { st.style.color = '#f87171'; st.textContent = '✕ Skriv inn nummer'; return; }
+    localStorage.setItem('gateway_phone', phone);
+    adminApi('/admin/settings/gateway-phone', {
+      method: 'POST', body: JSON.stringify({ phoneNumber: phone })
+    }).then(function(res) {
+      if (res.success) { st.style.color = '#4ade80'; st.textContent = '✓ Lagret!'; toast('Gateway-nummer lagret!'); }
+      else { st.style.color = '#f87171'; st.textContent = '✕ ' + (res.error || 'Feil'); }
+    });
+  });
+
+  document.getElementById('saveWelcomeTemplateBtn').addEventListener('click', function() {
+    var tpl = document.getElementById('welcomeTemplate').value;
+    var st = document.getElementById('welcomeTemplateStatus');
+    localStorage.setItem('welcome_template', tpl);
+    adminApi('/admin/settings/welcome-template', {
+      method: 'POST', body: JSON.stringify({ template: tpl })
+    }).then(function(res) {
+      if (res.success) { st.style.color = '#4ade80'; st.textContent = '✓ Mal lagret!'; toast('Velkomstmal lagret!'); }
+      else { st.style.color = '#f87171'; st.textContent = '✕ ' + (res.error || 'Feil'); }
+    });
+  });
+}
 
 function loadAdminSettings() {
   var tpl = localStorage.getItem('welcome_template');
@@ -718,19 +786,7 @@ document.getElementById('saveWelcomeTemplateBtn').addEventListener('click', func
     else { st.style.color = '#f87171'; st.textContent = '✕ ' + (res.error || 'Feil'); }
   });
 });
-document.getElementById('logoutBtn').addEventListener('click', adminLogout);
-document.getElementById('createBtn').addEventListener('click', createTenant);
-document.getElementById('copyBtn').addEventListener('click', copyWelcome);
-document.getElementById('newQrBtn').addEventListener('click', function() {
-  if (!currentTenantId) return;
-  var qrContainer = document.getElementById('qrcode');
-  qrContainer.innerHTML = 'Genererer...';
-  adminApi('/admin/tenants/' + currentTenantId + '/qr-token', { method: 'POST' }).then(function(qr) {
-    qrContainer.innerHTML = '';
-    new QRCode(qrContainer, { text: qr.qrData, width: 200, height: 200, colorDark: '#000000', colorLight: '#ffffff' });
-    document.getElementById('qrExpires').textContent = 'Utloper: ' + new Date(qr.expiresAt).toLocaleString('nb-NO');
-  });
-});
+document.getElementById('logoutBtn') && document.getElementById('logoutBtn').addEventListener('click', adminLogout);
 document.getElementById('adminPwd').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') adminLogin();
 });
