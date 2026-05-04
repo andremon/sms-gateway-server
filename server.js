@@ -232,8 +232,6 @@ async function requireTenantSession(req, res, next) {
 
 async function requireApiKey(req, res, next) {
     const key = req.headers['x-api-key'];
-    console.log('API KEY MOTTATT:', key);
-    console.log('GATEWAY KEY:', GATEWAY_API_KEY);
     const deviceId = req.headers['x-device-id'];
 
     if (!key) return res.status(401).json({ error: 'API-nøkkel mangler' });
@@ -705,7 +703,17 @@ app.post('/api/gateway/ping', requireApiKey, async (req, res) => {
     res.json({ success: true, serverTime: Date.now() });
 });
 
-// Admin: hent gateway-status for alle kunder
+// Admin-innboks — meldinger til gateway-telefonen
+app.get('/admin/inbox', requireAdmin, async (req, res) => {
+    const result = await pool.query(
+        "SELECT * FROM messages WHERE tenant_id='admin' ORDER BY created_at DESC LIMIT 100"
+    );
+    res.json(result.rows.map(m => ({
+        id: m.id, from: m.from_number, to: m.to_number,
+        body: m.body, direction: m.direction, source: m.source,
+        status: m.status, createdAt: parseInt(m.created_at)
+    })));
+});
 app.get('/admin/gateway-status', requireAdmin, async (req, res) => {
     const devices = await pool.query(`
         SELECT d.*, t.name as tenant_name, t.slug,
