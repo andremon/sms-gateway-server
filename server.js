@@ -232,6 +232,8 @@ async function requireTenantSession(req, res, next) {
 
 async function requireApiKey(req, res, next) {
     const key = req.headers['x-api-key'];
+    console.log('API KEY MOTTATT:', key);
+    console.log('GATEWAY KEY:', GATEWAY_API_KEY);
     const deviceId = req.headers['x-device-id'];
 
     if (!key) return res.status(401).json({ error: 'API-nøkkel mangler' });
