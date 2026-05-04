@@ -78,8 +78,17 @@ async function initDB() {
         );
 
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS phone_number TEXT;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS contact_person TEXT;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS contact_phone TEXT;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS address TEXT;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS postal_code TEXT;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS city TEXT;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS org_number TEXT;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS email TEXT;
         ALTER TABLE devices ADD COLUMN IF NOT EXISTS battery_level INT;
         ALTER TABLE devices ADD COLUMN IF NOT EXISTS network_type TEXT;
+        ALTER TABLE messages ADD COLUMN IF NOT EXISTS retry_count INT DEFAULT 0;
+        ALTER TABLE messages ADD COLUMN IF NOT EXISTS last_retry_at BIGINT;
 
         CREATE TABLE IF NOT EXISTS reset_codes (
             id TEXT PRIMARY KEY,
@@ -249,6 +258,9 @@ app.get('/admin/tenants', requireAdmin, async (req, res) => {
         return {
             id: t.id, name: t.name, slug: t.slug, apiKey: t.api_key,
             createdAt: t.created_at, phoneNumber: t.phone_number, maxDevices: t.max_devices || 1,
+            contactPerson: t.contact_person, contactPhone: t.contact_phone,
+            address: t.address, postalCode: t.postal_code, city: t.city,
+            orgNumber: t.org_number, email: t.email,
             stats: { inbound: parseInt(inbound.rows[0].count), sent: parseInt(sent.rows[0].count), pending: parseInt(pending.rows[0].count) }
         };
     }));
@@ -257,10 +269,20 @@ app.get('/admin/tenants', requireAdmin, async (req, res) => {
 
 // Rediger kunde
 app.put('/admin/tenants/:id', requireAdmin, async (req, res) => {
-    const { name, password, phoneNumber, maxDevices } = req.body;
+    const { name, password, phoneNumber, maxDevices, contactPerson, contactPhone, address, postalCode, city, orgNumber, email } = req.body;
     if (!name) return res.status(400).json({ error: 'Navn påkrevd' });
-    const updates = ['name=$1', 'phone_number=$2', 'max_devices=$3'];
-    const values = [name, phoneNumber || null, maxDevices || 1];
+    const updates = [
+        'name=$1', 'phone_number=$2', 'max_devices=$3',
+        'contact_person=$4', 'contact_phone=$5',
+        'address=$6', 'postal_code=$7', 'city=$8',
+        'org_number=$9', 'email=$10'
+    ];
+    const values = [
+        name, phoneNumber || null, maxDevices || 1,
+        contactPerson || null, contactPhone || null,
+        address || null, postalCode || null, city || null,
+        orgNumber || null, email || null
+    ];
     if (password && password.length >= 8) {
         updates.push('password=$' + (values.length + 1));
         values.push(password);
@@ -271,7 +293,7 @@ app.put('/admin/tenants/:id', requireAdmin, async (req, res) => {
 });
 
 app.post('/admin/tenants', requireAdmin, async (req, res) => {
-    const { name, password, phoneNumber, maxDevices } = req.body;
+    const { name, password, phoneNumber, maxDevices, contactPerson, contactPhone, address, postalCode, city, orgNumber, email } = req.body;
     if (!name || !password) return res.status(400).json({ error: 'name og password er påkrevd' });
     const slug = slugify(name);
     const existing = await getTenantBySlug(slug);
@@ -279,8 +301,13 @@ app.post('/admin/tenants', requireAdmin, async (req, res) => {
 
     const tenant = { id: uuidv4(), name, slug, password, api_key: generateApiKey(), created_at: Date.now() };
     await pool.query(
-        'INSERT INTO tenants (id,name,slug,password,api_key,created_at,phone_number,max_devices) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-        [tenant.id, tenant.name, tenant.slug, tenant.password, tenant.api_key, tenant.created_at, phoneNumber || null, maxDevices || 1]
+        `INSERT INTO tenants (id,name,slug,password,api_key,created_at,phone_number,max_devices,
+         contact_person,contact_phone,address,postal_code,city,org_number,email)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [tenant.id, tenant.name, tenant.slug, tenant.password, tenant.api_key, tenant.created_at,
+         phoneNumber || null, maxDevices || 1,
+         contactPerson || null, contactPhone || null, address || null,
+         postalCode || null, city || null, orgNumber || null, email || null]
     );
 
     const serverUrl = req.protocol + '://' + req.get('host');
@@ -534,13 +561,54 @@ app.get('/api/sms/pending', requireApiKey, async (req, res) => {
 app.post('/api/sms/:id/status', requireApiKey, async (req, res) => {
     const { success, sentAt, errorMessage } = req.body;
     if (success) {
-        await pool.query("UPDATE messages SET status='sent', sent_at=$1 WHERE id=$2 AND tenant_id=$3", [sentAt || Date.now(), req.params.id, req.tenant.id]);
+        await pool.query("UPDATE messages SET status='sent', sent_at=$1, error_message=NULL, retry_count=0 WHERE id=$2 AND tenant_id=$3", [sentAt || Date.now(), req.params.id, req.tenant.id]);
         const msg = await pool.query('SELECT * FROM messages WHERE id=$1', [req.params.id]);
         if (msg.rows[0]) await triggerWebhooks(req.tenant.id, 'sms.sent', msg.rows[0]);
     } else {
-        await pool.query("UPDATE messages SET status='failed', error_message=$1 WHERE id=$2 AND tenant_id=$3", [errorMessage, req.params.id, req.tenant.id]);
+        await pool.query(
+            "UPDATE messages SET status='failed', error_message=$1, retry_count=COALESCE(retry_count,0)+1, last_retry_at=$2 WHERE id=$3 AND tenant_id=$4",
+            [errorMessage, Date.now(), req.params.id, req.tenant.id]
+        );
+        await triggerWebhooks(req.tenant.id, 'sms.failed', { id: req.params.id, error: errorMessage });
     }
     res.json({ success: true });
+});
+
+// Hent feilede meldinger
+app.get('/kunde/:slug/api/sms/failed', requireTenantSession, async (req, res) => {
+    const result = await pool.query(
+        "SELECT * FROM messages WHERE tenant_id=$1 AND status='failed' ORDER BY created_at DESC LIMIT 50",
+        [req.tenant.id]
+    );
+    res.json(result.rows.map(m => ({
+        id: m.id, to: m.to_number, from: m.from_number, body: m.body,
+        errorMessage: m.error_message, retryCount: m.retry_count || 0,
+        createdAt: parseInt(m.created_at), lastRetryAt: m.last_retry_at ? parseInt(m.last_retry_at) : null,
+        direction: m.direction
+    })));
+});
+
+// Retry en feilet melding
+app.post('/kunde/:slug/api/sms/:id/retry', requireTenantSession, async (req, res) => {
+    const msg = await pool.query(
+        "SELECT * FROM messages WHERE id=$1 AND tenant_id=$2 AND status='failed'",
+        [req.params.id, req.tenant.id]
+    );
+    if (!msg.rows[0]) return res.status(404).json({ error: 'Melding ikke funnet' });
+    await pool.query(
+        "UPDATE messages SET status='pending', error_message=NULL WHERE id=$1 AND tenant_id=$2",
+        [req.params.id, req.tenant.id]
+    );
+    res.json({ success: true });
+});
+
+// Retry alle feilede meldinger
+app.post('/kunde/:slug/api/sms/retry-all', requireTenantSession, async (req, res) => {
+    const result = await pool.query(
+        "UPDATE messages SET status='pending', error_message=NULL WHERE tenant_id=$1 AND status='failed' AND direction='outbound' RETURNING id",
+        [req.tenant.id]
+    );
+    res.json({ success: true, count: result.rowCount });
 });
 
 app.post('/api/device/fcm-token', requireApiKey, (req, res) => {
