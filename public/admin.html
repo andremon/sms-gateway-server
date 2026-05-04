@@ -143,24 +143,60 @@ code{background:#0f172a;padding:3px 8px;border-radius:4px;font-size:11px;color:#
       <h2>➕ Opprett ny kunde</h2>
       <div class="form-row">
         <div class="form-group">
-          <label>Firmanavn</label>
+          <label>Firmanavn *</label>
           <input type="text" id="newName" placeholder="F.eks. Firma AS">
         </div>
         <div class="form-group">
-          <label>Passord til dashboard</label>
+          <label>Passord til dashboard *</label>
           <input type="password" id="newPwd" placeholder="Minimum 8 tegn">
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>Mobilnummer (for reset-kode)</label>
+          <label>Kontaktperson</label>
+          <input type="text" id="newContactPerson" placeholder="Fornavn Etternavn">
+        </div>
+        <div class="form-group">
+          <label>Kontaktperson telefon</label>
+          <input type="tel" id="newContactPhone" placeholder="+47 xxx xx xxx">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>E-post</label>
+          <input type="email" id="newEmail" placeholder="post@firma.no">
+        </div>
+        <div class="form-group">
+          <label>Org.nummer</label>
+          <input type="text" id="newOrgNumber" placeholder="000 000 000">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Firmaadresse</label>
+          <input type="text" id="newAddress" placeholder="Gateveien 1">
+        </div>
+        <div class="form-group" style="display:grid;grid-template-columns:100px 1fr;gap:8px">
+          <div>
+            <label>Postnr</label>
+            <input type="text" id="newPostalCode" placeholder="0000" maxlength="4">
+          </div>
+          <div>
+            <label>Sted</label>
+            <input type="text" id="newCity" placeholder="Oslo">
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mobilnummer (for SMS reset-kode)</label>
           <input type="tel" id="newPhone" placeholder="+47 xxx xx xxx">
         </div>
         <div class="form-group">
-          <label>Maks antall gateway-enheter</label>
-          <input type="number" id="newMaxDevices" placeholder="1" value="1" min="1" max="10" style="width:100%">
+          <label>Maks gateway-enheter</label>
+          <input type="number" id="newMaxDevices" placeholder="1" value="1" min="1" max="10">
         </div>
-        <button class="btn btn-green" id="createBtn">Opprett</button>
+        <button class="btn btn-green" id="createBtn" style="align-self:flex-end">Opprett</button>
       </div>
 
       <div id="welcomeResult" class="hidden">
@@ -270,15 +306,19 @@ function loadTenants() {
 
     var rows = data.map(function(t) {
       return '<tr>' +
-        '<td><strong>' + t.name + '</strong><br><span style="color:#64748b;font-size:12px">' + new Date(t.createdAt).toLocaleDateString('nb-NO') + '</span>' +
-        (t.phoneNumber ? '<br><span style="color:#94a3b8;font-size:11px">📱 ' + t.phoneNumber + '</span>' : '') + '</td>' +
-        '<td><a href="/kunde/' + t.slug + '/dashboard" target="_blank" style="color:#7dd3fc;font-size:13px">/kunde/' + t.slug + '</a></td>' +
+        '<td><strong>' + t.name + '</strong><br>' +
+        (t.contactPerson ? '<span style="color:#94a3b8;font-size:12px">👤 ' + t.contactPerson + '</span><br>' : '') +
+        (t.email ? '<span style="color:#64748b;font-size:11px">✉️ ' + t.email + '</span><br>' : '') +
+        (t.city ? '<span style="color:#64748b;font-size:11px">📍 ' + (t.postalCode ? t.postalCode + ' ' : '') + t.city + '</span><br>' : '') +
+        '<span style="color:#475569;font-size:11px">' + new Date(t.createdAt).toLocaleDateString('nb-NO') + '</span></td>' +
+        '<td><a href="/kunde/' + t.slug + '/dashboard" target="_blank" style="color:#7dd3fc;font-size:13px">/kunde/' + t.slug + '</a>' +
+        (t.phoneNumber ? '<br><span style="color:#64748b;font-size:11px">📱 ' + t.phoneNumber + '</span>' : '') + '</td>' +
         '<td id="devices-' + t.id + '"><span style="color:#64748b">Laster...</span></td>' +
         '<td><span style="color:#4ade80">&#8595; ' + t.stats.inbound + '</span> <span style="color:#60a5fa">&#8593; ' + t.stats.sent + '</span>' +
           (t.stats.pending > 0 ? ' <span style="color:#fbbf24">&#9203; ' + t.stats.pending + '</span>' : '') + '</td>' +
         '<td><div style="display:flex;flex-direction:column;gap:6px">' +
           '<button class="btn btn-blue btn-sm" onclick="showQrForTenant(\'' + t.id + '\',\'' + t.name + '\')">📱 QR-kode</button>' +
-          '<button class="btn btn-gray btn-sm" onclick="editTenant(\'' + t.id + '\',\'' + t.name + '\',\'' + (t.phoneNumber||'') + '\',' + (t.maxDevices||1) + ')">✏️ Rediger</button>' +
+          '<button class="btn btn-gray btn-sm" onclick="editTenant(\'' + t.id + '\',' + JSON.stringify(t).replace(/'/g, "\\'") + ')">✏️ Rediger</button>' +
           '<button class="btn btn-gray btn-sm" onclick="regenKey(\'' + t.id + '\',\'' + t.name + '\')">🔑 Ny nøkkel</button>' +
           '<button class="btn btn-danger btn-sm" onclick="deleteTenant(\'' + t.id + '\',\'' + t.name + '\')">🗑 Slett</button>' +
         '</div></td>' +
@@ -366,19 +406,32 @@ function createTenant() {
   var password = document.getElementById('newPwd').value;
   var phone = document.getElementById('newPhone').value.trim();
   var maxDevices = parseInt(document.getElementById('newMaxDevices').value) || 1;
+  var contactPerson = document.getElementById('newContactPerson').value.trim();
+  var contactPhone = document.getElementById('newContactPhone').value.trim();
+  var email = document.getElementById('newEmail').value.trim();
+  var orgNumber = document.getElementById('newOrgNumber').value.trim();
+  var address = document.getElementById('newAddress').value.trim();
+  var postalCode = document.getElementById('newPostalCode').value.trim();
+  var city = document.getElementById('newCity').value.trim();
+
   if (!name) { toast('Skriv firmanavn', false); return; }
   if (!password || password.length < 8) { toast('Passord min 8 tegn', false); return; }
 
-  adminApi('/admin/tenants', { method: 'POST', body: JSON.stringify({ name: name, password: password, phoneNumber: phone, maxDevices: maxDevices }) }).then(function(res) {
+  adminApi('/admin/tenants', { method: 'POST', body: JSON.stringify({
+    name, password, phoneNumber: phone, maxDevices,
+    contactPerson, contactPhone, email, orgNumber, address, postalCode, city
+  })}).then(function(res) {
     if (res.id) {
       lastWelcome = res.welcomeMessage;
       currentTenantId = res.id;
       document.getElementById('welcomeText').textContent = res.welcomeMessage;
       document.getElementById('dashLink').href = res.dashboardUrl;
       document.getElementById('welcomeResult').classList.remove('hidden');
-      document.getElementById('newName').value = '';
-      document.getElementById('newPwd').value = '';
-      document.getElementById('newPhone').value = '';
+      // Tøm alle felter
+      ['newName','newPwd','newPhone','newContactPerson','newContactPhone',
+       'newEmail','newOrgNumber','newAddress','newPostalCode','newCity'].forEach(function(id) {
+        document.getElementById(id).value = '';
+      });
       document.getElementById('newMaxDevices').value = '1';
 
       // Generer QR-kode automatisk
@@ -428,24 +481,27 @@ function regenKey(id, name) {
   });
 }
 
-function editTenant(id, name, phone, maxDevices) {
+function editTenant(id, data) {
   var modal = document.getElementById('editModal');
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'editModal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:1000';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:1000;overflow-y:auto;padding:20px';
     modal.innerHTML =
-      '<div style="background:#1e293b;border-radius:16px;padding:32px;width:440px;max-width:95vw">' +
+      '<div style="background:#1e293b;border-radius:16px;padding:32px;width:520px;max-width:95vw">' +
         '<h2 style="color:#f8fafc;margin-bottom:20px;font-size:18px">✏️ Rediger kunde</h2>' +
-        '<div style="display:flex;flex-direction:column;gap:12px">' +
-          '<div><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">Firmanavn</label>' +
-          '<input id="editName" type="text" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px"></div>' +
-          '<div><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">Mobilnummer (reset-kode)</label>' +
-          '<input id="editPhone" type="tel" placeholder="+47 xxx xx xxx" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px"></div>' +
-          '<div><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">Maks gateway-enheter</label>' +
-          '<input id="editMaxDevices" type="number" min="1" max="10" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px"></div>' +
-          '<div><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">Nytt passord (la stå tomt for å beholde)</label>' +
-          '<input id="editPwd" type="password" placeholder="Min. 8 tegn" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px"></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+          field('editName', 'text', 'Firmanavn *') +
+          field('editEmail', 'email', 'E-post') +
+          field('editContactPerson', 'text', 'Kontaktperson') +
+          field('editContactPhone', 'tel', 'Kontaktperson telefon') +
+          field('editAddress', 'text', 'Firmaadresse', '1/-1') +
+          field('editPostalCode', 'text', 'Postnr') +
+          field('editCity', 'text', 'Sted') +
+          field('editOrgNumber', 'text', 'Org.nummer') +
+          field('editPhone', 'tel', 'Mobilnummer (reset-kode)') +
+          field('editMaxDevices', 'number', 'Maks enheter') +
+          field('editPwd', 'password', 'Nytt passord (la stå tomt for å beholde)', '1/-1') +
         '</div>' +
         '<div style="display:flex;gap:10px;margin-top:20px">' +
           '<button id="saveEditBtn" class="btn btn-green" style="flex:1">Lagre</button>' +
@@ -455,18 +511,43 @@ function editTenant(id, name, phone, maxDevices) {
       '</div>';
     document.body.appendChild(modal);
   }
-  document.getElementById('editName').value = name;
-  document.getElementById('editPhone').value = phone || '';
-  document.getElementById('editMaxDevices').value = maxDevices || 1;
+
+  function field(id, type, label, span) {
+    return '<div style="' + (span ? 'grid-column:' + span : '') + '">' +
+      '<label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">' + label + '</label>' +
+      '<input id="' + id + '" type="' + type + '" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px;font-family:inherit">' +
+      '</div>';
+  }
+
+  document.getElementById('editName').value = data.name || '';
+  document.getElementById('editEmail').value = data.email || '';
+  document.getElementById('editContactPerson').value = data.contactPerson || '';
+  document.getElementById('editContactPhone').value = data.contactPhone || '';
+  document.getElementById('editAddress').value = data.address || '';
+  document.getElementById('editPostalCode').value = data.postalCode || '';
+  document.getElementById('editCity').value = data.city || '';
+  document.getElementById('editOrgNumber').value = data.orgNumber || '';
+  document.getElementById('editPhone').value = data.phoneNumber || '';
+  document.getElementById('editMaxDevices').value = data.maxDevices || 1;
   document.getElementById('editPwd').value = '';
   document.getElementById('editErr').textContent = '';
+
   document.getElementById('saveEditBtn').onclick = function() {
-    var newName = document.getElementById('editName').value.trim();
-    var newPhone = document.getElementById('editPhone').value.trim();
-    var newMax = parseInt(document.getElementById('editMaxDevices').value) || 1;
-    var newPwd = document.getElementById('editPwd').value;
-    if (!newName) { document.getElementById('editErr').textContent = 'Navn kan ikke være tomt'; return; }
-    adminApi('/admin/tenants/' + id, { method: 'PUT', body: JSON.stringify({ name: newName, phoneNumber: newPhone, maxDevices: newMax, password: newPwd || undefined }) }).then(function(res) {
+    var payload = {
+      name: document.getElementById('editName').value.trim(),
+      email: document.getElementById('editEmail').value.trim(),
+      contactPerson: document.getElementById('editContactPerson').value.trim(),
+      contactPhone: document.getElementById('editContactPhone').value.trim(),
+      address: document.getElementById('editAddress').value.trim(),
+      postalCode: document.getElementById('editPostalCode').value.trim(),
+      city: document.getElementById('editCity').value.trim(),
+      orgNumber: document.getElementById('editOrgNumber').value.trim(),
+      phoneNumber: document.getElementById('editPhone').value.trim(),
+      maxDevices: parseInt(document.getElementById('editMaxDevices').value) || 1,
+      password: document.getElementById('editPwd').value || undefined
+    };
+    if (!payload.name) { document.getElementById('editErr').textContent = 'Navn kan ikke være tomt'; return; }
+    adminApi('/admin/tenants/' + id, { method: 'PUT', body: JSON.stringify(payload) }).then(function(res) {
       if (res.success) { modal.remove(); loadTenants(); toast('Kunde oppdatert!'); }
       else { document.getElementById('editErr').textContent = res.error || 'Feil'; }
     });
