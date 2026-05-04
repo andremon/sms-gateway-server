@@ -8,6 +8,7 @@ const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 8080;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const GATEWAY_API_KEY = process.env.GATEWAY_API_KEY || null;
 
 app.use(cors());
 app.use(express.json());
@@ -31,7 +32,7 @@ async function initDB() {
 
         CREATE TABLE IF NOT EXISTS messages (
             id TEXT PRIMARY KEY,
-            tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+            tenant_id TEXT NOT NULL,
             direction TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'pending',
             from_number TEXT,
@@ -230,8 +231,36 @@ async function requireTenantSession(req, res, next) {
 }
 
 async function requireApiKey(req, res, next) {
-    const tenant = await getTenantByApiKey(req.headers['x-api-key']);
+    const key = req.headers['x-api-key'];
+    const deviceId = req.headers['x-device-id'];
+
+    if (!key) return res.status(401).json({ error: 'API-nøkkel mangler' });
+
+    // Sjekk om det er admin-gateway-nøkkelen
+    if (GATEWAY_API_KEY && key === GATEWAY_API_KEY) {
+        req.tenant = { id: 'admin', name: 'Admin Gateway', slug: 'admin', isAdmin: true };
+        req.isAdminGateway = true;
+        return next();
+    }
+
+    // Vanlig kunde-nøkkel
+    const tenant = await getTenantByApiKey(key);
     if (!tenant) return res.status(401).json({ error: 'Ugyldig API-nøkkel' });
+
+    if (deviceId) {
+        const device = await pool.query(
+            'SELECT * FROM devices WHERE tenant_id=$1 AND device_id=$2',
+            [tenant.id, deviceId]
+        );
+        if (!device.rows[0]) {
+            return res.status(403).json({ error: 'Enhet ikke registrert. Skann QR-kode på nytt.' });
+        }
+        await pool.query(
+            'UPDATE devices SET last_seen=$1 WHERE tenant_id=$2 AND device_id=$3',
+            [Date.now(), tenant.id, deviceId]
+        );
+    }
+
     req.tenant = tenant;
     next();
 }
@@ -543,8 +572,44 @@ app.delete('/kunde/:slug/api/rules/:id', requireTenantSession, async (req, res) 
 app.post('/api/sms/inbound', requireApiKey, async (req, res) => {
     const { from, body, timestamp, receivedAt } = req.body;
     if (!from || !body) return res.status(400).json({ error: 'from og body påkrevd' });
-    const id = uuidv4();
     const ts = receivedAt || Date.now();
+
+    // Admin-gateway: håndter RESET-meldinger
+    if (req.isAdminGateway) {
+        const trimmed = body.trim().toUpperCase();
+        if (trimmed === 'RESET') {
+            // Finn kunde med dette nummeret
+            const tenant = await pool.query(
+                'SELECT * FROM tenants WHERE phone_number=$1', [from]
+            );
+            if (tenant.rows[0]) {
+                const t = tenant.rows[0];
+                const code = Math.floor(100000 + Math.random() * 900000).toString();
+                const expiresAt = Date.now() + 15 * 60 * 1000;
+                await pool.query('DELETE FROM reset_codes WHERE tenant_id=$1', [t.id]);
+                await pool.query(
+                    'INSERT INTO reset_codes (id,tenant_id,code,phone,used,created_at,expires_at) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+                    [uuidv4(), t.id, code, from, false, Date.now(), expiresAt]
+                );
+                // Legg reset-svar i utgående kø
+                await pool.query(
+                    'INSERT INTO messages (id,tenant_id,direction,status,to_number,body,created_at,source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+                    [uuidv4(), 'admin', 'outbound', 'pending', from,
+                     `Ayno Connect: Din reset-kode er ${code}. Gyldig i 15 minutter. Gå til dashbordet for å sette nytt passord.`,
+                     Date.now(), 'reset']
+                );
+                console.log(`[Admin Gateway] RESET-kode sendt til ${from} for kunde ${t.name}`);
+            } else {
+                console.log(`[Admin Gateway] RESET fra ukjent nummer ${from}`);
+            }
+        } else {
+            console.log(`[Admin Gateway] Melding fra ${from}: ${body}`);
+        }
+        return res.json({ success: true });
+    }
+
+    // Vanlig kunde-gateway
+    const id = uuidv4();
     await pool.query('INSERT INTO messages (id,tenant_id,direction,status,from_number,body,received_at,created_at,source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
         [id, req.tenant.id, 'inbound', 'received', from, body, ts, ts, 'gateway']);
     await triggerWebhooks(req.tenant.id, 'sms.received', { id, from, body, receivedAt: ts });
@@ -554,22 +619,27 @@ app.post('/api/sms/inbound', requireApiKey, async (req, res) => {
 });
 
 app.get('/api/sms/pending', requireApiKey, async (req, res) => {
-    const result = await pool.query("SELECT * FROM messages WHERE tenant_id=$1 AND status='pending' AND direction='outbound' ORDER BY created_at ASC", [req.tenant.id]);
+    // Admin-gateway henter kun admin-utgående meldinger (reset-koder)
+    const tenantId = req.isAdminGateway ? 'admin' : req.tenant.id;
+    const result = await pool.query(
+        "SELECT * FROM messages WHERE tenant_id=$1 AND status='pending' AND direction='outbound' ORDER BY created_at ASC",
+        [tenantId]
+    );
     res.json(result.rows.map(m => ({ id: m.id, to: m.to_number, body: m.body })));
 });
 
 app.post('/api/sms/:id/status', requireApiKey, async (req, res) => {
     const { success, sentAt, errorMessage } = req.body;
+    const tenantId = req.isAdminGateway ? 'admin' : req.tenant.id;
     if (success) {
-        await pool.query("UPDATE messages SET status='sent', sent_at=$1, error_message=NULL, retry_count=0 WHERE id=$2 AND tenant_id=$3", [sentAt || Date.now(), req.params.id, req.tenant.id]);
+        await pool.query("UPDATE messages SET status='sent', sent_at=$1, error_message=NULL, retry_count=0 WHERE id=$2 AND tenant_id=$3", [sentAt || Date.now(), req.params.id, tenantId]);
         const msg = await pool.query('SELECT * FROM messages WHERE id=$1', [req.params.id]);
-        if (msg.rows[0]) await triggerWebhooks(req.tenant.id, 'sms.sent', msg.rows[0]);
+        if (msg.rows[0] && !req.isAdminGateway) await triggerWebhooks(tenantId, 'sms.sent', msg.rows[0]);
     } else {
         await pool.query(
             "UPDATE messages SET status='failed', error_message=$1, retry_count=COALESCE(retry_count,0)+1, last_retry_at=$2 WHERE id=$3 AND tenant_id=$4",
-            [errorMessage, Date.now(), req.params.id, req.tenant.id]
+            [errorMessage, Date.now(), req.params.id, tenantId]
         );
-        await triggerWebhooks(req.tenant.id, 'sms.failed', { id: req.params.id, error: errorMessage });
     }
     res.json({ success: true });
 });
