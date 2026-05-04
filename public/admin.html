@@ -84,6 +84,23 @@ td{padding:12px 14px;border-top:1px solid #ffffff0f;font-size:13px;vertical-alig
     <input type="password" id="adminPwd" placeholder="Admin-passord" autocomplete="current-password">
     <button class="login-btn" id="loginBtn">Logg inn</button>
     <div class="login-err" id="loginErr"></div>
+    <button id="forgotAdminBtn" style="background:none;border:none;color:#6366f1;font-size:12px;cursor:pointer;margin-top:10px;font-family:inherit;width:100%">Glemt passord?</button>
+  </div>
+
+  <!-- Reset admin passord -->
+  <div class="login-box hidden" id="resetAdminBox" style="margin-top:0">
+    <div style="font-size:28px;margin-bottom:8px">🔑</div>
+    <h1>Tilbakestill passord</h1>
+    <p class="sub" id="resetAdminSub">Sett nytt admin-passord direkte.</p>
+    <div id="resetAdminStep1">
+      <input type="password" id="resetNewPwd1" placeholder="Nytt passord (min. 8 tegn)" autocomplete="new-password">
+      <input type="password" id="resetCfmPwd1" placeholder="Bekreft nytt passord" autocomplete="new-password">
+      <p style="font-size:11px;color:#475569;margin-bottom:12px">Du trenger gjeldende Railway ADMIN_PASSWORD for å bekrefte.</p>
+      <input type="password" id="resetCurPwd1" placeholder="Nåværende passord" autocomplete="current-password">
+      <button class="login-btn" id="doResetAdminBtn">Sett nytt passord</button>
+      <div class="login-err" id="resetAdminErr"></div>
+    </div>
+    <button id="backToAdminLoginBtn" style="background:none;border:none;color:#475569;font-size:12px;cursor:pointer;margin-top:12px;font-family:inherit;width:100%">← Tilbake til innlogging</button>
   </div>
 </div>
 
@@ -340,6 +357,46 @@ function showAdmin() {
   document.getElementById('adminView').classList.remove('hidden');
   init();
 }
+
+document.getElementById('forgotAdminBtn').addEventListener('click', function(){
+  document.getElementById('loginView').querySelector('.login-box').classList.add('hidden');
+  document.getElementById('resetAdminBox').classList.remove('hidden');
+});
+
+document.getElementById('backToAdminLoginBtn').addEventListener('click', function(){
+  document.getElementById('resetAdminBox').classList.add('hidden');
+  document.getElementById('loginView').querySelector('.login-box').classList.remove('hidden');
+  document.getElementById('resetAdminErr').textContent='';
+});
+
+document.getElementById('doResetAdminBtn').addEventListener('click', function(){
+  var cur = document.getElementById('resetCurPwd1').value;
+  var nw = document.getElementById('resetNewPwd1').value;
+  var cf = document.getElementById('resetCfmPwd1').value;
+  var err = document.getElementById('resetAdminErr');
+  if(!nw||nw.length<8){err.textContent='Minimum 8 tegn';return;}
+  if(nw!==cf){err.textContent='Passordene er ikke like';return;}
+  // Logg inn med gammelt passord og bytt
+  fetch(BASE+'/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:cur})})
+  .then(function(r){return r.json();}).then(function(res){
+    if(!res.token){err.textContent='Feil nåværende passord';return;}
+    var tmpToken = res.token;
+    fetch(BASE+'/admin/settings/password',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':tmpToken},body:JSON.stringify({currentPassword:cur,newPassword:nw})})
+    .then(function(r){return r.json();}).then(function(res2){
+      if(res2.success){
+        document.getElementById('resetAdminBox').classList.add('hidden');
+        document.getElementById('loginView').querySelector('.login-box').classList.remove('hidden');
+        document.getElementById('loginErr').style.color='#34d399';
+        document.getElementById('loginErr').textContent='✓ Passord endret! Logg inn med nytt passord.';
+        document.getElementById('resetCurPwd1').value='';
+        document.getElementById('resetNewPwd1').value='';
+        document.getElementById('resetCfmPwd1').value='';
+      } else {
+        err.textContent=res2.error||'Feil';
+      }
+    });
+  });
+});
 
 document.getElementById('loginBtn').addEventListener('click', adminLogin);
 document.getElementById('adminPwd').addEventListener('keydown', function(e){
