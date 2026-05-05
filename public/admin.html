@@ -995,25 +995,6 @@ document.getElementById('activeSendBtn').addEventListener('click', function() {
 });
 
 function loadAdminInbox() { loadActiveInbox(); }
-    var el = document.getElementById('adminInboxTable');
-    if (!data.length) {
-      el.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#475569;padding:24px">Ingen meldinger ennå</td></tr>';
-      return;
-    }
-    el.innerHTML = data.map(function(m) {
-      var typeLabel = m.source === 'reset' ? '<span style="background:#6366f114;color:#818cf8;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">🔑 RESET</span>' :
-        m.direction === 'inbound' ? '<span style="background:#34d39914;color:#34d399;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">↓ Inn</span>' :
-        '<span style="background:#3b82f614;color:#60a5fa;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600">↑ Ut</span>';
-      var num = m.direction === 'inbound' ? m.from : m.to;
-      return '<tr>'+
-        '<td style="font-family:monospace;font-size:12px">'+(num||'–')+'</td>'+
-        '<td style="font-size:13px;max-width:360px">'+m.body+'</td>'+
-        '<td>'+typeLabel+'</td>'+
-        '<td style="font-size:12px;color:#475569;white-space:nowrap">'+timeAgo(m.createdAt)+'</td>'+
-      '</tr>';
-    }).join('');
-  });
-}
 
 function loadGatewayStatus() {
   adminApi('/admin/gateway-status').then(function(devices){
