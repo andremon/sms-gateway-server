@@ -885,7 +885,16 @@ function genQrForTenant(id, name) {
       '<p style="font-size:11px;color:#334155;margin-top:4px">Engangsbruk · Gyldig 24 timer</p></div>'
     );
     document.body.appendChild(modal);
-    new QRCode(document.getElementById('qrModalCode'), { text: qr.qrData, width: 200, height: 200, colorDark: '#000', colorLight: '#fff' });
+    setTimeout(function() {
+      new QRCode(document.getElementById('qrModalCode'), {
+        text: qr.qrData,
+        width: 200,
+        height: 200,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }, 100);
   });
 }
 
@@ -1034,7 +1043,18 @@ document.getElementById('createBtn').addEventListener('click', function() {
           if (qr.error) return;
           var qrEl = document.getElementById('qrcode');
           qrEl.innerHTML = '';
-          new QRCode(qrEl, { text: qr.qrData, width: 180, height: 180, colorDark: '#000', colorLight: '#fff' });
+          qrEl.style.width = '180px';
+          qrEl.style.height = '180px';
+          setTimeout(function() {
+            new QRCode(qrEl, {
+              text: qr.qrData,
+              width: 180,
+              height: 180,
+              colorDark: '#000000',
+              colorLight: '#ffffff',
+              correctLevel: QRCode.CorrectLevel.M
+            });
+          }, 100);
           document.getElementById('qrExpires').textContent = 'Utløper: ' + new Date(qr.expiresAt).toLocaleString('nb-NO');
         });
       }
