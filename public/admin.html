@@ -110,6 +110,16 @@ td{padding:12px 14px;border-top:1px solid #ffffff0f;font-size:13px;vertical-alig
       <h1>🔧 Ayno Connect Admin</h1>
       <div class="status-pill"><div class="status-dot" id="statusDot"></div><span id="statusText">Sjekker...</span></div>
     </div>
+    <!-- AKTIV GATEWAY-KONTO -->
+    <div style="display:flex;align-items:center;gap:10px;background:#1a1a26;border:1px solid #6366f130;border-radius:10px;padding:8px 14px;flex:1;max-width:380px;margin:0 16px">
+      <div>
+        <div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px">📡 Aktiv gateway-konto</div>
+        <select id="activeGatewaySelect" style="background:transparent;border:none;color:#f8fafc;font-size:14px;font-weight:600;font-family:inherit;outline:none;cursor:pointer;width:100%">
+          <option value="" style="background:#1a1a26">— Ingen valgt —</option>
+        </select>
+      </div>
+      <div id="activeGatewayStatus" style="flex-shrink:0"></div>
+    </div>
     <div class="header-right">
       <button class="btn btn-gray btn-sm" id="settingsBtn">⚙️ Innstillinger</button>
       <button class="btn btn-danger btn-sm" id="logoutBtn">Logg ut</button>
@@ -125,17 +135,54 @@ td{padding:12px 14px;border-top:1px solid #ffffff0f;font-size:13px;vertical-alig
       <div id="gatewayStatus"><div style="color:#475569;font-size:13px">Laster...</div></div>
     </div>
 
-    <!-- ADMIN INNBOKS -->
+    <!-- AKTIV KONTO INNBOKS -->
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h2 style="margin:0">📨 Admin-innboks</h2>
-        <button class="btn btn-gray btn-sm" onclick="loadAdminInbox()">↻ Oppdater</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <h2 style="margin:0">📨 Innboks</h2>
+          <div style="font-size:12px;color:#475569;margin-top:3px">Viser innboks for: <span id="activeAccountLabel" style="color:#818cf8;font-weight:600">Ingen konto valgt</span></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-gray btn-sm" id="inboxReplyBtn" style="display:none">✉️ Send SMS</button>
+          <button class="btn btn-gray btn-sm" onclick="loadActiveInbox()">↻ Oppdater</button>
+        </div>
       </div>
-      <p style="font-size:12px;color:#475569;margin-bottom:12px">Meldinger mottatt på gateway-telefonen som ikke tilhører noen kunde.</p>
-      <table>
-        <thead><tr><th>Fra</th><th>Melding</th><th>Type</th><th>Tidspunkt</th></tr></thead>
-        <tbody id="adminInboxTable"><tr><td colspan="4" style="text-align:center;color:#475569;padding:24px">Laster...</td></tr></tbody>
+      <div id="activeInboxEmpty" style="color:#475569;font-size:13px;padding:16px 0">Velg en gateway-konto i toppen for å se innboksen.</div>
+      <table id="activeInboxTable" style="display:none">
+        <thead><tr><th>Fra</th><th>Melding</th><th>Tidspunkt</th><th></th></tr></thead>
+        <tbody id="activeInboxBody"></tbody>
       </table>
+    </div>
+
+    <!-- SEND FRA AKTIV KONTO -->
+    <div class="card" id="activeSendCard" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div>
+          <h2 style="margin:0">✉️ Send SMS</h2>
+          <div style="font-size:12px;color:#475569;margin-top:3px">Sendes fra: <span id="activeSendLabel" style="color:#818cf8;font-weight:600"></span></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label>Mottaker</label>
+            <input type="tel" id="activeSendTo" placeholder="+47 xxx xx xxx">
+          </div>
+          <div class="form-group" style="margin-bottom:8px">
+            <label>Melding</label>
+            <textarea id="activeSendBody" rows="4" placeholder="Skriv meldingen..." style="width:100%;padding:10px 14px;background:#1a1a26;border:1px solid #ffffff18;border-radius:8px;color:#f8fafc;font-size:14px;font-family:inherit;resize:vertical;line-height:1.5;outline:none"></textarea>
+            <div style="text-align:right;font-size:11px;color:#475569;margin-top:3px;font-family:monospace" id="activeSendCount">0 / 160</div>
+          </div>
+          <button class="btn btn-primary" id="activeSendBtn">📤 Send SMS</button>
+          <div id="activeSendStatus" style="font-size:13px;margin-top:8px;min-height:16px"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Kontakter</div>
+          <div id="activeContactsList" style="background:#0a0a0f;border:1px solid #ffffff0f;border-radius:8px;max-height:220px;overflow-y:auto">
+            <div style="padding:16px;color:#475569;font-size:13px">Laster kontakter...</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- OPPRETT KUNDE -->
@@ -425,6 +472,9 @@ function loadTenants() {
       '<div class="stat"><div class="num">'+totI+'</div><div class="lbl">Totalt innkommende</div></div>'+
       '<div class="stat"><div class="num">'+totS+'</div><div class="lbl">Totalt sendte</div></div>';
 
+    allTenantsCache = data;
+    updateGatewaySelect(data);
+
     // Oppdater kunde-avkrysningsbokser
     var cb = document.getElementById('customerCheckboxes');
     if(data.length) {
@@ -660,8 +710,193 @@ document.getElementById('adminSendBtn').addEventListener('click', function(){
   });
 });
 
-function loadAdminInbox() {
-  adminApi('/admin/inbox').then(function(data) {
+// AKTIV GATEWAY-KONTO
+var activeGatewayId = localStorage.getItem('active_gateway_id') || '';
+var activeGatewaySlug = localStorage.getItem('active_gateway_slug') || '';
+var activeGatewayName = localStorage.getItem('active_gateway_name') || '';
+var activeGatewayToken = localStorage.getItem('active_gateway_token') || '';
+var allTenantsCache = [];
+
+function customerApi(path, opts) {
+  opts = opts || {};
+  return fetch(BASE + '/kunde/' + activeGatewaySlug + path, Object.assign({}, opts, {
+    headers: Object.assign({'Content-Type':'application/json','X-Session-Token':activeGatewayToken}, opts.headers||{})
+  })).then(function(r){return r.json();});
+}
+
+async function ensureGatewayToken() {
+  if (!activeGatewayId || !activeGatewaySlug) return false;
+  // Sjekk om token er gyldig
+  const test = await customerApi('/api/stats').catch(function(){return {error:true};});
+  if (!test.error) return true;
+  return false;
+}
+
+function updateGatewaySelect(tenants) {
+  var sel = document.getElementById('activeGatewaySelect');
+  sel.innerHTML = '<option value="" style="background:#1a1a26">— Ingen valgt —</option>';
+  tenants.forEach(function(t) {
+    var opt = document.createElement('option');
+    opt.value = t.id;
+    opt.setAttribute('data-slug', t.slug);
+    opt.setAttribute('data-name', t.name);
+    opt.textContent = t.name;
+    opt.style.background = '#1a1a26';
+    if (t.id === activeGatewayId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  updateActiveGatewayUI();
+}
+
+function updateActiveGatewayUI() {
+  var label = document.getElementById('activeAccountLabel');
+  var sendLabel = document.getElementById('activeSendLabel');
+  var sendCard = document.getElementById('activeSendCard');
+  var inboxEmpty = document.getElementById('activeInboxEmpty');
+  var inboxTable = document.getElementById('activeInboxTable');
+  var statusEl = document.getElementById('activeGatewayStatus');
+
+  if (!activeGatewayId) {
+    label.textContent = 'Ingen konto valgt';
+    sendCard.style.display = 'none';
+    inboxEmpty.style.display = 'block';
+    inboxTable.style.display = 'none';
+    statusEl.innerHTML = '';
+    return;
+  }
+
+  label.textContent = activeGatewayName;
+  if (sendLabel) sendLabel.textContent = activeGatewayName;
+  sendCard.style.display = 'block';
+  inboxEmpty.style.display = 'none';
+  inboxTable.style.display = 'table';
+  statusEl.innerHTML = '<span style="font-size:11px;color:#818cf8">✓ Valgt</span>';
+  loadActiveInbox();
+  loadActiveContacts();
+}
+
+document.getElementById('activeGatewaySelect').addEventListener('change', function() {
+  var sel = this;
+  var opt = sel.options[sel.selectedIndex];
+  if (!opt.value) {
+    activeGatewayId = '';
+    activeGatewaySlug = '';
+    activeGatewayName = '';
+    activeGatewayToken = '';
+    localStorage.removeItem('active_gateway_id');
+    localStorage.removeItem('active_gateway_slug');
+    localStorage.removeItem('active_gateway_name');
+    localStorage.removeItem('active_gateway_token');
+    updateActiveGatewayUI();
+    return;
+  }
+  activeGatewayId = opt.value;
+  activeGatewaySlug = opt.getAttribute('data-slug');
+  activeGatewayName = opt.getAttribute('data-name');
+  localStorage.setItem('active_gateway_id', activeGatewayId);
+  localStorage.setItem('active_gateway_slug', activeGatewaySlug);
+  localStorage.setItem('active_gateway_name', activeGatewayName);
+
+  // Logg inn på kunden for å få session-token
+  // Admin trenger passord — vis mini-dialog
+  var pwd = prompt('Skriv inn passord for ' + activeGatewayName + ':');
+  if (!pwd) { sel.value = ''; return; }
+  fetch(BASE + '/kunde/' + activeGatewaySlug + '/auth/login', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({password: pwd})
+  }).then(function(r){return r.json();}).then(function(res){
+    if (res.token) {
+      activeGatewayToken = res.token;
+      localStorage.setItem('active_gateway_token', activeGatewayToken);
+      updateActiveGatewayUI();
+      toast('Gateway-konto satt til ' + activeGatewayName + '!');
+    } else {
+      toast('Feil passord for ' + activeGatewayName, 'err');
+      sel.value = activeGatewayId ? activeGatewayId : '';
+    }
+  });
+});
+
+function loadActiveInbox() {
+  if (!activeGatewayToken || !activeGatewaySlug) return;
+  customerApi('/api/sms/inbox?limit=50').then(function(data) {
+    if (!Array.isArray(data)) return;
+    var tbody = document.getElementById('activeInboxBody');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#475569;padding:24px">Ingen innkommende meldinger</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(function(m) {
+      return '<tr>' +
+        '<td style="font-family:monospace;font-size:12px">' + (m.from||'–') + '</td>' +
+        '<td style="max-width:360px;font-size:13px">' + esc(m.body||'') + '</td>' +
+        '<td style="white-space:nowrap;color:#475569;font-size:12px">' + timeAgo(m.receivedAt) + '</td>' +
+        '<td><button class="btn btn-gray btn-sm" style="font-size:11px" onclick="replyFromActive(\'' + esc(m.from) + '\')">Svar</button></td>' +
+      '</tr>';
+    }).join('');
+  });
+}
+
+function loadActiveContacts() {
+  if (!activeGatewayToken || !activeGatewaySlug) return;
+  customerApi('/api/contacts').then(function(data) {
+    var el = document.getElementById('activeContactsList');
+    if (!Array.isArray(data) || !data.length) {
+      el.innerHTML = '<div style="padding:16px;color:#475569;font-size:13px">Ingen kontakter ennå</div>';
+      return;
+    }
+    el.innerHTML = data.map(function(c) {
+      return '<div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #ffffff0f;display:flex;justify-content:space-between;align-items:center" onclick="selectActiveContact(\'' + esc(c.number) + '\')">' +
+        '<div><div style="font-size:13px;font-weight:500;font-family:monospace">' + c.number + '</div>' +
+        '<div style="font-size:11px;color:#475569">' + c.messageCount + ' meldinger · ' + timeAgo(c.lastSeen) + '</div></div>' +
+        '<span style="color:#475569;font-size:12px">→</span>' +
+      '</div>';
+    }).join('');
+  });
+}
+
+function selectActiveContact(num) {
+  document.getElementById('activeSendTo').value = num;
+  document.getElementById('activeSendBody').focus();
+}
+
+function replyFromActive(num) {
+  document.getElementById('activeSendTo').value = num;
+  document.getElementById('activeSendCard').scrollIntoView({behavior:'smooth'});
+  document.getElementById('activeSendBody').focus();
+}
+
+document.getElementById('activeSendBody').addEventListener('input', function() {
+  var len = this.value.length;
+  document.getElementById('activeSendCount').textContent = len + ' / 160' + (len > 160 ? ' · ' + Math.ceil(len/160) + ' deler' : '');
+});
+
+document.getElementById('activeSendBtn').addEventListener('click', function() {
+  var to = document.getElementById('activeSendTo').value.trim();
+  var body = document.getElementById('activeSendBody').value.trim();
+  var st = document.getElementById('activeSendStatus');
+  if (!to) { toast('Skriv inn mottaker', 'err'); return; }
+  if (!body) { toast('Skriv inn melding', 'err'); return; }
+  if (!activeGatewayToken) { toast('Ingen gateway-konto valgt', 'err'); return; }
+  var btn = this;
+  btn.disabled = true; btn.textContent = '⏳ Sender...';
+  customerApi('/api/sms/send', {method:'POST', body:JSON.stringify({to:to, body:body})}).then(function(res) {
+    btn.disabled = false; btn.textContent = '📤 Send SMS';
+    if (res.success) {
+      st.style.color = '#34d399'; st.textContent = '✓ Melding lagt i kø!';
+      document.getElementById('activeSendTo').value = '';
+      document.getElementById('activeSendBody').value = '';
+      document.getElementById('activeSendCount').textContent = '0 / 160';
+      loadActiveContacts();
+      setTimeout(function(){st.textContent='';}, 4000);
+      toast('Melding sendt!');
+    } else {
+      st.style.color = '#f87171'; st.textContent = '✕ ' + (res.error || 'Feil');
+    }
+  });
+});
+
+function loadAdminInbox() { loadActiveInbox(); }
     var el = document.getElementById('adminInboxTable');
     if (!data.length) {
       el.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#475569;padding:24px">Ingen meldinger ennå</td></tr>';
@@ -783,8 +1018,15 @@ function init() {
   checkServerStatus();
   loadTenants();
   loadGatewayStatus();
-  loadAdminInbox();
-  setInterval(function(){checkServerStatus();loadTenants();loadGatewayStatus();loadAdminInbox();},15000);
+  if (activeGatewayToken) {
+    updateActiveGatewayUI();
+  }
+  setInterval(function(){
+    checkServerStatus();
+    loadTenants();
+    loadGatewayStatus();
+    if (activeGatewayToken) loadActiveInbox();
+  }, 15000);
 }
 
 // SESSION CHECK
