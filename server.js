@@ -69,7 +69,20 @@ async function initDB() {
         CREATE INDEX IF NOT EXISTS idx_messages_direction ON messages(direction);
         CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(status);
 
-        CREATE TABLE IF NOT EXISTS admin_settings (
+        CREATE TABLE IF NOT EXISTS demo_sessions (
+            id TEXT PRIMARY KEY,
+            phone TEXT NOT NULL,
+            ip TEXT NOT NULL,
+            created_at BIGINT NOT NULL,
+            expires_at BIGINT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS demo_rate_limit (
+            key TEXT PRIMARY KEY,
+            count INTEGER DEFAULT 1,
+            first_at BIGINT NOT NULL,
+            last_at BIGINT NOT NULL
+        );
             id TEXT PRIMARY KEY DEFAULT 'main',
             admin_password TEXT,
             gateway_phone TEXT,
@@ -865,6 +878,165 @@ app.get('/admin/tenants/:id/messages', requireAdmin, async (req, res) => {
         [req.params.id, limit]
     );
     res.json(result.rows);
+});
+
+// ── DEMO API ──────────────────────────────────────────────────────────────────
+// Henter demo-tenant slug fra miljøvariabel DEMO_TENANT_SLUG
+// Opprett en kunde kalt "Demo" i admin-panelet og sett slug her
+
+const DEMO_TENANT_SLUG = process.env.DEMO_TENANT_SLUG || 'demo';
+const DEMO_MAX_PER_IP = 3;
+const DEMO_MAX_PER_PHONE = 1;
+const DEMO_SESSION_MINUTES = 10;
+const DEMO_RATE_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 timer
+
+async function getDemoTenant() {
+    const result = await pool.query('SELECT * FROM tenants WHERE slug=$1', [DEMO_TENANT_SLUG]);
+    return result.rows[0] || null;
+}
+
+function getClientIp(req) {
+    return (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+}
+
+// Sjekk rate limit
+async function checkRateLimit(key, max) {
+    const now = Date.now();
+    const windowStart = now - DEMO_RATE_WINDOW_MS;
+    const result = await pool.query('SELECT * FROM demo_rate_limit WHERE key=$1', [key]);
+    if (!result.rows[0]) return { allowed: true, remaining: max - 1 };
+    const row = result.rows[0];
+    // Reset hvis vindu er utløpt
+    if (row.first_at < windowStart) return { allowed: true, remaining: max - 1 };
+    if (row.count >= max) return { allowed: false, remaining: 0, resetAt: parseInt(row.first_at) + DEMO_RATE_WINDOW_MS };
+    return { allowed: true, remaining: max - row.count - 1 };
+}
+
+async function incrementRateLimit(key) {
+    const now = Date.now();
+    await pool.query(`
+        INSERT INTO demo_rate_limit (key, count, first_at, last_at) VALUES ($1, 1, $2, $2)
+        ON CONFLICT (key) DO UPDATE SET
+            count = CASE WHEN demo_rate_limit.first_at < $3 THEN 1 ELSE demo_rate_limit.count + 1 END,
+            first_at = CASE WHEN demo_rate_limit.first_at < $3 THEN $2 ELSE demo_rate_limit.first_at END,
+            last_at = $2
+    `, [key, now, now - DEMO_RATE_WINDOW_MS]);
+}
+
+// POST /api/demo/send — start demo-sesjon
+app.post('/api/demo/send', async (req, res) => {
+    const { phone } = req.body;
+    const ip = getClientIp(req);
+
+    if (!phone || !/^\+?[0-9]{8,15}$/.test(phone.replace(/\s/g, ''))) {
+        return res.status(400).json({ error: 'Ugyldig telefonnummer' });
+    }
+
+    // Normaliser nummer
+    var cleanPhone = phone.replace(/\s/g, '');
+    if (!cleanPhone.startsWith('+')) {
+        if (cleanPhone.length === 8) cleanPhone = '+47' + cleanPhone;
+        else if (cleanPhone.startsWith('47') && cleanPhone.length === 10) cleanPhone = '+' + cleanPhone;
+    }
+
+    // Sjekk IP-limit
+    const ipCheck = await checkRateLimit('ip:' + ip, DEMO_MAX_PER_IP);
+    if (!ipCheck.allowed) {
+        const resetIn = Math.ceil((ipCheck.resetAt - Date.now()) / 3600000);
+        return res.status(429).json({ error: 'Du har brukt opp dine ' + DEMO_MAX_PER_IP + ' demo-forsøk for i dag. Prøv igjen om ' + resetIn + ' timer.' });
+    }
+
+    // Sjekk telefonnummer-limit
+    const phoneCheck = await checkRateLimit('phone:' + cleanPhone, DEMO_MAX_PER_PHONE);
+    if (!phoneCheck.allowed) {
+        return res.status(429).json({ error: 'Dette nummeret har allerede mottatt en demo-SMS i dag. Prøv igjen i morgen!' });
+    }
+
+    // Hent demo-tenant
+    const tenant = await getDemoTenant();
+    if (!tenant) {
+        return res.status(503).json({ error: 'Demo er ikke konfigurert ennå. Kontakt oss på post@ay.no' });
+    }
+
+    // Oppdater rate limits
+    await incrementRateLimit('ip:' + ip);
+    await incrementRateLimit('phone:' + cleanPhone);
+
+    // Opprett demo-sesjon
+    const sessionId = uuidv4();
+    const now = Date.now();
+    const expiresAt = now + DEMO_SESSION_MINUTES * 60 * 1000;
+    await pool.query(
+        'INSERT INTO demo_sessions (id, phone, ip, created_at, expires_at) VALUES ($1,$2,$3,$4,$5)',
+        [sessionId, cleanPhone, ip, now, expiresAt]
+    );
+
+    // Legg velkomst-SMS i utgående kø
+    const welcomeMsg = `Hei! 👋 Dette er en live demo av Ayno Connect SMS Gateway.\n\nDu kan svare på denne meldingen og se svaret dukke opp i sanntid på ay.no/demo\n\nDemon er aktiv i ${DEMO_SESSION_MINUTES} minutter. 🚀`;
+    await pool.query(
+        'INSERT INTO messages (id,tenant_id,direction,status,to_number,body,created_at,source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [uuidv4(), tenant.id, 'outbound', 'pending', cleanPhone, welcomeMsg, now, 'demo']
+    );
+
+    console.log(`[Demo] SMS sendt til ${cleanPhone} fra IP ${ip}`);
+
+    res.json({
+        success: true,
+        sessionId,
+        phone: cleanPhone,
+        expiresAt,
+        remaining: ipCheck.remaining
+    });
+});
+
+// GET /api/demo/inbox/:sessionId — hent innkommende svar i demo-sesjonen
+app.get('/api/demo/inbox/:sessionId', async (req, res) => {
+    const session = await pool.query(
+        'SELECT * FROM demo_sessions WHERE id=$1', [req.params.sessionId]
+    );
+    if (!session.rows[0]) return res.status(404).json({ error: 'Sesjon ikke funnet' });
+
+    const s = session.rows[0];
+    if (Date.now() > parseInt(s.expires_at)) {
+        return res.status(410).json({ error: 'Sesjonen er utløpt' });
+    }
+
+    const tenant = await getDemoTenant();
+    if (!tenant) return res.status(503).json({ error: 'Demo ikke konfigurert' });
+
+    const messages = await pool.query(
+        `SELECT direction, body, from_number, to_number, received_at, sent_at, created_at, status
+         FROM messages
+         WHERE tenant_id=$1 AND (from_number=$2 OR to_number=$2) AND created_at >= $3
+         ORDER BY created_at ASC`,
+        [tenant.id, s.phone, s.created_at]
+    );
+
+    res.json({
+        messages: messages.rows.map(function(m) {
+            return {
+                direction: m.direction,
+                body: m.body,
+                timestamp: parseInt(m.received_at || m.sent_at || m.created_at),
+                status: m.status
+            };
+        }),
+        expiresAt: parseInt(s.expires_at),
+        phone: s.phone
+    });
+});
+
+// GET /api/demo/status — vis om demo er tilgjengelig
+app.get('/api/demo/status', async (req, res) => {
+    const tenant = await getDemoTenant();
+    const ip = getClientIp(req);
+    const ipCheck = await checkRateLimit('ip:' + ip, DEMO_MAX_PER_IP);
+    res.json({
+        available: !!tenant,
+        remainingToday: Math.max(0, ipCheck.remaining + (ipCheck.allowed ? 0 : 0)),
+        maxPerDay: DEMO_MAX_PER_IP,
+        sessionMinutes: DEMO_SESSION_MINUTES
+    });
 });
 
 // ── TREDJEPARTS API — KOMPATIBELT ENDEPUNKT ──────────────────────────────────
