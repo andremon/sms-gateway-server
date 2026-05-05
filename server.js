@@ -949,9 +949,11 @@ app.post('/api/demo/send', async (req, res) => {
         return res.status(400).json({ error: 'Ugyldig telefonnummer' });
     }
 
-    // Normaliser nummer
-    var cleanPhone = phone.replace(/\s/g, '');
-    if (!cleanPhone.startsWith('+')) {
+    // Normaliser nummer — håndter dobbel landskode
+    var cleanPhone = phone.replace(/\s/g, '').replace(/[^\d+]/g, '');
+    if (cleanPhone.startsWith('+4747') && cleanPhone.length === 14) cleanPhone = '+47' + cleanPhone.slice(5);
+    else if (cleanPhone.startsWith('4747') && cleanPhone.length === 12) cleanPhone = '+47' + cleanPhone.slice(4);
+    else if (!cleanPhone.startsWith('+')) {
         if (cleanPhone.length === 8) cleanPhone = '+47' + cleanPhone;
         else if (cleanPhone.startsWith('47') && cleanPhone.length === 10) cleanPhone = '+' + cleanPhone;
     }
