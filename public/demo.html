@@ -56,14 +56,14 @@ main{position:relative;z-index:1;min-height:100vh;display:flex;align-items:cente
 .send-err{font-size:12px;color:#f87171;margin-top:8px;min-height:16px;text-align:center}
 
 /* INNBOKS */
-.inbox-card{display:none}
+.inbox-card{display:none;min-width:0;overflow:hidden}
 .inbox-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .inbox-title{font-size:14px;font-weight:600;color:#fff}
 .inbox-timer{font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;display:flex;align-items:center;gap:6px}
 .timer-dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.messages{display:flex;flex-direction:column;gap:10px;min-height:120px;max-height:380px;overflow-y:auto;padding:4px 8px;scrollbar-width:thin;scrollbar-color:#334155 transparent}
-.msg{max-width:82%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;animation:fadeIn .3s ease;word-break:break-word;overflow-wrap:break-word;white-space:pre-wrap;box-sizing:border-box}
+.messages{display:flex;flex-direction:column;gap:10px;min-height:120px;max-height:380px;overflow-y:scroll;padding:4px 8px;scrollbar-width:thin;scrollbar-color:#334155 transparent;overscroll-behavior:contain}
+.msg{max-width:82%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;animation:fadeIn .3s ease;word-break:break-word;overflow-wrap:break-word;white-space:pre-wrap;box-sizing:border-box;contain:content}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .msg.outbound{align-self:flex-end;background:var(--indigo);color:white;border-radius:12px 12px 2px 12px}
 .msg.inbound{align-self:flex-start;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:12px 12px 12px 2px}
