@@ -211,6 +211,21 @@ td{padding:12px 14px;border-top:1px solid #ffffff0f;font-size:13px;vertical-alig
         <div class="form-group"><label>Mobilnummer (SMS reset)</label><input type="tel" id="newPhone" placeholder="+47 xxx xx xxx"></div>
         <div class="form-group"><label>Maks gateway-enheter</label><input type="number" id="newMaxDevices" value="1" min="1" max="10"></div>
       </div>
+
+      <!-- API-KLIENT TOGGLE -->
+      <div style="background:#0a0a0f;border:1px solid #6366f130;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:0">
+          <input type="checkbox" id="newIsApiClient" style="accent-color:#6366f1;width:16px;height:16px">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#f8fafc">🔌 API-klient (tredjepart)</div>
+            <div style="font-size:11px;color:#475569;margin-top:2px">Kunden har eget dashboard — kun API-tilkobling trengs. Ingen kunde-dashboard i Ayno Connect.</div>
+          </div>
+        </label>
+        <div id="apiClientNameRow" style="display:none;margin-top:10px">
+          <div class="form-group"><label>Navn på tilkoblet system</label><input type="text" id="newApiClientName" placeholder="F.eks. AppFabrikk, BookingSystem"></div>
+        </div>
+      </div>
+
       <button class="btn btn-green" id="createBtn">Opprett kunde</button>
 
       <div id="welcomeResult" class="hidden">
@@ -496,24 +511,37 @@ function loadTenants() {
       document.getElementById('tenantsTable').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#475569;padding:32px">Ingen kunder ennå</td></tr>';
       return;
     }
-    document.getElementById('tenantsTable').innerHTML = data.map(function(t){
-      return '<tr>'+
-        '<td><strong>'+t.name+'</strong>'+
+    document.getElementById('tenantsTable').innerHTML = data.map(function(t) {
+      var isApi = t.isApiClient;
+      var badge = isApi
+        ? '<span style="background:#6366f120;color:#818cf8;border:1px solid #6366f140;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;margin-left:6px">🔌 API</span>'
+        : '<span style="background:#34d39920;color:#34d399;border:1px solid #34d39940;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;margin-left:6px">👤 Dashboard</span>';
+      return '<tr style="'+(isApi?'background:#6366f108':'')+'">' +
+        '<td><strong>'+t.name+'</strong>'+badge+
+        (isApi && t.apiClientName ? '<br><span style="color:#818cf8;font-size:12px">↔ '+t.apiClientName+'</span>' : '') +
         (t.contactPerson?'<br><span style="color:#94a3b8;font-size:12px">👤 '+t.contactPerson+'</span>':'')+
         (t.email?'<br><span style="color:#475569;font-size:11px">✉️ '+t.email+'</span>':'')+
         (t.city?'<br><span style="color:#475569;font-size:11px">📍 '+(t.postalCode?t.postalCode+' ':'')+t.city+'</span>':'')+
         '</td>'+
-        '<td><a href="/kunde/'+t.slug+'/dashboard" target="_blank" style="color:#818cf8;font-size:13px">/kunde/'+t.slug+'</a>'+
-        (t.phoneNumber?'<br><span style="color:#475569;font-size:11px">📱 '+t.phoneNumber+'</span>':'')+
+        '<td>'+(isApi
+          ? '<div style="background:#0a0a0f;border:1px solid #6366f130;border-radius:8px;padding:8px 10px">' +
+            '<div style="color:#818cf8;font-weight:600;font-size:11px;margin-bottom:4px">🔌 API-endepunkter</div>' +
+            '<div style="font-family:monospace;font-size:10px;color:#64748b;line-height:1.8">' +
+            'POST /api/3rdparty/v1/message<br>' +
+            'GET &nbsp;/api/3rdparty/v1/messages/sent<br>' +
+            'GET &nbsp;/api/3rdparty/v1/messages/inbox</div></div>'
+          : '<a href="/kunde/'+t.slug+'/dashboard" target="_blank" style="color:#818cf8;font-size:13px">/kunde/'+t.slug+'</a>'+
+            (t.phoneNumber?'<br><span style="color:#475569;font-size:11px">📱 '+t.phoneNumber+'</span>':''))+
         '</td>'+
-        '<td id="dev-'+t.id+'"><span style="color:#475569">Laster...</span></td>'+
+        '<td id="dev-'+t.id+'"><span style="color:#475569">'+(isApi?'—':'Laster...')+'</span></td>'+
         '<td><span style="color:#34d399">↓'+t.stats.inbound+'</span> <span style="color:#818cf8">↑'+t.stats.sent+'</span>'+
         (t.stats.pending>0?' <span style="color:#fbbf24">⏳'+t.stats.pending+'</span>':'')+
         '</td>'+
         '<td><div style="display:flex;flex-direction:column;gap:5px">'+
-          '<button class="btn btn-blue btn-sm" onclick="generateQr(\''+t.id+'\',\''+t.name+'\')">📱 QR-kode</button>'+
+          (isApi ? '' : '<button class="btn btn-blue btn-sm" onclick="generateQr(\''+t.id+'\',\''+t.name+'\')">📱 QR-kode</button>')+
+          '<button class="btn btn-gray btn-sm" onclick="showApiInfo(\''+t.id+'\',\''+t.name+'\',\''+t.apiKey+'\',\''+t.slug+'\')">🔑 API-info</button>'+
           '<button class="btn btn-gray btn-sm" onclick="openEdit(\''+t.id+'\')">✏️ Rediger</button>'+
-          '<button class="btn btn-gray btn-sm" onclick="regenKey(\''+t.id+'\',\''+t.name+'\')">🔑 Ny nøkkel</button>'+
+          '<button class="btn btn-gray btn-sm" onclick="regenKey(\''+t.id+'\',\''+t.name+'\')">↻ Ny nøkkel</button>'+
           '<button class="btn btn-danger btn-sm" onclick="deleteTenant(\''+t.id+'\',\''+t.name+'\')">🗑 Slett</button>'+
         '</div></td>'+
       '</tr>';
@@ -546,6 +574,66 @@ function loadDevices(tenantId) {
 }
 
 // QR
+function showApiInfo(id, name, apiKey, slug) {
+  var existing = document.getElementById('apiInfoModal');
+  if (existing) existing.remove();
+  var modal = document.createElement('div');
+  modal.id = 'apiInfoModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px';
+  var base = window.location.origin;
+  modal.innerHTML =
+    '<div style="background:#12121a;border:1px solid #6366f130;border-radius:16px;padding:28px;width:560px;max-width:100%">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+        '<div>' +
+          '<h2 style="color:#f8fafc;font-size:17px;margin:0">🔌 API-tilkobling</h2>' +
+          '<div style="color:#818cf8;font-size:12px;margin-top:3px">'+name+'</div>' +
+        '</div>' +
+        '<button onclick="document.getElementById(\'apiInfoModal\').remove()" style="background:none;border:none;color:#64748b;font-size:20px;cursor:pointer">✕</button>' +
+      '</div>' +
+
+      '<div style="background:#0a0a0f;border:1px solid #ffffff0f;border-radius:10px;padding:14px;margin-bottom:14px">' +
+        '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Konfigurasjon</div>' +
+        row('SMS_GATEWAY_URL', base) +
+        row('SMS_GATEWAY_API_KEY', apiKey) +
+        row('Auth-header', 'Authorization: Bearer ' + apiKey) +
+      '</div>' +
+
+      '<div style="background:#0a0a0f;border:1px solid #ffffff0f;border-radius:10px;padding:14px;margin-bottom:14px">' +
+        '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Endepunkter</div>' +
+        epRow('POST', base + '/api/3rdparty/v1/message', 'Send SMS') +
+        epRow('GET',  base + '/api/3rdparty/v1/messages/sent', 'Hent sendte') +
+        epRow('GET',  base + '/api/3rdparty/v1/messages/inbox', 'Hent innkommende') +
+        epRow('GET',  base + '/api/3rdparty/v1/messages/{id}', 'Sjekk status') +
+      '</div>' +
+
+      '<div style="background:#0a0a0f;border:1px solid #ffffff0f;border-radius:10px;padding:14px;margin-bottom:16px">' +
+        '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Eksempel — Send SMS</div>' +
+        '<pre style="font-family:monospace;font-size:11px;color:#94a3b8;white-space:pre-wrap;line-height:1.7">POST '+base+'/api/3rdparty/v1/message\nAuthorization: Bearer '+apiKey+'\nContent-Type: application/json\n\n{\n  "to": "+4799887766",\n  "message": "Din time er bekreftet kl 14:00"\n}</pre>' +
+      '</div>' +
+
+      '<button onclick="document.getElementById(\'apiInfoModal\').remove()" class="btn btn-gray" style="width:100%">Lukk</button>' +
+    '</div>';
+
+  function row(label, val) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #ffffff0f">' +
+      '<span style="font-size:11px;color:#64748b;font-family:monospace">'+label+'</span>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span style="font-size:11px;color:#e2e8f0;font-family:monospace;max-width:280px;overflow:hidden;text-overflow:ellipsis">'+val+'</span>' +
+        '<button onclick="navigator.clipboard.writeText(\''+val.replace(/'/g,"\\'")+'\')" style="background:#1e293b;border:1px solid #334155;border-radius:6px;color:#94a3b8;font-size:10px;padding:3px 8px;cursor:pointer">Kopier</button>' +
+      '</div></div>';
+  }
+  function epRow(method, url, desc) {
+    var colors = {POST:'#818cf8', GET:'#34d399'};
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #ffffff0f">' +
+      '<span style="color:'+colors[method]+';font-family:monospace;font-size:11px;font-weight:600;min-width:36px">'+method+'</span>' +
+      '<span style="font-family:monospace;font-size:11px;color:#94a3b8;flex:1">'+url+'</span>' +
+      '<span style="font-size:11px;color:#475569">'+desc+'</span>' +
+    '</div>';
+  }
+
+  document.body.appendChild(modal);
+}
+
 function generateQr(tenantId, tenantName) {
   currentTenantId = tenantId;
   adminApi('/admin/tenants/'+tenantId+'/qr-token', {method:'POST'}).then(function(res){
@@ -561,24 +649,34 @@ function generateQr(tenantId, tenantName) {
 }
 
 // CREATE
+document.getElementById('newIsApiClient').addEventListener('change', function() {
+  document.getElementById('apiClientNameRow').style.display = this.checked ? 'block' : 'none';
+  document.getElementById('newPwd').required = !this.checked;
+});
+
 function createTenant() {
   var name = document.getElementById('newName').value.trim();
   var password = document.getElementById('newPwd').value;
-  if(!name){toast('Skriv firmanavn','err');return;}
-  if(!password||password.length<8){toast('Passord min 8 tegn','err');return;}
+  var isApiClient = document.getElementById('newIsApiClient').checked;
+  if (!name) { toast('Skriv firmanavn', 'err'); return; }
+  if (!isApiClient && (!password || password.length < 8)) { toast('Passord min 8 tegn', 'err'); return; }
+  // API-klienter får et tilfeldig passord — de logger ikke inn på dashboard
+  var effectivePassword = password || (Math.random().toString(36).slice(2,10) + 'Aa1!');
   adminApi('/admin/tenants', {method:'POST', body:JSON.stringify({
-    name:name, password:password,
-    phoneNumber:document.getElementById('newPhone').value.trim(),
-    maxDevices:parseInt(document.getElementById('newMaxDevices').value)||1,
-    contactPerson:document.getElementById('newContactPerson').value.trim(),
-    contactPhone:document.getElementById('newContactPhone').value.trim(),
-    email:document.getElementById('newEmail').value.trim(),
-    orgNumber:document.getElementById('newOrgNumber').value.trim(),
-    address:document.getElementById('newAddress').value.trim(),
-    postalCode:document.getElementById('newPostalCode').value.trim(),
-    city:document.getElementById('newCity').value.trim()
-  })}).then(function(res){
-    if(res.id){
+    name: name, password: effectivePassword,
+    phoneNumber: document.getElementById('newPhone').value.trim(),
+    maxDevices: parseInt(document.getElementById('newMaxDevices').value) || 1,
+    contactPerson: document.getElementById('newContactPerson').value.trim(),
+    contactPhone: document.getElementById('newContactPhone').value.trim(),
+    email: document.getElementById('newEmail').value.trim(),
+    orgNumber: document.getElementById('newOrgNumber').value.trim(),
+    address: document.getElementById('newAddress').value.trim(),
+    postalCode: document.getElementById('newPostalCode').value.trim(),
+    city: document.getElementById('newCity').value.trim(),
+    isApiClient: isApiClient,
+    apiClientName: isApiClient ? document.getElementById('newApiClientName').value.trim() : null
+  })}).then(function(res) {
+    if (res.id) {
       lastWelcome = res.welcomeMessage;
       currentTenantId = res.id;
       document.getElementById('welcomeText').textContent = res.welcomeMessage;
