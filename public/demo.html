@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Prøv gratis — Ayno Connect SMS Demo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
   --indigo:#6366f1;--indigo-light:#818cf8;--indigo-dim:#6366f115;
@@ -13,87 +13,108 @@
   --border:#ffffff0f;--text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--obsidian);color:var(--text);min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--obsidian);color:var(--text);min-height:100vh}
 
 /* HEADER */
-header{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,var(--obsidian) 60%,transparent);border-bottom:1px solid var(--border)}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#fff;letter-spacing:-.5px;text-decoration:none}
+header{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;background:var(--obsidian);border-bottom:1px solid var(--border)}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;text-decoration:none;letter-spacing:-.5px}
 .logo span{color:var(--indigo-light)}
-.back-link{color:var(--text3);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px;transition:color .2s}
-.back-link:hover{color:var(--text2)}
+.back{color:var(--text3);text-decoration:none;font-size:13px}
+.back:hover{color:var(--text2)}
 
-/* MAIN */
-main{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:108px 24px 40px}
-.demo-wrap{width:100%;max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+/* STATUS BAR */
+.status-bar{position:fixed;top:60px;left:0;right:0;z-index:99;height:38px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;background:#09090f;border-bottom:1px solid var(--border);font-size:12px;gap:12px}
+.srv-status{display:flex;align-items:center;gap:7px}
+.srv-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.srv-dot.online{background:var(--emerald);animation:blink 2s infinite}
+.srv-dot.offline{background:#ef4444}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.attempts{display:flex;align-items:center;gap:8px;color:var(--text3)}
+.dot-row{display:flex;gap:4px}
+.dot-used{width:8px;height:8px;border-radius:50%;background:var(--emerald);border:1px solid #34d39960}
+.dot-free{width:8px;height:8px;border-radius:50%;background:#1e293b;border:1px solid #334155}
 
-/* LEFT PANEL */
-.left-panel{position:sticky;top:88px}
-.hero-label{display:inline-flex;align-items:center;gap:8px;background:var(--indigo-dim);border:1px solid #6366f130;border-radius:20px;padding:6px 16px;font-size:11px;color:var(--indigo-light);font-weight:600;margin-bottom:24px;letter-spacing:.5px;text-transform:uppercase}
-.left-panel h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(28px,4vw,44px);line-height:1.1;letter-spacing:-1.5px;color:#fff;margin-bottom:16px}
-.left-panel h1 em{font-style:normal;color:var(--indigo-light)}
-.left-panel p{font-size:15px;color:var(--text2);line-height:1.7;margin-bottom:28px}
-.how-list{display:flex;flex-direction:column;gap:12px;margin-bottom:28px}
-.how-item{display:flex;align-items:flex-start;gap:12px}
-.how-num{width:28px;height:28px;border-radius:8px;background:var(--indigo-dim);border:1px solid #6366f130;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--indigo-light);flex-shrink:0;font-family:'DM Mono',monospace}
-.how-text{font-size:13px;color:var(--text2);line-height:1.6;padding-top:4px}
-.limits-pill{background:#ffffff06;border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--text3);line-height:1.6}
-.limits-pill strong{color:var(--text2)}
+/* PAGE */
+.page{min-height:100vh;padding:118px 32px 48px;display:flex;align-items:flex-start;justify-content:center}
+.wrap{width:100%;max-width:920px;display:grid;grid-template-columns:1fr 420px;gap:32px;align-items:start}
 
-/* RIGHT PANEL */
-.right-panel{display:flex;flex-direction:column;gap:16px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px}
+/* LEFT */
+.left{position:sticky;top:118px}
+.label{display:inline-flex;align-items:center;gap:6px;background:var(--indigo-dim);border:1px solid #6366f130;border-radius:20px;padding:5px 14px;font-size:11px;color:var(--indigo-light);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:20px}
+.left h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(30px,4vw,46px);line-height:1.1;letter-spacing:-1.5px;color:#fff;margin-bottom:14px}
+.left h1 em{font-style:normal;color:var(--indigo-light)}
+.left p{font-size:15px;color:var(--text2);line-height:1.7;margin-bottom:24px}
+.steps{display:flex;flex-direction:column;gap:14px;margin-bottom:24px}
+.step{display:flex;gap:12px;align-items:flex-start}
+.step-num{width:26px;height:26px;border-radius:7px;background:var(--indigo-dim);border:1px solid #6366f130;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--indigo-light);flex-shrink:0;font-family:'DM Mono',monospace;margin-top:2px}
+.step-txt{font-size:13px;color:var(--text2);line-height:1.6}
+.step-txt strong{color:#f8fafc;display:block;margin-bottom:2px}
+.note{background:#ffffff06;border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--text3);line-height:1.6}
+.note strong{color:var(--text2)}
+
+/* RIGHT */
+.right{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px}
 
 /* PHONE INPUT */
-.phone-wrap{position:relative}
-.phone-prefix{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--text2);font-family:'DM Mono',monospace;pointer-events:none}
-.phone-input{width:100%;padding:14px 14px 14px 60px;background:#1a1a2e;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;font-family:'DM Mono',monospace;outline:none;transition:border-color .2s;-webkit-appearance:none}
-.phone-input:focus{border-color:var(--indigo)}
+.field-label{font-size:12px;font-weight:600;color:#fff;margin-bottom:12px}
+.phone-row{display:flex;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#1a1a2e;transition:border-color .2s}
+.phone-row:focus-within{border-color:var(--indigo)}
+.prefix{padding:0 14px;display:flex;align-items:center;font-family:'DM Mono',monospace;font-size:15px;color:var(--text2);background:#1e1e2e;border-right:1px solid var(--border);flex-shrink:0}
+.phone-input{flex:1;padding:13px 14px;background:transparent;border:none;color:var(--text);font-size:16px;font-family:'DM Mono',monospace;outline:none;min-width:0}
 .phone-input::placeholder{color:var(--text3)}
-.send-btn{width:100%;padding:15px;background:var(--indigo);color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px}
-.send-btn:hover:not(:disabled){background:#5558e0;transform:translateY(-1px);box-shadow:0 8px 32px #6366f140}
-.send-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.send-err{font-size:12px;color:#f87171;margin-top:8px;min-height:16px;text-align:center}
+.hint{font-size:11px;color:var(--text3);margin-top:6px}
+.send-btn{width:100%;padding:14px;background:var(--indigo);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.send-btn:hover:not(:disabled){background:#5558e0;box-shadow:0 6px 24px #6366f140}
+.send-btn:disabled{opacity:.45;cursor:not-allowed}
+.err{font-size:12px;margin-top:8px;min-height:16px;text-align:center}
 
 /* INNBOKS */
-.inbox-card{display:none;min-width:0;overflow:hidden}
-.inbox-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.inbox-card{display:none}
+.inbox-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .inbox-title{font-size:14px;font-weight:600;color:#fff}
-.inbox-timer{font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;display:flex;align-items:center;gap:6px}
-.timer-dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);animation:pulse 1.5s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.messages{display:flex;flex-direction:column;gap:10px;min-height:120px;max-height:380px;overflow-y:scroll;padding:4px 8px;scrollbar-width:thin;scrollbar-color:#334155 transparent;overscroll-behavior:contain}
-.msg{max-width:82%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;animation:fadeIn .3s ease;word-break:break-word;overflow-wrap:break-word;white-space:pre-wrap;box-sizing:border-box;contain:content}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.msg.outbound{align-self:flex-end;background:var(--indigo);color:white;border-radius:12px 12px 2px 12px}
-.msg.inbound{align-self:flex-start;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:12px 12px 12px 2px}
-.msg.pending{opacity:.6}
-.msg-time{font-size:10px;opacity:.6;margin-top:4px;font-family:'DM Mono',monospace}
-.msg-status{font-size:10px;opacity:.6;margin-top:2px;text-align:right}
-.empty-inbox{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;color:var(--text3);font-size:13px;gap:8px;flex:1}
-.empty-inbox .wave{font-size:28px;animation:wave 1.5s infinite}
-@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(15deg)}}
-.reply-hint{background:#34d39910;border:1px solid #34d39930;border-radius:8px;padding:10px 14px;font-size:12px;color:#34d399;text-align:center;margin-top:4px}
-.expired-msg{background:#ef444410;border:1px solid #ef444430;border-radius:8px;padding:12px 16px;font-size:13px;color:#f87171;text-align:center}
-.restart-btn{background:transparent;border:1px solid var(--border);color:var(--text2);padding:8px 18px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;margin-top:10px;transition:all .2s;width:100%}
-.restart-btn:hover{border-color:#ffffff30;color:var(--text)}
+.timer{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);font-family:'DM Mono',monospace}
+.timer-dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);animation:blink 1.5s infinite}
+
+/* MESSAGES — fast høyde, ingen hopp */
+.msgs-wrap{height:300px;overflow-y:scroll;scrollbar-width:thin;scrollbar-color:#1e293b transparent;display:flex;flex-direction:column;gap:8px;padding-right:4px}
+.msgs-wrap::-webkit-scrollbar{width:4px}
+.msgs-wrap::-webkit-scrollbar-track{background:transparent}
+.msgs-wrap::-webkit-scrollbar-thumb{background:#1e293b;border-radius:4px}
+
+.bubble{max-width:80%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;word-break:break-word;overflow-wrap:break-word;white-space:pre-wrap}
+.bubble.out{align-self:flex-end;background:var(--indigo);color:#fff;border-radius:12px 12px 3px 12px}
+.bubble.out.pending{opacity:.55}
+.bubble.in{align-self:flex-start;background:var(--surface2);border:1px solid var(--border);border-radius:12px 12px 12px 3px}
+.b-time{font-size:10px;opacity:.55;margin-top:3px;font-family:'DM Mono',monospace}
+.b-status{font-size:10px;opacity:.55;text-align:right;margin-top:2px}
+
+.empty-state{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text3);font-size:13px;text-align:center}
+.wave-emoji{font-size:26px;animation:wave 2s infinite}
+@keyframes wave{0%,100%{transform:rotate(0)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}}
+
+.reply-hint{background:#34d39910;border:1px solid #34d39930;border-radius:8px;padding:9px 14px;font-size:12px;color:var(--emerald);text-align:center;margin-top:8px;display:none}
+.expired{background:#ef444410;border:1px solid #ef444430;border-radius:8px;padding:12px;font-size:13px;color:#f87171;text-align:center;margin-top:8px;display:none}
+.restart{background:transparent;border:1px solid var(--border);color:var(--text2);padding:7px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;margin-top:8px;width:100%}
+.restart:hover{border-color:#ffffff30;color:var(--text)}
 
 /* SHARE */
-.share-card{background:linear-gradient(135deg,#6366f110,#34d39908);border:1px solid #6366f130;border-radius:16px;padding:20px;text-align:center}
-.share-card h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;margin-bottom:6px}
-.share-card p{font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.5}
-.share-btn{display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:9px 18px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;text-decoration:none;transition:all .2s}
-.share-btn:hover{border-color:#ffffff30;color:var(--text)}
+.share-card{background:linear-gradient(135deg,#6366f112,#34d39908);border:1px solid #6366f130;border-radius:14px;padding:18px;text-align:center;display:none}
+.share-card h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff;margin-bottom:5px}
+.share-card p{font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5}
+.share-links{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.share-link{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:8px 16px;border-radius:8px;font-size:12px;text-decoration:none;transition:all .2s}
+.share-link:hover{border-color:#ffffff30;color:var(--text)}
 
-/* FOOTER */
-footer{position:relative;z-index:1;text-align:center;padding:24px;color:var(--text3);font-size:12px;border-top:1px solid var(--border)}
+footer{text-align:center;padding:20px;color:var(--text3);font-size:12px;border-top:1px solid var(--border)}
 footer a{color:var(--indigo-light);text-decoration:none}
 
-/* RESPONSIVE */
-@media(max-width:720px){
-  .demo-wrap{grid-template-columns:1fr}
-  .left-panel{position:static}
-  header{padding:0 20px}
+@media(max-width:740px){
+  .wrap{grid-template-columns:1fr}
+  .left{position:static}
+  .page{padding:118px 16px 40px}
+  header,.status-bar{padding:0 16px}
 }
 </style>
 </head>
@@ -101,314 +122,277 @@ footer a{color:var(--indigo-light);text-decoration:none}
 
 <header>
   <a href="https://ay.no" class="logo">ayno<span>.</span></a>
-  <a href="https://ay.no" class="back-link">← Tilbake til ay.no</a>
+  <a href="https://ay.no" class="back">← Tilbake</a>
 </header>
 
-<!-- STATUS BAR -->
-<div id="statusBar" style="position:fixed;top:64px;left:0;right:0;z-index:99;padding:10px 40px;display:flex;align-items:center;justify-content:space-between;font-size:12px;background:#0a0a14;border-bottom:1px solid var(--border);gap:12px">
-  <div style="display:flex;align-items:center;gap:8px">
-    <div id="serverDot" style="width:7px;height:7px;border-radius:50%;background:#475569"></div>
-    <span id="serverText" style="color:var(--text3)">Sjekker server...</span>
+<div class="status-bar">
+  <div class="srv-status">
+    <div class="srv-dot" id="srvDot"></div>
+    <span id="srvTxt" style="color:var(--text3)">Sjekker...</span>
   </div>
-  <div id="attemptsBar" style="display:flex;align-items:center;gap:8px;color:var(--text3)">
-    <span>Forsøk igjen i dag:</span>
-    <div id="attemptsDots" style="display:flex;gap:4px"></div>
-    <span id="attemptsNum" style="font-family:'DM Mono',monospace;color:var(--text2)"></span>
+  <div class="attempts" id="attemptsWrap">
+    <span>Forsøk igjen:</span>
+    <div class="dot-row" id="dotRow"></div>
+    <span id="attNum" style="font-family:'DM Mono',monospace;color:var(--text2)"></span>
   </div>
 </div>
-  <div class="demo-wrap">
 
-    <!-- VENSTRE: FORKLARING -->
-    <div class="left-panel">
-      <div class="hero-label">🚀 Live demo</div>
+<div class="page">
+  <div class="wrap">
+
+    <!-- VENSTRE -->
+    <div class="left">
+      <div class="label">🚀 Live demo</div>
       <h1>Se <em>Ayno Connect</em> i aksjon</h1>
-      <p>Skriv inn ditt mobilnummer og motta en ekte SMS fra vår gateway — akkurat slik kundene dine vil oppleve det.</p>
-
-      <div class="how-list">
-        <div class="how-item">
-          <div class="how-num">1</div>
-          <div class="how-text"><strong style="color:#f8fafc">Skriv inn nummeret ditt</strong><br>Vi sender deg en ekte SMS via Ayno Connect gateway-telefonen.</div>
+      <p>Skriv inn ditt mobilnummer og motta en ekte SMS fra vår gateway — akkurat slik kundene dine opplever det.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-txt"><strong>Skriv inn nummeret ditt</strong>Vi sender en ekte SMS via Ayno Connect gateway-telefonen.</div>
         </div>
-        <div class="how-item">
-          <div class="how-num">2</div>
-          <div class="how-text"><strong style="color:#f8fafc">Motta SMS på mobilen</strong><br>Du ser meldingen på telefonen din — akkurat som en vanlig SMS fra en bedrift.</div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-txt"><strong>Motta SMS på mobilen</strong>Akkurat som en vanlig SMS fra en bedrift.</div>
         </div>
-        <div class="how-item">
-          <div class="how-num">3</div>
-          <div class="how-text"><strong style="color:#f8fafc">Svar tilbake</strong><br>Send et svar fra telefonen din og se det dukke opp her i sanntid.</div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-txt"><strong>Svar tilbake</strong>Send et svar og se det dukke opp her i sanntid.</div>
         </div>
       </div>
-
-      <div class="limits-pill">
-        🛡️ <strong>Begrenset demo:</strong> Maks <strong>3 forsøk per IP</strong> og <strong>1 per nummer</strong> per dag. Vi lagrer ikke nummeret ditt etter sesjonen.
-      </div>
+      <div class="note">🛡️ <strong>Begrenset demo:</strong> Maks 5 forsøk per dag per enhet. Vi lagrer ikke nummeret ditt etter sesjonen.</div>
     </div>
 
-    <!-- HØYRE: DEMO -->
-    <div class="right-panel">
+    <!-- HØYRE -->
+    <div class="right">
 
-      <!-- SEND-SKJEMA -->
+      <!-- SEND -->
       <div class="card" id="sendCard">
-        <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:16px">📱 Skriv inn ditt mobilnummer</div>
-        <div class="phone-wrap">
-          <span class="phone-prefix">+47</span>
-          <input class="phone-input" type="tel" id="phoneInput" placeholder="000 00 000" maxlength="9" inputmode="numeric">
+        <div class="field-label">📱 Ditt mobilnummer</div>
+        <div class="phone-row">
+          <div class="prefix">+47</div>
+          <input class="phone-input" type="tel" id="phoneInput" placeholder="000 00 000" maxlength="9" inputmode="numeric" autocomplete="tel">
         </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:6px">Kun norske nummer — skriv 8 siffer uten landskode</div>
-        <button class="send-btn" id="sendBtn">
-          <span id="sendBtnText">Send demo-SMS 📨</span>
-        </button>
-        <div class="send-err" id="sendErr"></div>
-        <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text3)">Vi sender aldri reklame. Kun denne ene demo-meldingen.</div>
+        <div class="hint">Kun norske nummer — 8 siffer uten landskode</div>
+        <button class="send-btn" id="sendBtn">Send demo-SMS 📨</button>
+        <div class="err" id="sendErr"></div>
+        <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--text3)">Vi sender aldri reklame. Kun denne ene meldingen.</div>
       </div>
 
       <!-- INNBOKS -->
       <div class="card inbox-card" id="inboxCard">
-        <div class="inbox-header">
+        <div class="inbox-top">
           <div class="inbox-title">📨 Live innboks</div>
-          <div class="inbox-timer"><div class="timer-dot"></div><span id="timerText">10:00</span></div>
+          <div class="timer"><div class="timer-dot" id="timerDot"></div><span id="timerTxt">10:00</span></div>
         </div>
-        <div class="messages" id="messagesEl">
-          <div class="empty-inbox">
-            <div class="wave">👋</div>
-            <div>Sender SMS til <strong id="phoneLbl" style="color:#f8fafc"></strong>...<br>Den burde ankomme om noen sekunder!</div>
+        <div class="msgs-wrap" id="msgsWrap">
+          <div class="empty-state" id="emptyState">
+            <div class="wave-emoji">👋</div>
+            <div>Sender til <strong id="phoneLbl" style="color:#f8fafc"></strong>...<br>Ankommer om noen sekunder!</div>
           </div>
         </div>
-        <div class="reply-hint" id="replyHint" style="display:none">
-          💬 Svar på SMS-en fra telefonen din — det dukker opp her!
-        </div>
-        <div class="expired-msg" id="expiredMsg" style="display:none">
-          ⏰ Demo-sesjonen er utløpt.
-          <button class="restart-btn" onclick="resetDemo()">Prøv igjen</button>
+        <div class="reply-hint" id="replyHint">💬 Svar på SMS-en fra telefonen — det dukker opp her!</div>
+        <div class="expired" id="expiredBox">
+          ⏰ Sesjonen er utløpt.
+          <button class="restart" onclick="resetDemo()">Prøv igjen</button>
         </div>
       </div>
 
-      <!-- DEL-KORT -->
-      <div class="share-card" id="shareCard" style="display:none">
+      <!-- DEL -->
+      <div class="share-card" id="shareCard">
         <h3>Imponert? 🎉</h3>
         <p>Del Ayno Connect med noen som trenger enkel SMS-kommunikasjon for bedriften.</p>
-        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-          <a href="https://ay.no" class="share-btn">🏠 Se alle tjenester</a>
-          <a href="mailto:post@ay.no?subject=Ayno Connect demo" class="share-btn">✉️ Kontakt oss</a>
+        <div class="share-links">
+          <a href="https://ay.no" class="share-link">🏠 Alle tjenester</a>
+          <a href="mailto:post@ay.no" class="share-link">✉️ Kontakt oss</a>
         </div>
       </div>
 
     </div>
   </div>
-</main>
+</div>
 
 <footer>
-  <p>Ayno Connect · <a href="https://ay.no">ay.no</a> · Demo-data slettes automatisk etter 24 timer</p>
+  <p>Ayno Connect · <a href="https://ay.no">ay.no</a> · Demo-data slettes etter 24 timer</p>
 </footer>
 
 <script>
 var BASE = 'https://sms.ay.no';
-var sessionId = null;
-var pollInterval = null;
-var timerInterval = null;
-var expiresAt = null;
-var messagesSeen = new Set();
+var sessionId = null, expiresAt = null;
+var pollIv = null, timerIv = null;
+var seenKeys = new Set();
 var hasInbound = false;
+var rendered = [];
 
-// ── SEND ─────────────────────────────────────────────────────────
+// ── INPUT ─────────────────────────────────────────────────
 document.getElementById('phoneInput').addEventListener('input', function() {
-  this.value = this.value.replace(/[^0-9]/g, '');
+  this.value = this.value.replace(/\D/g, '').slice(0, 9);
   document.getElementById('sendErr').textContent = '';
 });
-
 document.getElementById('phoneInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') document.getElementById('sendBtn').click();
 });
 
+// ── SEND ──────────────────────────────────────────────────
 document.getElementById('sendBtn').addEventListener('click', function() {
   var raw = document.getElementById('phoneInput').value.trim();
   var err = document.getElementById('sendErr');
-  if (!raw || raw.length < 8) { err.textContent = 'Skriv inn et gyldig norsk mobilnummer'; return; }
-  var phone = '+47' + raw.replace(/\s/g, '');
-  var btn = this;
-  var btnText = document.getElementById('sendBtnText');
-  btn.disabled = true; btnText.textContent = '⏳ Sender...';
-  err.textContent = '';
+  if (!raw || raw.length < 8) { err.style.color='#f87171'; err.textContent = 'Skriv 8 siffer'; return; }
+  var phone = '+47' + raw;
+  var btn = this; btn.disabled = true; btn.textContent = '⏳ Sender...';
 
   fetch(BASE + '/api/demo/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: phone })
-  }).then(function(r) { return r.json(); }).then(function(res) {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({phone: phone})
+  }).then(function(r){return r.json();}).then(function(res){
     if (res.success) {
-      sessionId = res.sessionId;
-      expiresAt = res.expiresAt;
+      sessionId = res.sessionId; expiresAt = res.expiresAt;
       document.getElementById('phoneLbl').textContent = phone;
       document.getElementById('sendCard').style.display = 'none';
       document.getElementById('inboxCard').style.display = 'block';
-      startPolling();
-      startTimer();
+      startPolling(); startTimer();
+      checkStatus();
     } else {
-      err.textContent = res.error || 'Noe gikk galt. Prøv igjen.';
-      btn.disabled = false; btnText.textContent = 'Send demo-SMS 📨';
+      err.style.color = '#f87171'; err.textContent = res.error || 'Noe gikk galt';
+      btn.disabled = false; btn.textContent = 'Send demo-SMS 📨';
     }
-  }).catch(function() {
-    err.textContent = 'Kunne ikke koble til serveren. Prøv igjen om litt.';
-    btn.disabled = false; btnText.textContent = 'Send demo-SMS 📨';
+  }).catch(function(){
+    err.style.color = '#f87171'; err.textContent = 'Serverfeil — prøv igjen';
+    btn.disabled = false; btn.textContent = 'Send demo-SMS 📨';
   });
 });
 
-// ── POLLING ───────────────────────────────────────────────────────
-function startPolling() {
-  pollMessages();
-  pollInterval = setInterval(pollMessages, 4000);
-}
+// ── POLLING ───────────────────────────────────────────────
+function startPolling() { poll(); pollIv = setInterval(poll, 4000); }
 
-function pollMessages() {
+function poll() {
   if (!sessionId) return;
-  fetch(BASE + '/api/demo/inbox/' + sessionId)
-    .then(function(r) {
-      if (r.status === 410) { sessionExpired(); return null; }
-      return r.json();
-    }).then(function(data) {
-      if (!data) return;
-      renderMessages(data.messages);
-    }).catch(function() {});
+  fetch(BASE + '/api/demo/inbox/' + sessionId).then(function(r){
+    if (r.status === 410) { expire(); return null; }
+    return r.json();
+  }).then(function(d){ if (d) render(d.messages); }).catch(function(){});
 }
 
-function renderMessages(messages) {
-  var el = document.getElementById('messagesEl');
-  if (!messages || !messages.length) return;
+function render(msgs) {
+  if (!msgs || !msgs.length) return;
+  var wrap = document.getElementById('msgsWrap');
+  var wasBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 40;
 
-  var html = messages.map(function(m) {
-    var key = m.direction + m.timestamp + m.body;
-    var isNew = !messagesSeen.has(key);
-    messagesSeen.add(key);
-    var time = new Date(m.timestamp).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
-    var statusIcon = m.direction === 'outbound'
-      ? (m.status === 'sent' ? '<div class="msg-status">✓✓ Sendt via gateway</div>'
-        : m.status === 'failed' ? '<div class="msg-status" style="color:#f87171">✕ Feil ved sending</div>'
-        : '<div class="msg-status">⏳ Venter på gateway...</div>')
-      : '';
+  // Bygg kun nye meldinger
+  var newHtml = '';
+  var hasSent = false;
+  msgs.forEach(function(m) {
+    var key = m.direction + '|' + m.timestamp + '|' + m.body;
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      var t = new Date(m.timestamp).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'});
+      var cls = m.direction === 'outbound' ? 'out' + (m.status === 'pending' ? ' pending' : '') : 'in';
+      var status = m.direction === 'outbound'
+        ? '<div class="b-status">' + (m.status === 'sent' ? '✓✓ Sendt' : m.status === 'failed' ? '✕ Feil' : '⏳') + '</div>'
+        : '';
+      newHtml += '<div class="bubble ' + cls + '"><div>' + escHtml(m.body) + '</div><div class="b-time">' + t + '</div>' + status + '</div>';
+    }
+    if (m.direction === 'outbound' && m.status === 'sent') hasSent = true;
     if (m.direction === 'inbound') hasInbound = true;
-    return '<div class="msg ' + m.direction + (m.status === 'pending' ? ' pending' : '') + '">' +
-      '<div>' + escHtml(m.body) + '</div>' +
-      '<div class="msg-time">' + time + '</div>' +
-      statusIcon +
-    '</div>';
-  }).join('');
+  });
 
-  el.innerHTML = html;
-  el.scrollTop = el.scrollHeight;
-
-  // Vis svar-hint etter at utgående melding er levert
-  var hasSent = messages.some(function(m) { return m.direction === 'outbound' && m.status === 'sent'; });
-  if (hasSent && !hasInbound) {
-    document.getElementById('replyHint').style.display = 'block';
+  if (newHtml) {
+    // Fjern empty-state hvis den er der
+    var empty = document.getElementById('emptyState');
+    if (empty) empty.remove();
+    wrap.insertAdjacentHTML('beforeend', newHtml);
   }
+
+  // Oppdater status på siste outbound-melding
+  var bubbles = wrap.querySelectorAll('.bubble.out');
+  if (bubbles.length) {
+    var lastOut = bubbles[bubbles.length - 1];
+    var statusEl = lastOut.querySelector('.b-status');
+    if (statusEl) {
+      var lastMsg = msgs.filter(function(m){return m.direction==='outbound';}).pop();
+      if (lastMsg) statusEl.textContent = lastMsg.status === 'sent' ? '✓✓ Sendt' : lastMsg.status === 'failed' ? '✕ Feil' : '⏳';
+    }
+  }
+
+  if (hasSent && !hasInbound) document.getElementById('replyHint').style.display = 'block';
   if (hasInbound) {
     document.getElementById('replyHint').style.display = 'none';
     document.getElementById('shareCard').style.display = 'block';
   }
+
+  // Scroll til bunnen kun hvis brukeren var der
+  if (wasBottom) wrap.scrollTop = wrap.scrollHeight;
 }
 
-// ── TIMER ─────────────────────────────────────────────────────────
-function startTimer() {
-  updateTimer();
-  timerInterval = setInterval(function() {
-    if (Date.now() >= expiresAt) { sessionExpired(); return; }
-    updateTimer();
-  }, 1000);
-}
+// ── TIMER ─────────────────────────────────────────────────
+function startTimer() { updateTimer(); timerIv = setInterval(function(){ if (Date.now()>=expiresAt){expire();}else{updateTimer();} }, 1000); }
 
 function updateTimer() {
-  var remaining = Math.max(0, expiresAt - Date.now());
-  var mins = Math.floor(remaining / 60000);
-  var secs = Math.floor((remaining % 60000) / 1000);
-  document.getElementById('timerText').textContent =
-    String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+  var r = Math.max(0, expiresAt - Date.now());
+  var m = Math.floor(r/60000), s = Math.floor((r%60000)/1000);
+  document.getElementById('timerTxt').textContent = pad(m)+':'+pad(s);
 }
+function pad(n){return String(n).padStart(2,'0');}
 
-function sessionExpired() {
-  clearInterval(pollInterval);
-  clearInterval(timerInterval);
-  document.getElementById('timerText').textContent = '00:00';
-  document.querySelector('.timer-dot').style.background = '#ef4444';
-  document.querySelector('.timer-dot').style.animation = 'none';
-  document.getElementById('expiredMsg').style.display = 'block';
+function expire() {
+  clearInterval(pollIv); clearInterval(timerIv);
+  document.getElementById('timerTxt').textContent = '00:00';
+  document.getElementById('timerDot').style.background = '#ef4444';
+  document.getElementById('timerDot').style.animation = 'none';
+  document.getElementById('expiredBox').style.display = 'block';
   document.getElementById('replyHint').style.display = 'none';
   document.getElementById('shareCard').style.display = 'block';
 }
 
 function resetDemo() {
-  clearInterval(pollInterval);
-  clearInterval(timerInterval);
-  sessionId = null; expiresAt = null;
-  messagesSeen = new Set(); hasInbound = false;
-  document.getElementById('inboxCard').style.display = 'none';
-  document.getElementById('sendCard').style.display = 'block';
-  document.getElementById('sendBtn').disabled = false;
-  document.getElementById('sendBtnText').textContent = 'Send demo-SMS 📨';
-  document.getElementById('phoneInput').value = '';
-  document.getElementById('expiredMsg').style.display = 'none';
-  document.getElementById('replyHint').style.display = 'none';
-  document.getElementById('shareCard').style.display = 'none';
-  document.getElementById('messagesEl').innerHTML = '';
+  clearInterval(pollIv); clearInterval(timerIv);
+  sessionId=null; expiresAt=null; seenKeys=new Set(); hasInbound=false;
+  document.getElementById('inboxCard').style.display='none';
+  document.getElementById('sendCard').style.display='block';
+  document.getElementById('sendBtn').disabled=false;
+  document.getElementById('sendBtn').textContent='Send demo-SMS 📨';
+  document.getElementById('phoneInput').value='';
+  document.getElementById('expiredBox').style.display='none';
+  document.getElementById('replyHint').style.display='none';
+  document.getElementById('shareCard').style.display='none';
+  document.getElementById('msgsWrap').innerHTML='<div class="empty-state" id="emptyState"><div class="wave-emoji">👋</div><div>Sender til <strong id="phoneLbl" style="color:#f8fafc"></strong>...<br>Ankommer om noen sekunder!</div></div>';
+  checkStatus();
 }
 
-function escHtml(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
+
+// ── STATUS ────────────────────────────────────────────────
+function checkStatus() {
+  fetch(BASE + '/api/demo/status').then(function(r){return r.json();}).then(function(d){
+    var dot = document.getElementById('srvDot');
+    var txt = document.getElementById('srvTxt');
+    dot.className = 'srv-dot online';
+    txt.style.color = '#34d399'; txt.textContent = '● Server online';
+
+    var rem = d.remainingToday !== undefined ? d.remainingToday : d.maxPerDay;
+    var max = d.maxPerDay || 5;
+    document.getElementById('attNum').textContent = rem + ' / ' + max;
+    document.getElementById('dotRow').innerHTML = Array.from({length:max},function(_,i){
+      return '<div class="' + (i < rem ? 'dot-used' : 'dot-free') + '"></div>';
+    }).join('');
+
+    var err = document.getElementById('sendErr');
+    var btn = document.getElementById('sendBtn');
+    if (!d.available) {
+      err.style.color='#fbbf24'; err.textContent='⚠️ Demo ikke konfigurert ennå';
+      btn.disabled=true;
+    } else if (rem === 0) {
+      err.style.color='#f87171'; err.textContent='✕ Ingen forsøk igjen i dag';
+      btn.disabled=true;
+    }
+  }).catch(function(){
+    var dot=document.getElementById('srvDot');
+    dot.className='srv-dot offline';
+    document.getElementById('srvTxt').style.color='#f87171';
+    document.getElementById('srvTxt').textContent='● Server utilgjengelig';
+    document.getElementById('sendBtn').disabled=true;
+  });
 }
-
-// Sjekk demo-status ved oppstart
-function checkDemoStatus() {
-  fetch(BASE + '/api/demo/status')
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var dot = document.getElementById('serverDot');
-      var text = document.getElementById('serverText');
-      var err = document.getElementById('sendErr');
-      var btn = document.getElementById('sendBtn');
-      var attNum = document.getElementById('attemptsNum');
-      var attDots = document.getElementById('attemptsDots');
-
-      // Server online
-      dot.style.background = '#34d399';
-      dot.style.animation = 'pulse 2s infinite';
-      text.style.color = '#34d399';
-      text.textContent = '● Server online';
-
-      // Forsøk-indikator
-      var remaining = data.remainingToday || 0;
-      var max = data.maxPerDay || 5;
-      attNum.textContent = remaining + ' / ' + max;
-      attDots.innerHTML = Array.from({length: max}, function(_, i) {
-        return '<div style="width:8px;height:8px;border-radius:50%;background:' +
-          (i < remaining ? '#34d399' : '#1e293b') +
-          ';border:1px solid ' + (i < remaining ? '#34d39960' : '#334155') + '"></div>';
-      }).join('');
-
-      if (!data.available) {
-        err.style.color = '#fbbf24';
-        err.textContent = '⚠️ Demo-kontoen er ikke konfigurert ennå. Prøv igjen snart!';
-        btn.disabled = true;
-      } else if (remaining === 0) {
-        err.style.color = '#f87171';
-        err.textContent = '✕ Du har brukt alle ' + max + ' forsøk for i dag. Kom tilbake i morgen!';
-        btn.disabled = true;
-      } else {
-        err.textContent = '';
-        btn.disabled = false;
-      }
-    })
-    .catch(function() {
-      var dot = document.getElementById('serverDot');
-      var text = document.getElementById('serverText');
-      dot.style.background = '#ef4444';
-      text.style.color = '#f87171';
-      text.textContent = '● Server utilgjengelig';
-      document.getElementById('sendErr').style.color = '#f87171';
-      document.getElementById('sendErr').textContent = '✕ Kan ikke koble til server. Prøv igjen om litt.';
-      document.getElementById('sendBtn').disabled = true;
-    });
-}
-
-checkDemoStatus();
+checkStatus();
 </script>
 </body>
 </html>
