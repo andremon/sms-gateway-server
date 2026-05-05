@@ -83,6 +83,8 @@ async function initDB() {
             first_at BIGINT NOT NULL,
             last_at BIGINT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS admin_settings (
             id TEXT PRIMARY KEY DEFAULT 'main',
             admin_password TEXT,
             gateway_phone TEXT,
