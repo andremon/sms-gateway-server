@@ -855,6 +855,18 @@ document.getElementById('loginPwd').addEventListener('keydown',e=>{if(e.key==='E
 </script></body></html>`;
 }
 
+// Hent meldingshistorikk for en kunde (admin)
+app.get('/admin/tenants/:id/messages', requireAdmin, async (req, res) => {
+    const limit = parseInt(req.query.limit) || 30;
+    const result = await pool.query(
+        `SELECT id, direction, status, from_number as "fromNumber", to_number as "toNumber",
+                body, created_at as "createdAt", sent_at as "sentAt", source
+         FROM messages WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT $2`,
+        [req.params.id, limit]
+    );
+    res.json(result.rows);
+});
+
 // ── TREDJEPARTS API — KOMPATIBELT ENDEPUNKT ──────────────────────────────────
 // Kompatibelt med AppFabrikk og andre systemer som bruker Basic Auth + JSON
 // Støtter både Basic Auth og Bearer Token / API-nøkkel i header
