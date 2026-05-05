@@ -8,66 +8,156 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0f;color:#e2e8f0;min-height:100vh}
-.login{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse 60% 50% at 50% 0%,#6366f122,transparent 70%)}
+
+/* ── LOGIN ── */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse 60% 50% at 50% 0%,#6366f122,transparent 70%)}
 .login-box{background:#12121a;border:1px solid #ffffff18;border-radius:20px;padding:40px;width:380px;text-align:center;box-shadow:0 24px 80px #0006}
-.login-box h1{font-size:22px;margin-bottom:4px;color:#f8fafc;font-weight:600}
-.login-box .sub{color:#64748b;margin-bottom:24px;font-size:13px}
-.login-box input{width:100%;padding:12px 16px;background:#1a1a26;border:1px solid #ffffff18;border-radius:8px;color:#f8fafc;font-size:14px;margin-bottom:12px;outline:none;transition:border-color .2s}
+.login-box .icon{font-size:36px;margin-bottom:10px}
+.login-box h1{font-size:22px;font-weight:600;color:#f8fafc;margin-bottom:4px}
+.login-box .sub{color:#64748b;font-size:13px;margin-bottom:24px}
+.login-box input{width:100%;padding:12px 16px;background:#1a1a26;border:1px solid #ffffff18;border-radius:8px;color:#f8fafc;font-size:14px;margin-bottom:12px;outline:none;transition:border-color .2s;font-family:inherit}
 .login-box input:focus{border-color:#6366f1}
-.login-btn{width:100%;padding:13px;background:#6366f1;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .2s}.login-btn:hover{opacity:.9}
-.login-err{color:#f87171;margin-top:8px;font-size:13px;min-height:20px}
-.btn{padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:opacity .2s}.btn:hover{opacity:.85}
-.btn-primary{background:#6366f1;color:white}
-.btn-danger{background:#ef4444;color:white}
-.btn-green{background:#22c55e;color:#0a0a0f}
-.btn-gray{background:#1e293b;color:#e2e8f0;border:1px solid #334155}
-.btn-blue{background:#3b82f6;color:white}
-.btn-sm{padding:5px 12px;font-size:12px}
-header{background:#12121a;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ffffff0f;gap:12px}
-.header-left{display:flex;align-items:center;gap:16px}
-header h1{font-size:17px;color:#f8fafc;font-weight:600}
-.status-pill{display:flex;align-items:center;gap:6px;padding:4px 12px;background:#34d39914;border-radius:20px;font-size:12px;color:#34d399;font-weight:500}
-.status-dot{width:6px;height:6px;border-radius:50%;background:#34d399;animation:pulse 2s infinite}
-.status-dot.offline{background:#ef4444;animation:none}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.header-right{display:flex;gap:8px}
-.container{max-width:1100px;margin:28px auto;padding:0 16px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
-.stat{background:#12121a;border:1px solid #ffffff0f;border-radius:12px;padding:18px 20px}
-.stat .num{font-size:28px;font-weight:700;color:#6366f1}
-.stat .lbl{color:#64748b;font-size:12px;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
-.card{background:#12121a;border:1px solid #ffffff0f;border-radius:12px;padding:22px;margin-bottom:20px}
-.card h2{font-size:15px;font-weight:600;margin-bottom:16px;color:#f8fafc}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.form-group{display:flex;flex-direction:column;gap:5px}
-.form-group label{font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.form-group input{padding:10px 14px;background:#1a1a26;border:1px solid #ffffff18;border-radius:8px;color:#f8fafc;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s}
-.form-group input:focus{border-color:#6366f1}
+.login-btn{width:100%;padding:13px;background:#6366f1;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}.login-btn:hover{opacity:.9}
+.login-err{color:#f87171;margin-top:8px;font-size:13px;min-height:18px}
+.forgot-link{background:none;border:none;color:#6366f1;font-size:12px;cursor:pointer;margin-top:10px;font-family:inherit;width:100%}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;background:#0d0d18;border-right:1px solid #ffffff0f;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.sidebar-logo{padding:18px 16px 14px;border-bottom:1px solid #ffffff0f}
+.sidebar-logo h1{font-size:15px;font-weight:700;color:#818cf8;letter-spacing:-.3px}
+.sidebar-logo .ver{font-size:10px;color:#334155;margin-top:2px}
+.sidebar-nav{flex:1;overflow-y:auto;padding:8px 0}
+.nav-section{padding:10px 14px 4px;font-size:10px;color:#334155;font-weight:600;text-transform:uppercase;letter-spacing:.8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-radius:0;font-size:13px;color:#94a3b8;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.nav-item:hover{background:#ffffff08;color:#e2e8f0}
+.nav-item.active{background:#6366f118;color:#818cf8;font-weight:600;border-right:2px solid #6366f1}
+.nav-item .icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.nav-item .badge{margin-left:auto;background:#6366f130;color:#818cf8;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700}
+.nav-item .badge.green{background:#34d39920;color:#34d399}
+.nav-item .badge.amber{background:#fbbf2420;color:#fbbf24}
+.sidebar-bottom{padding:12px;border-top:1px solid #ffffff0f}
+.gateway-pill{background:#34d39914;border:1px solid #34d39930;border-radius:8px;padding:8px 10px;margin-bottom:8px}
+.gateway-pill.offline{background:#ef444414;border-color:#ef444430}
+.gateway-pill.warn{background:#fbbf2414;border-color:#fbbf2430}
+.gw-dot{width:6px;height:6px;border-radius:50%;background:#34d399;display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+.gw-dot.offline{background:#ef4444;animation:none}.gw-dot.warn{background:#fbbf24;animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#12121a;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ffffff0f;gap:12px;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.page-title{font-size:16px;font-weight:600;color:#f8fafc}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.gateway-select-wrap{display:flex;align-items:center;gap:8px;background:#1a1a26;border:1px solid #6366f130;border-radius:8px;padding:6px 12px;min-width:200px}
+.gateway-select-wrap label{font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;white-space:nowrap}
+.gateway-select-wrap select{background:transparent;border:none;color:#f8fafc;font-size:13px;font-weight:600;font-family:inherit;outline:none;cursor:pointer;flex:1}
+.content{flex:1;overflow-y:auto;padding:24px}
+
+/* ── VIEWS ── */
+.view{display:none}
+.view.active{display:block}
+
+/* ── CARDS ── */
+.card{background:#12121a;border:1px solid #ffffff0f;border-radius:12px;padding:20px;margin-bottom:16px}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:600;color:#f8fafc}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:#12121a;border:1px solid #ffffff0f;border-radius:10px;padding:16px 18px}
+.stat .num{font-size:26px;font-weight:700;color:#6366f1}
+.stat .lbl{color:#64748b;font-size:11px;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+/* ── TABLES ── */
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:9px 14px;background:#0a0a0f;font-size:10px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:.7px}
-td{padding:12px 14px;border-top:1px solid #ffffff0f;font-size:13px;vertical-align:top}
+th{text-align:left;padding:8px 12px;background:#0a0a0f;font-size:10px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:.7px}
+td{padding:12px 12px;border-top:1px solid #ffffff0f;font-size:13px;vertical-align:middle}
+tr:hover td{background:#ffffff04}
+
+/* ── CUSTOMER CARD ── */
+.customer-card{background:#12121a;border:1px solid #ffffff0f;border-radius:12px;padding:18px 20px;margin-bottom:10px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.customer-card:hover{border-color:#6366f140;background:#12121a}
+.customer-card .name{font-size:14px;font-weight:600;color:#f8fafc}
+.customer-card .meta{font-size:12px;color:#64748b;margin-top:2px}
+.customer-card .right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.type-badge{padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.type-badge.api{background:#6366f120;color:#818cf8;border:1px solid #6366f140}
+.type-badge.dash{background:#34d39920;color:#34d399;border:1px solid #34d39940}
+
+/* ── CUSTOMER DETAIL ── */
+.detail-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.back-btn{background:#1e293b;border:1px solid #334155;border-radius:8px;color:#94a3b8;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
+.back-btn:hover{color:#e2e8f0}
+.detail-tabs{display:flex;gap:4px;margin-bottom:20px;background:#0a0a0f;border-radius:10px;padding:4px}
+.detail-tab{padding:8px 16px;border-radius:7px;font-size:13px;cursor:pointer;color:#64748b;border:none;background:none;font-family:inherit;transition:all .15s}
+.detail-tab.active{background:#1e293b;color:#f8fafc;font-weight:600}
+.detail-pane{display:none}.detail-pane.active{display:block}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.info-field{background:#0a0a0f;border:1px solid #ffffff0f;border-radius:8px;padding:12px 14px}
+.info-field label{font-size:10px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+.info-field .val{font-size:14px;color:#f8fafc}
+.info-field .val.mono{font-family:monospace;font-size:12px}
+.info-field .val.muted{color:#64748b}
+.api-box{background:#0a0a0f;border:1px solid #6366f130;border-radius:10px;padding:16px;margin-bottom:14px}
+.api-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #ffffff0f}
+.api-row:last-child{border-bottom:none}
+.api-row .key{font-size:11px;color:#64748b;font-family:monospace}
+.api-row .val{font-size:12px;color:#e2e8f0;font-family:monospace;max-width:300px;overflow:hidden;text-overflow:ellipsis}
+
+/* ── FORMS ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select,.form-group textarea{padding:10px 14px;background:#1a1a26;border:1px solid #ffffff18;border-radius:8px;color:#f8fafc;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#6366f1}
+.toggle-row{display:flex;align-items:center;gap:12px;background:#0a0a0f;border:1px solid #6366f130;border-radius:10px;padding:14px 16px;margin-bottom:14px;cursor:pointer}
+.toggle-row input[type=checkbox]{accent-color:#6366f1;width:16px;height:16px;flex-shrink:0}
+.toggle-label h4{font-size:13px;font-weight:600;color:#f8fafc;margin-bottom:2px}
+.toggle-label p{font-size:11px;color:#475569}
+
+/* ── BUTTONS ── */
+.btn{padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:opacity .2s;display:inline-flex;align-items:center;gap:6px}.btn:hover{opacity:.85}
+.btn-primary{background:#6366f1;color:white}
+.btn-green{background:#22c55e;color:#0a0a0f}
+.btn-danger{background:#ef4444;color:white}
+.btn-gray{background:#1e293b;color:#e2e8f0;border:1px solid #334155}
+.btn-ghost{background:none;border:1px solid #334155;color:#94a3b8;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit}.btn-ghost:hover{color:#e2e8f0;border-color:#475569}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* ── QR ── */
+.qr-box{background:#0a0a0f;border:1px solid #6366f130;border-radius:10px;padding:20px;text-align:center}
+#qrcode{display:inline-block;background:white;padding:10px;border-radius:8px;margin:10px auto}
+
+/* ── WELCOME ── */
 .welcome-box{background:#0a0a0f;border:1px solid #34d39930;border-radius:10px;padding:16px;margin-top:14px}
 .welcome-text{font-family:monospace;font-size:12px;color:#cbd5e1;white-space:pre-wrap;line-height:1.6}
-.qr-box{background:#0a0a0f;border:1px solid #6366f130;border-radius:10px;padding:20px;margin-top:12px;text-align:center}
-.qr-box h3{color:#818cf8;font-size:13px;margin-bottom:12px;font-weight:600}
-#qrcode{display:inline-block;background:white;padding:12px;border-radius:8px;margin:8px auto}
-.qr-expires{color:#475569;font-size:12px;margin-top:8px}
-.device-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid #ffffff0f;font-size:12px}
-.device-dot{width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;margin-right:6px}
-.device-dot.offline{background:#ef4444}.device-dot.warn{background:#fbbf24}
+
+/* ── INBOX / SEND ── */
+.inbox-reply{background:#0a0a0f;border:1px solid #ffffff0f;border-radius:10px;padding:14px;margin-bottom:14px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.contacts-list{background:#0a0a0f;border:1px solid #ffffff0f;border-radius:8px;max-height:220px;overflow-y:auto}
+.contact-row{padding:10px 14px;cursor:pointer;border-bottom:1px solid #ffffff0f;display:flex;justify-content:space-between;align-items:center}
+.contact-row:hover{background:#ffffff06}
+.contact-row:last-child{border-bottom:none}
+
+/* ── GATEWAY DETAIL ── */
 .gw-card{background:#0a0a0f;border:1px solid #ffffff0f;border-radius:10px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-left:3px solid #334155}
-.gw-online{border-left-color:#34d399}.gw-warn{border-left-color:#fbbf24}.gw-offline{border-left-color:#ef4444}
-.gw-meta{font-size:11px;color:#475569;margin-top:3px}
+.gw-card.online{border-left-color:#34d399}
+.gw-card.warn{border-left-color:#fbbf24}
+.gw-card.offline{border-left-color:#ef4444}
+
+/* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
 .modal{background:#12121a;border:1px solid #ffffff18;border-radius:16px;padding:28px;width:520px;max-width:100%;max-height:90vh;overflow-y:auto}
 .modal h2{font-size:17px;font-weight:600;color:#f8fafc;margin-bottom:20px}
-.modal-field{margin-bottom:12px}
-.modal-field label{display:block;font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-.modal-field input{width:100%;padding:10px 14px;background:#0a0a0f;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px;font-family:inherit;outline:none}
-.modal-field input:focus{border-color:#6366f1}
-.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.modal-actions{display:flex;gap:10px;margin-top:20px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.modal-close{background:none;border:none;color:#64748b;font-size:20px;cursor:pointer}
+
+/* ── MISC ── */
 .hidden{display:none!important}
+.sep{border:none;border-top:1px solid #ffffff0f;margin:16px 0}
 #toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;background:#12121a;border:1px solid #ffffff18;border-radius:10px;font-size:13px;font-weight:500;opacity:0;transition:opacity .25s,transform .25s;transform:translateY(8px);z-index:9999;box-shadow:0 8px 32px #0006}
 #toast.show{opacity:1;transform:translateY(0)}
 #toast.ok{border-color:#34d39930;color:#34d399}
@@ -76,1045 +166,1162 @@ td{padding:12px 14px;border-top:1px solid #ffffff0f;font-size:13px;vertical-alig
 </head>
 <body>
 
-<div class="login" id="loginView">
-  <div class="login-box">
-    <div style="font-size:28px;margin-bottom:8px">🔧</div>
+<!-- ══ LOGIN ═══════════════════════════════════════════════════════ -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box" id="loginBox">
+    <div class="icon">🔧</div>
     <h1>Ayno Connect</h1>
-    <p class="sub">Admin-panel — v5.0</p>
+    <p class="sub">Admin-panel — v5.1</p>
     <input type="password" id="adminPwd" placeholder="Admin-passord" autocomplete="current-password">
     <button class="login-btn" id="loginBtn">Logg inn</button>
     <div class="login-err" id="loginErr"></div>
-    <button id="forgotAdminBtn" style="background:none;border:none;color:#6366f1;font-size:12px;cursor:pointer;margin-top:10px;font-family:inherit;width:100%">Glemt passord?</button>
+    <button class="forgot-link" id="forgotBtn">Glemt passord?</button>
   </div>
-
-  <!-- Reset admin passord -->
-  <div class="login-box hidden" id="resetAdminBox" style="margin-top:0">
-    <div style="font-size:28px;margin-bottom:8px">🔑</div>
+  <div class="login-box hidden" id="resetBox">
+    <div class="icon">🔑</div>
     <h1>Tilbakestill passord</h1>
-    <p class="sub" id="resetAdminSub">Sett nytt admin-passord direkte.</p>
-    <div id="resetAdminStep1">
-      <input type="password" id="resetNewPwd1" placeholder="Nytt passord (min. 8 tegn)" autocomplete="new-password">
-      <input type="password" id="resetCfmPwd1" placeholder="Bekreft nytt passord" autocomplete="new-password">
-      <p style="font-size:11px;color:#475569;margin-bottom:12px">Du trenger gjeldende Railway ADMIN_PASSWORD for å bekrefte.</p>
-      <input type="password" id="resetCurPwd1" placeholder="Nåværende passord" autocomplete="current-password">
-      <button class="login-btn" id="doResetAdminBtn">Sett nytt passord</button>
-      <div class="login-err" id="resetAdminErr"></div>
-    </div>
-    <button id="backToAdminLoginBtn" style="background:none;border:none;color:#475569;font-size:12px;cursor:pointer;margin-top:12px;font-family:inherit;width:100%">← Tilbake til innlogging</button>
+    <p class="sub">Skriv nåværende og nytt passord</p>
+    <input type="password" id="resetCur" placeholder="Nåværende passord">
+    <input type="password" id="resetNew" placeholder="Nytt passord (min. 8 tegn)">
+    <input type="password" id="resetCfm" placeholder="Bekreft nytt passord">
+    <button class="login-btn" id="doResetBtn">Sett nytt passord</button>
+    <div class="login-err" id="resetErr"></div>
+    <button class="forgot-link" id="backLoginBtn">← Tilbake</button>
   </div>
 </div>
 
-<div id="adminView" class="hidden">
-  <header>
-    <div class="header-left">
-      <h1>🔧 Ayno Connect Admin</h1>
-      <div class="status-pill"><div class="status-dot" id="statusDot"></div><span id="statusText">Sjekker...</span></div>
+<!-- ══ APP ══════════════════════════════════════════════════════════ -->
+<div class="app hidden" id="appWrap">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>🔧 Ayno Connect</h1>
+      <div class="ver">Admin v5.1</div>
     </div>
-    <!-- AKTIV GATEWAY-KONTO -->
-    <div style="display:flex;align-items:center;gap:10px;background:#1a1a26;border:1px solid #6366f130;border-radius:10px;padding:8px 14px;flex:1;max-width:380px;margin:0 16px">
-      <div>
-        <div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px">📡 Aktiv gateway-konto</div>
-        <select id="activeGatewaySelect" style="background:transparent;border:none;color:#f8fafc;font-size:14px;font-weight:600;font-family:inherit;outline:none;cursor:pointer;width:100%">
-          <option value="" style="background:#1a1a26">— Ingen valgt —</option>
-        </select>
+    <div class="sidebar-nav">
+      <div class="nav-section">Oversikt</div>
+      <button class="nav-item active" data-view="dashboard">
+        <span class="icon">📊</span> Dashboard
+      </button>
+      <button class="nav-item" data-view="gateway">
+        <span class="icon">📡</span> Gateway-status
+      </button>
+      <button class="nav-item" data-view="inbox">
+        <span class="icon">📨</span> Innboks
+        <span class="badge" id="inboxBadge" style="display:none">0</span>
+      </button>
+      <button class="nav-item" data-view="send">
+        <span class="icon">✉️</span> Send SMS
+      </button>
+
+      <div class="nav-section" style="margin-top:8px">Kunder</div>
+      <button class="nav-item" data-view="dash-customers">
+        <span class="icon">👤</span> Dashboard-kunder
+        <span class="badge green" id="dashCount">0</span>
+      </button>
+      <button class="nav-item" data-view="api-customers">
+        <span class="icon">🔌</span> API-kunder
+        <span class="badge" id="apiCount">0</span>
+      </button>
+      <button class="nav-item" data-view="new-customer">
+        <span class="icon">➕</span> Ny kunde
+      </button>
+
+      <div class="nav-section" style="margin-top:8px">Utsendelse</div>
+      <button class="nav-item" data-view="broadcast">
+        <span class="icon">📢</span> Send til kunder
+      </button>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="gateway-pill" id="gwPill">
+        <span class="gw-dot" id="gwDot"></span>
+        <span id="gwPillText" style="font-size:11px;color:#94a3b8">Sjekker...</span>
       </div>
-      <div id="activeGatewayStatus" style="flex-shrink:0"></div>
+      <button class="nav-item" data-view="settings" style="margin-bottom:4px">
+        <span class="icon">⚙️</span> Innstillinger
+      </button>
+      <button class="nav-item" id="logoutNavBtn">
+        <span class="icon">↩️</span> Logg ut
+      </button>
     </div>
-    <div class="header-right">
-      <button class="btn btn-gray btn-sm" id="settingsBtn">⚙️ Innstillinger</button>
-      <button class="btn btn-danger btn-sm" id="logoutBtn">Logg ut</button>
-    </div>
-  </header>
+  </nav>
 
-  <div class="container">
-    <div class="stats" id="adminStats"></div>
-
-    <!-- GATEWAY STATUS -->
-    <div class="card">
-      <h2>📡 Gateway-status</h2>
-      <div id="gatewayStatus"><div style="color:#475569;font-size:13px">Laster...</div></div>
-    </div>
-
-    <!-- AKTIV KONTO INNBOKS -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div>
-          <h2 style="margin:0">📨 Innboks</h2>
-          <div style="font-size:12px;color:#475569;margin-top:3px">Viser innboks for: <span id="activeAccountLabel" style="color:#818cf8;font-weight:600">Ingen konto valgt</span></div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn btn-gray btn-sm" id="inboxReplyBtn" style="display:none">✉️ Send SMS</button>
-          <button class="btn btn-gray btn-sm" onclick="loadActiveInbox()">↻ Oppdater</button>
-        </div>
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="page-title" id="pageTitle">Dashboard</span>
       </div>
-      <div id="activeInboxEmpty" style="color:#475569;font-size:13px;padding:16px 0">Velg en gateway-konto i toppen for å se innboksen.</div>
-      <table id="activeInboxTable" style="display:none">
-        <thead><tr><th>Fra</th><th>Melding</th><th>Tidspunkt</th><th></th></tr></thead>
-        <tbody id="activeInboxBody"></tbody>
-      </table>
+      <div class="topbar-right">
+        <div class="gateway-select-wrap">
+          <label>📡 Gateway-konto</label>
+          <select id="activeGwSelect">
+            <option value="">— Ingen valgt —</option>
+          </select>
+        </div>
+        <span id="activeGwStatus" style="font-size:12px;color:#475569"></span>
+      </div>
     </div>
 
-    <!-- SEND FRA AKTIV KONTO -->
-    <div class="card" id="activeSendCard" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div>
-          <h2 style="margin:0">✉️ Send SMS</h2>
-          <div style="font-size:12px;color:#475569;margin-top:3px">Sendes fra: <span id="activeSendLabel" style="color:#818cf8;font-weight:600"></span></div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div>
-          <div class="form-group" style="margin-bottom:12px">
-            <label>Mottaker</label>
-            <input type="tel" id="activeSendTo" placeholder="+47 xxx xx xxx">
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ── DASHBOARD ─────────────────────────────── -->
+      <div class="view active" id="view-dashboard">
+        <div class="stats" id="mainStats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-header"><span class="card-title">👤 Dashboard-kunder</span><button class="btn-ghost" onclick="switchView('dash-customers')">Se alle →</button></div>
+            <div id="dashCustomerPreview"></div>
           </div>
-          <div class="form-group" style="margin-bottom:8px">
-            <label>Melding</label>
-            <textarea id="activeSendBody" rows="4" placeholder="Skriv meldingen..." style="width:100%;padding:10px 14px;background:#1a1a26;border:1px solid #ffffff18;border-radius:8px;color:#f8fafc;font-size:14px;font-family:inherit;resize:vertical;line-height:1.5;outline:none"></textarea>
-            <div style="text-align:right;font-size:11px;color:#475569;margin-top:3px;font-family:monospace" id="activeSendCount">0 / 160</div>
-          </div>
-          <button class="btn btn-primary" id="activeSendBtn">📤 Send SMS</button>
-          <div id="activeSendStatus" style="font-size:13px;margin-top:8px;min-height:16px"></div>
-        </div>
-        <div>
-          <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Kontakter</div>
-          <div id="activeContactsList" style="background:#0a0a0f;border:1px solid #ffffff0f;border-radius:8px;max-height:220px;overflow-y:auto">
-            <div style="padding:16px;color:#475569;font-size:13px">Laster kontakter...</div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">🔌 API-kunder</span><button class="btn-ghost" onclick="switchView('api-customers')">Se alle →</button></div>
+            <div id="apiCustomerPreview"></div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- OPPRETT KUNDE -->
-    <div class="card">
-      <h2>➕ Opprett ny kunde</h2>
-      <div class="form-row">
-        <div class="form-group"><label>Firmanavn *</label><input type="text" id="newName" placeholder="Firma AS"></div>
-        <div class="form-group"><label>Passord til dashboard *</label><input type="password" id="newPwd" placeholder="Min. 8 tegn"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Kontaktperson</label><input type="text" id="newContactPerson" placeholder="Fornavn Etternavn"></div>
-        <div class="form-group"><label>Kontakttelefon</label><input type="tel" id="newContactPhone" placeholder="+47 xxx xx xxx"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>E-post</label><input type="email" id="newEmail" placeholder="post@firma.no"></div>
-        <div class="form-group"><label>Org.nummer</label><input type="text" id="newOrgNumber" placeholder="000 000 000"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Adresse</label><input type="text" id="newAddress" placeholder="Gateveien 1"></div>
-        <div class="form-group" style="display:grid;grid-template-columns:100px 1fr;gap:8px">
-          <div class="form-group"><label>Postnr</label><input type="text" id="newPostalCode" placeholder="0000" maxlength="4"></div>
-          <div class="form-group"><label>Sted</label><input type="text" id="newCity" placeholder="Oslo"></div>
+      <!-- ── GATEWAY STATUS ─────────────────────────── -->
+      <div class="view" id="view-gateway">
+        <div class="card">
+          <div class="card-header"><span class="card-title">📡 Gateway-enheter</span><button class="btn-ghost" onclick="loadGatewayStatus()">↻ Oppdater</button></div>
+          <div id="gatewayList"><div style="color:#475569">Laster...</div></div>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label>Mobilnummer (SMS reset)</label><input type="tel" id="newPhone" placeholder="+47 xxx xx xxx"></div>
-        <div class="form-group"><label>Maks gateway-enheter</label><input type="number" id="newMaxDevices" value="1" min="1" max="10"></div>
+
+      <!-- ── INNBOKS ────────────────────────────────── -->
+      <div class="view" id="view-inbox">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <span class="card-title">📨 Innboks</span>
+              <div style="font-size:12px;color:#475569;margin-top:3px">Viser: <span id="inboxAccountLabel" style="color:#818cf8;font-weight:600">Ingen konto valgt</span></div>
+            </div>
+            <button class="btn-ghost" onclick="loadActiveInbox()">↻ Oppdater</button>
+          </div>
+          <div id="inboxEmpty" style="color:#475569;font-size:13px;padding:16px 0">Velg en gateway-konto øverst for å se innboksen.</div>
+          <table id="inboxTable" class="hidden">
+            <thead><tr><th>Fra</th><th>Melding</th><th>Tidspunkt</th><th></th></tr></thead>
+            <tbody id="inboxBody"></tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- API-KLIENT TOGGLE -->
-      <div style="background:#0a0a0f;border:1px solid #6366f130;border-radius:10px;padding:14px 16px;margin-bottom:14px">
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:0">
-          <input type="checkbox" id="newIsApiClient" style="accent-color:#6366f1;width:16px;height:16px">
+      <!-- ── SEND SMS ───────────────────────────────── -->
+      <div class="view" id="view-send">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <span class="card-title">✉️ Send SMS</span>
+              <div style="font-size:12px;color:#475569;margin-top:3px">Fra: <span id="sendAccountLabel" style="color:#818cf8;font-weight:600">Ingen konto valgt</span></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 280px;gap:16px">
+            <div>
+              <div class="form-group" style="margin-bottom:12px"><label>Mottaker</label><input type="tel" id="sendTo" placeholder="+47 xxx xx xxx"></div>
+              <div class="form-group" style="margin-bottom:6px"><label>Melding</label>
+                <textarea id="sendBody" rows="5" placeholder="Skriv melding..." style="resize:vertical;line-height:1.5"></textarea>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+                <span style="font-size:11px;color:#475569">SMS sendes via gateway-telefonen</span>
+                <span id="sendCount" style="font-size:11px;color:#475569;font-family:monospace">0/160</span>
+              </div>
+              <button class="btn btn-primary" id="sendSmsBtn">📤 Send SMS</button>
+              <div id="sendStatus" style="font-size:13px;margin-top:8px;min-height:16px"></div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Kontakter</div>
+              <div class="contacts-list" id="sendContacts"><div style="padding:16px;color:#475569;font-size:13px">Velg gateway-konto</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DASHBOARD-KUNDER ───────────────────────── -->
+      <div class="view" id="view-dash-customers">
+        <div id="dashCustomerList"></div>
+      </div>
+
+      <!-- ── API-KUNDER ─────────────────────────────── -->
+      <div class="view" id="view-api-customers">
+        <div id="apiCustomerList"></div>
+      </div>
+
+      <!-- ── KUNDE-DETALJ ───────────────────────────── -->
+      <div class="view" id="view-customer-detail">
+        <div class="detail-header">
+          <button class="back-btn" id="backFromDetail">← Tilbake</button>
           <div>
-            <div style="font-size:13px;font-weight:600;color:#f8fafc">🔌 API-klient (tredjepart)</div>
-            <div style="font-size:11px;color:#475569;margin-top:2px">Kunden har eget dashboard — kun API-tilkobling trengs. Ingen kunde-dashboard i Ayno Connect.</div>
-          </div>
-        </label>
-        <div id="apiClientNameRow" style="display:none;margin-top:10px">
-          <div class="form-group"><label>Navn på tilkoblet system</label><input type="text" id="newApiClientName" placeholder="F.eks. AppFabrikk, BookingSystem"></div>
-        </div>
-      </div>
-
-      <button class="btn btn-green" id="createBtn">Opprett kunde</button>
-
-      <div id="welcomeResult" class="hidden">
-        <div class="welcome-box">
-          <div style="color:#34d399;font-weight:600;margin-bottom:8px">✅ Kunde opprettet!</div>
-          <div class="welcome-text" id="welcomeText"></div>
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <button class="btn btn-gray btn-sm" id="copyBtn">📋 Kopier melding</button>
-            <a id="dashLink" href="#" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none">🔗 Åpne dashboard</a>
+            <div style="font-size:16px;font-weight:700;color:#f8fafc" id="detailName"></div>
+            <div style="font-size:12px;color:#64748b" id="detailType"></div>
           </div>
         </div>
-        <div class="qr-box">
-          <h3>📱 QR-kode for Android-appen</h3>
-          <div id="qrcode"></div>
-          <div class="qr-expires" id="qrExpires"></div>
-          <p style="color:#64748b;font-size:12px;margin-top:8px">Kan kun brukes én gang · Gyldig i 24 timer</p>
-          <button class="btn btn-blue btn-sm" id="newQrBtn" style="margin-top:10px">🔄 Generer ny QR-kode</button>
+        <div class="detail-tabs">
+          <button class="detail-tab active" data-tab="info">📋 Info</button>
+          <button class="detail-tab" data-tab="api">🔑 API-tilkobling</button>
+          <button class="detail-tab" data-tab="messages">💬 Meldinger</button>
+          <button class="detail-tab" data-tab="devices" id="devicesTabBtn">📱 Enheter</button>
+          <button class="detail-tab" data-tab="danger">⚠️ Administrer</button>
+        </div>
+        <div class="detail-pane active" id="pane-info"></div>
+        <div class="detail-pane" id="pane-api"></div>
+        <div class="detail-pane" id="pane-messages"></div>
+        <div class="detail-pane" id="pane-devices"></div>
+        <div class="detail-pane" id="pane-danger"></div>
+      </div>
+
+      <!-- ── NY KUNDE ───────────────────────────────── -->
+      <div class="view" id="view-new-customer">
+        <div class="card">
+          <div class="card-header"><span class="card-title">➕ Opprett ny kunde</span></div>
+
+          <div class="toggle-row" id="apiToggleRow">
+            <input type="checkbox" id="ncIsApi">
+            <div class="toggle-label">
+              <h4>🔌 API-klient (tredjepart)</h4>
+              <p>Systemet har eget dashboard — kun API-tilkobling til Ayno Connect</p>
+            </div>
+          </div>
+          <div id="apiClientNameGroup" class="form-group hidden" style="margin-bottom:14px"><label>Navn på tilkoblet system</label><input type="text" id="ncApiName" placeholder="F.eks. AppFabrikk, BookingApp"></div>
+
+          <div class="form-grid">
+            <div class="form-group"><label>Firmanavn *</label><input type="text" id="ncName" placeholder="Firma AS"></div>
+            <div class="form-group" id="ncPwdGroup"><label>Passord til dashboard *</label><input type="password" id="ncPwd" placeholder="Min. 8 tegn"></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>Kontaktperson</label><input type="text" id="ncContact" placeholder="Fornavn Etternavn"></div>
+            <div class="form-group"><label>Kontakttelefon</label><input type="tel" id="ncContactPhone" placeholder="+47 xxx xx xxx"></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>E-post</label><input type="email" id="ncEmail" placeholder="post@firma.no"></div>
+            <div class="form-group"><label>Org.nummer</label><input type="text" id="ncOrg" placeholder="000 000 000"></div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>Adresse</label><input type="text" id="ncAddress" placeholder="Gateveien 1"></div>
+            <div style="display:grid;grid-template-columns:90px 1fr;gap:8px">
+              <div class="form-group"><label>Postnr</label><input type="text" id="ncPostal" maxlength="4" placeholder="0000"></div>
+              <div class="form-group"><label>Sted</label><input type="text" id="ncCity" placeholder="Oslo"></div>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group"><label>Mobilnummer (SMS reset)</label><input type="tel" id="ncPhone" placeholder="+47 xxx xx xxx"></div>
+            <div class="form-group"><label>Maks gateway-enheter</label><input type="number" id="ncMaxDev" value="1" min="1" max="10"></div>
+          </div>
+          <button class="btn btn-green" id="createBtn">Opprett kunde</button>
+
+          <div id="createResult" class="hidden">
+            <hr class="sep">
+            <div class="welcome-box">
+              <div style="color:#34d399;font-weight:600;margin-bottom:8px">✅ Kunde opprettet!</div>
+              <div class="welcome-text" id="welcomeText"></div>
+              <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+                <button class="btn btn-gray btn-sm" id="copyWelcomeBtn">📋 Kopier melding</button>
+                <a id="dashLinkBtn" href="#" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none">🔗 Åpne dashboard</a>
+                <button class="btn btn-gray btn-sm" id="goToCustomerBtn">👤 Åpne kundekortet</button>
+              </div>
+            </div>
+            <div class="qr-box" id="qrSection" style="margin-top:12px">
+              <div style="font-size:13px;font-weight:600;color:#818cf8;margin-bottom:8px">📱 QR-kode for gateway-appen</div>
+              <div id="qrcode"></div>
+              <div style="font-size:12px;color:#475569;margin-top:6px" id="qrExpires"></div>
+              <p style="font-size:11px;color:#334155;margin-top:4px">Engangsbruk · Gyldig 24 timer</p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- SEND TIL KUNDER -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h2 style="margin:0">📤 Send melding til kunder</h2>
-      </div>
-      <p style="font-size:12px;color:#475569;margin-bottom:14px">Send SMS til kontaktpersonens mobilnummer hos én eller flere kunder via gateway-telefonen.</p>
-
-      <div style="margin-bottom:12px">
-        <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Mottakere</div>
-        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-          <button class="btn btn-gray btn-sm" id="selectAllCustomers">✓ Velg alle</button>
-          <button class="btn btn-gray btn-sm" id="selectNoneCustomers">✕ Fjern alle</button>
-        </div>
-        <div id="customerCheckboxes" style="display:flex;flex-direction:column;gap:6px;background:#0a0a0f;border:1px solid #ffffff0f;border-radius:8px;padding:12px;max-height:200px;overflow-y:auto">
-          <div style="color:#475569;font-size:13px">Laster kunder...</div>
-        </div>
-      </div>
-
-      <div style="margin-bottom:12px">
-        <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Melding</div>
-        <textarea id="adminSendBody" rows="4" placeholder="Skriv meldingen her..." style="width:100%;padding:10px 14px;background:#0a0a0f;border:1px solid #ffffff18;border-radius:8px;color:#f8fafc;font-size:14px;font-family:inherit;resize:vertical;line-height:1.5;outline:none"></textarea>
-        <div style="display:flex;justify-content:space-between;margin-top:4px">
-          <span style="font-size:11px;color:#475569">Sendes til kontaktpersonens telefonnummer</span>
-          <span id="adminSendCharCount" style="font-size:11px;color:#475569;font-family:monospace">0 / 160</span>
+      <!-- ── BROADCAST ──────────────────────────────── -->
+      <div class="view" id="view-broadcast">
+        <div class="card">
+          <div class="card-header"><span class="card-title">📢 Send melding til kunder</span></div>
+          <p style="font-size:12px;color:#475569;margin-bottom:14px">Send SMS til kontaktpersonens mobilnummer hos én eller flere kunder.</p>
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Mottakere</div>
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <button class="btn-ghost" id="selectAllBtn">✓ Velg alle</button>
+              <button class="btn-ghost" id="selectNoneBtn">✕ Fjern alle</button>
+            </div>
+            <div id="broadcastCheckboxes" style="background:#0a0a0f;border:1px solid #ffffff0f;border-radius:8px;padding:10px;max-height:200px;overflow-y:auto"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:6px"><label>Melding</label>
+            <textarea id="broadcastBody" rows="4" placeholder="Skriv meldingen..." style="resize:vertical;line-height:1.5"></textarea>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+            <span style="font-size:11px;color:#475569">Sendes til kontakttelefon per kunde</span>
+            <span id="broadcastCount" style="font-size:11px;color:#475569;font-family:monospace">0/160</span>
+          </div>
+          <button class="btn btn-primary" id="broadcastBtn">📤 Send til valgte</button>
+          <div id="broadcastStatus" style="font-size:13px;margin-top:8px;min-height:16px"></div>
         </div>
       </div>
 
-      <button class="btn btn-primary" id="adminSendBtn">📤 Send til valgte kunder</button>
-      <div id="adminSendStatus" style="font-size:13px;margin-top:10px;min-height:16px"></div>
-    </div>
-      <h2>👥 Kunder</h2>
-      <table>
-        <thead><tr><th>Firma</th><th>Dashboard</th><th>Enheter</th><th>Statistikk</th><th>Handlinger</th></tr></thead>
-        <tbody id="tenantsTable"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- INNSTILLINGER MODAL -->
-<div class="modal-overlay hidden" id="settingsModal">
-  <div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <h2 style="margin:0">⚙️ Innstillinger</h2>
-      <button onclick="document.getElementById('settingsModal').classList.add('hidden')" style="background:none;border:none;color:#64748b;font-size:20px;cursor:pointer">✕</button>
-    </div>
-
-    <div style="border-bottom:1px solid #ffffff0f;padding-bottom:20px;margin-bottom:20px">
-      <div style="font-size:11px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">🔑 Endre admin-passord</div>
-      <div class="modal-field"><label>Nåværende passord</label><input type="password" id="curAdminPwd"></div>
-      <div class="modal-field"><label>Nytt passord</label><input type="password" id="newAdminPwd" placeholder="Min. 8 tegn"></div>
-      <div class="modal-field"><label>Bekreft nytt passord</label><input type="password" id="cfmAdminPwd"></div>
-      <button class="btn btn-primary btn-sm" id="changeAdminPwdBtn">Lagre nytt passord</button>
-      <div id="adminPwdStatus" style="font-size:12px;margin-top:8px;min-height:16px"></div>
-    </div>
-
-    <div style="border-bottom:1px solid #ffffff0f;padding-bottom:20px;margin-bottom:20px">
-      <div style="font-size:11px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">📱 Gateway-telefonnummer</div>
-      <p style="font-size:12px;color:#64748b;margin-bottom:10px">Nummeret kunder sender RESET til for å få nytt passord.</p>
-      <div style="display:flex;gap:8px">
-        <input type="tel" id="gatewayPhoneNumber" placeholder="+47 xxx xx xxx" style="flex:1;padding:10px;background:#0a0a0f;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:14px;font-family:inherit;outline:none">
-        <button class="btn btn-primary btn-sm" id="saveGatewayPhoneBtn">Lagre</button>
+      <!-- ── INNSTILLINGER ──────────────────────────── -->
+      <div class="view" id="view-settings">
+        <div style="max-width:560px">
+          <div class="card">
+            <div class="card-header"><span class="card-title">🔑 Endre admin-passord</span></div>
+            <div class="form-grid">
+              <div class="form-group full"><label>Nåværende passord</label><input type="password" id="sCurPwd"></div>
+              <div class="form-group"><label>Nytt passord</label><input type="password" id="sNewPwd" placeholder="Min. 8 tegn"></div>
+              <div class="form-group"><label>Bekreft</label><input type="password" id="sCfmPwd"></div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="savePwdBtn">Lagre passord</button>
+            <div id="pwdStatus" style="font-size:12px;margin-top:8px;min-height:16px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">📱 Gateway-telefonnummer</span></div>
+            <p style="font-size:12px;color:#475569;margin-bottom:12px">Nummeret kunder sender RESET til for nytt passord.</p>
+            <div style="display:flex;gap:8px">
+              <input type="tel" id="sGwPhone" placeholder="+47 xxx xx xxx" style="flex:1;padding:10px;background:#1a1a26;border:1px solid #ffffff18;border-radius:8px;color:#f8fafc;font-size:14px;font-family:inherit;outline:none">
+              <button class="btn btn-primary btn-sm" id="saveGwPhoneBtn">Lagre</button>
+            </div>
+            <div id="gwPhoneStatus" style="font-size:12px;margin-top:6px;min-height:16px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">✉️ Velkomstmelding-mal</span></div>
+            <p style="font-size:12px;color:#475569;margin-bottom:10px">Variabler: {navn}, {slug}, {passord}, {url}</p>
+            <textarea id="sWelcomeTpl" rows="5" style="width:100%;padding:10px;background:#1a1a26;border:1px solid #ffffff18;border-radius:8px;color:#f8fafc;font-size:13px;font-family:monospace;resize:vertical;line-height:1.5;outline:none"></textarea>
+            <button class="btn btn-primary btn-sm" id="saveWelcomeBtn" style="margin-top:8px">Lagre mal</button>
+            <div id="welcomeStatus" style="font-size:12px;margin-top:6px;min-height:16px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">🖥️ Server-info</span></div>
+            <div id="serverInfo" style="background:#0a0a0f;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:#475569;line-height:1.8">Laster...</div>
+          </div>
+        </div>
       </div>
-      <div id="gatewayPhoneStatus" style="font-size:12px;margin-top:6px;min-height:16px"></div>
-    </div>
 
-    <div style="border-bottom:1px solid #ffffff0f;padding-bottom:20px;margin-bottom:20px">
-      <div style="font-size:11px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">✉️ Velkomstmelding-mal</div>
-      <p style="font-size:12px;color:#64748b;margin-bottom:10px">Variabler: {navn}, {slug}, {passord}, {url}</p>
-      <textarea id="welcomeTemplate" rows="5" style="width:100%;padding:10px;background:#0a0a0f;border:1px solid #334155;border-radius:8px;color:#f8fafc;font-size:12px;font-family:monospace;resize:vertical;line-height:1.5;outline:none"></textarea>
-      <button class="btn btn-primary btn-sm" id="saveWelcomeTemplateBtn" style="margin-top:8px">Lagre mal</button>
-      <div id="welcomeTemplateStatus" style="font-size:12px;margin-top:6px;min-height:16px"></div>
-    </div>
-
-    <div>
-      <div style="font-size:11px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">🖥️ Server-info</div>
-      <div id="serverInfo" style="background:#0a0a0f;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:#475569;line-height:1.8">Laster...</div>
-    </div>
-  </div>
-</div>
-
-<!-- REDIGER KUNDE MODAL -->
-<div class="modal-overlay hidden" id="editModal">
-  <div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <h2 style="margin:0">✏️ Rediger kunde</h2>
-      <button onclick="document.getElementById('editModal').classList.add('hidden')" style="background:none;border:none;color:#64748b;font-size:20px;cursor:pointer">✕</button>
-    </div>
-    <div class="modal-grid">
-      <div class="modal-field"><label>Firmanavn *</label><input type="text" id="editName"></div>
-      <div class="modal-field"><label>E-post</label><input type="email" id="editEmail"></div>
-      <div class="modal-field"><label>Kontaktperson</label><input type="text" id="editContactPerson"></div>
-      <div class="modal-field"><label>Kontakttelefon</label><input type="tel" id="editContactPhone"></div>
-      <div class="modal-field" style="grid-column:1/-1"><label>Adresse</label><input type="text" id="editAddress"></div>
-      <div class="modal-field"><label>Postnr</label><input type="text" id="editPostalCode"></div>
-      <div class="modal-field"><label>Sted</label><input type="text" id="editCity"></div>
-      <div class="modal-field"><label>Org.nummer</label><input type="text" id="editOrgNumber"></div>
-      <div class="modal-field"><label>Mobilnummer (SMS reset)</label><input type="tel" id="editPhone"></div>
-      <div class="modal-field"><label>Maks gateway-enheter</label><input type="number" id="editMaxDevices" min="1" max="10"></div>
-      <div class="modal-field" style="grid-column:1/-1"><label>Nytt passord (la stå tomt for å beholde)</label><input type="password" id="editPwd" placeholder="Min. 8 tegn"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-green" id="saveEditBtn" style="flex:1">Lagre</button>
-      <button class="btn btn-gray" onclick="document.getElementById('editModal').classList.add('hidden')">Avbryt</button>
-    </div>
-    <div id="editErr" style="color:#f87171;font-size:13px;margin-top:8px"></div>
-  </div>
-</div>
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
 
 <div id="toast"></div>
 
 <script>
-var adminToken = localStorage.getItem('admin_token') || '';
 var BASE = window.location.origin;
-var lastWelcome = '';
-var currentTenantId = '';
+var adminToken = localStorage.getItem('admin_token') || '';
+var activeGwId = localStorage.getItem('active_gw_id') || '';
+var activeGwSlug = localStorage.getItem('active_gw_slug') || '';
+var activeGwName = localStorage.getItem('active_gw_name') || '';
+var activeGwToken = localStorage.getItem('active_gw_token') || '';
+var allTenants = [];
+var currentCustomerId = '';
+var prevView = '';
 
+// ── API HELPERS ──────────────────────────────────────────────────
 function adminApi(path, opts) {
   opts = opts || {};
   return fetch(BASE + path, Object.assign({}, opts, {
-    headers: Object.assign({'Content-Type':'application/json','X-Admin-Token':adminToken}, opts.headers||{})
-  })).then(function(r){return r.json();});
+    headers: Object.assign({ 'Content-Type': 'application/json', 'X-Admin-Token': adminToken }, opts.headers || {})
+  })).then(function(r) { return r.json(); });
 }
-
+function customerApi(path, opts) {
+  opts = opts || {};
+  return fetch(BASE + '/kunde/' + activeGwSlug + path, Object.assign({}, opts, {
+    headers: Object.assign({ 'Content-Type': 'application/json', 'X-Session-Token': activeGwToken }, opts.headers || {})
+  })).then(function(r) { return r.json(); });
+}
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function toast(msg, type) {
   var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show ' + (type||'ok');
-  clearTimeout(t._t);
-  t._t = setTimeout(function(){t.className='';}, 3000);
+  t.textContent = msg; t.className = 'show ' + (type || 'ok');
+  clearTimeout(t._t); t._t = setTimeout(function() { t.className = ''; }, 3000);
 }
-
 function timeAgo(ts) {
-  var d = Math.floor((Date.now()-parseInt(ts))/1000);
-  if(d<60) return d+'s siden';
-  if(d<3600) return Math.floor(d/60)+'m siden';
-  if(d<86400) return Math.floor(d/3600)+'t siden';
-  return new Date(parseInt(ts)).toLocaleString('nb-NO');
+  var d = Math.floor((Date.now() - parseInt(ts)) / 1000);
+  if (d < 60) return d + 's siden';
+  if (d < 3600) return Math.floor(d / 60) + 'm siden';
+  if (d < 86400) return Math.floor(d / 3600) + 't siden';
+  return new Date(parseInt(ts)).toLocaleDateString('nb-NO');
 }
 
-// LOGIN
+// ── NAVIGATION ───────────────────────────────────────────────────
+var pageTitles = {
+  'dashboard': 'Dashboard', 'gateway': 'Gateway-status',
+  'inbox': 'Innboks', 'send': 'Send SMS',
+  'dash-customers': 'Dashboard-kunder', 'api-customers': 'API-kunder',
+  'new-customer': 'Ny kunde', 'customer-detail': '',
+  'broadcast': 'Send til kunder', 'settings': 'Innstillinger'
+};
+
+function switchView(name, fromNav) {
+  document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(b) { b.classList.remove('active'); });
+  var el = document.getElementById('view-' + name);
+  if (el) el.classList.add('active');
+  var btn = document.querySelector('.nav-item[data-view="' + name + '"]');
+  if (btn) btn.classList.add('active');
+  document.getElementById('pageTitle').textContent = pageTitles[name] || name;
+  if (name === 'dashboard') { loadDashboard(); }
+  if (name === 'gateway') { loadGatewayStatus(); }
+  if (name === 'inbox') { loadActiveInbox(); }
+  if (name === 'send') { loadSendContacts(); }
+  if (name === 'dash-customers') { renderCustomerList('dashboard'); }
+  if (name === 'api-customers') { renderCustomerList('api'); }
+  if (name === 'broadcast') { renderBroadcastList(); }
+  if (name === 'settings') { loadSettings(); }
+}
+
+document.querySelectorAll('.nav-item[data-view]').forEach(function(btn) {
+  btn.addEventListener('click', function() { switchView(this.getAttribute('data-view'), true); });
+});
+
+// ── LOGIN ────────────────────────────────────────────────────────
 function adminLogin() {
   var pwd = document.getElementById('adminPwd').value;
   document.getElementById('loginErr').textContent = '';
-  fetch(BASE+'/admin/login', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({password:pwd})
-  }).then(function(r){return r.json();}).then(function(res){
-    if(res.token) {
-      adminToken = res.token;
-      localStorage.setItem('admin_token', adminToken);
-      showAdmin();
-    } else {
-      document.getElementById('loginErr').textContent = 'Feil passord';
-    }
-  }).catch(function(){
-    document.getElementById('loginErr').textContent = 'Feil — sjekk tilkobling';
-  });
-}
-
-function adminLogout() {
-  localStorage.removeItem('admin_token');
-  adminToken = '';
-  document.getElementById('adminView').classList.add('hidden');
-  document.getElementById('loginView').classList.remove('hidden');
-}
-
-function showAdmin() {
-  document.getElementById('loginView').classList.add('hidden');
-  document.getElementById('adminView').classList.remove('hidden');
-  init();
-}
-
-document.getElementById('forgotAdminBtn').addEventListener('click', function(){
-  document.getElementById('loginView').querySelector('.login-box').classList.add('hidden');
-  document.getElementById('resetAdminBox').classList.remove('hidden');
-});
-
-document.getElementById('backToAdminLoginBtn').addEventListener('click', function(){
-  document.getElementById('resetAdminBox').classList.add('hidden');
-  document.getElementById('loginView').querySelector('.login-box').classList.remove('hidden');
-  document.getElementById('resetAdminErr').textContent='';
-});
-
-document.getElementById('doResetAdminBtn').addEventListener('click', function(){
-  var cur = document.getElementById('resetCurPwd1').value;
-  var nw = document.getElementById('resetNewPwd1').value;
-  var cf = document.getElementById('resetCfmPwd1').value;
-  var err = document.getElementById('resetAdminErr');
-  if(!nw||nw.length<8){err.textContent='Minimum 8 tegn';return;}
-  if(nw!==cf){err.textContent='Passordene er ikke like';return;}
-  // Logg inn med gammelt passord og bytt
-  fetch(BASE+'/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:cur})})
-  .then(function(r){return r.json();}).then(function(res){
-    if(!res.token){err.textContent='Feil nåværende passord';return;}
-    var tmpToken = res.token;
-    fetch(BASE+'/admin/settings/password',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':tmpToken},body:JSON.stringify({currentPassword:cur,newPassword:nw})})
-    .then(function(r){return r.json();}).then(function(res2){
-      if(res2.success){
-        document.getElementById('resetAdminBox').classList.add('hidden');
-        document.getElementById('loginView').querySelector('.login-box').classList.remove('hidden');
-        document.getElementById('loginErr').style.color='#34d399';
-        document.getElementById('loginErr').textContent='✓ Passord endret! Logg inn med nytt passord.';
-        document.getElementById('resetCurPwd1').value='';
-        document.getElementById('resetNewPwd1').value='';
-        document.getElementById('resetCfmPwd1').value='';
+  fetch(BASE + '/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) })
+    .then(function(r) { return r.json(); }).then(function(res) {
+      if (res.token) {
+        adminToken = res.token;
+        localStorage.setItem('admin_token', adminToken);
+        showApp();
       } else {
-        err.textContent=res2.error||'Feil';
+        document.getElementById('loginErr').textContent = '✕ Feil passord';
       }
-    });
-  });
-});
-
+    }).catch(function() { document.getElementById('loginErr').textContent = '✕ Feil — sjekk tilkobling'; });
+}
 document.getElementById('loginBtn').addEventListener('click', adminLogin);
-document.getElementById('adminPwd').addEventListener('keydown', function(e){
-  if(e.key==='Enter') adminLogin();
+document.getElementById('adminPwd').addEventListener('keydown', function(e) { if (e.key === 'Enter') adminLogin(); });
+document.getElementById('forgotBtn').addEventListener('click', function() {
+  document.getElementById('loginBox').classList.add('hidden');
+  document.getElementById('resetBox').classList.remove('hidden');
+});
+document.getElementById('backLoginBtn').addEventListener('click', function() {
+  document.getElementById('resetBox').classList.add('hidden');
+  document.getElementById('loginBox').classList.remove('hidden');
+});
+document.getElementById('doResetBtn').addEventListener('click', function() {
+  var cur = document.getElementById('resetCur').value;
+  var nw = document.getElementById('resetNew').value;
+  var cf = document.getElementById('resetCfm').value;
+  var err = document.getElementById('resetErr');
+  if (!nw || nw.length < 8) { err.textContent = '✕ Min. 8 tegn'; return; }
+  if (nw !== cf) { err.textContent = '✕ Passordene er ikke like'; return; }
+  fetch(BASE + '/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: cur }) })
+    .then(function(r) { return r.json(); }).then(function(res) {
+      if (!res.token) { err.textContent = '✕ Feil nåværende passord'; return; }
+      var tmp = res.token;
+      fetch(BASE + '/admin/settings/password', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': tmp }, body: JSON.stringify({ currentPassword: cur, newPassword: nw }) })
+        .then(function(r) { return r.json(); }).then(function(r2) {
+          if (r2.success) {
+            document.getElementById('resetBox').classList.add('hidden');
+            document.getElementById('loginBox').classList.remove('hidden');
+            document.getElementById('loginErr').style.color = '#34d399';
+            document.getElementById('loginErr').textContent = '✓ Passord endret! Logg inn med nytt.';
+          } else { err.textContent = '✕ ' + (r2.error || 'Feil'); }
+        });
+    });
+});
+document.getElementById('logoutNavBtn').addEventListener('click', function() {
+  localStorage.removeItem('admin_token'); adminToken = '';
+  document.getElementById('appWrap').classList.add('hidden');
+  document.getElementById('loginWrap').classList.remove('hidden');
 });
 
-// SERVER STATUS
-function checkServerStatus() {
-  fetch(BASE+'/').then(function(r){
-    document.getElementById('statusDot').className = 'status-dot';
-    document.getElementById('statusText').textContent = 'Server kjører';
-  }).catch(function(){
-    document.getElementById('statusDot').className = 'status-dot offline';
-    document.getElementById('statusText').textContent = 'Utilgjengelig';
+function showApp() {
+  document.getElementById('loginWrap').classList.add('hidden');
+  document.getElementById('appWrap').classList.remove('hidden');
+  loadAllTenants();
+  checkServer();
+  updateActiveGwUI();
+  setInterval(function() { checkServer(); loadGwPing(); if (activeGwToken) loadActiveInbox(); }, 15000);
+}
+
+// ── SERVER CHECK ─────────────────────────────────────────────────
+function checkServer() {
+  fetch(BASE + '/').then(function(r) {
+    var d = document.getElementById('gwDot');
+    var t = document.getElementById('gwPillText');
+    var pill = document.getElementById('gwPill');
+    d.className = 'gw-dot'; t.textContent = 'Server online'; pill.className = 'gateway-pill';
+  }).catch(function() {
+    document.getElementById('gwDot').className = 'gw-dot offline';
+    document.getElementById('gwPillText').textContent = 'Server offline';
+    document.getElementById('gwPill').className = 'gateway-pill offline';
   });
 }
 
-// TENANTS
-function loadTenants() {
+// ── TENANTS ──────────────────────────────────────────────────────
+function loadAllTenants() {
   adminApi('/admin/tenants').then(function(data) {
-    if(!Array.isArray(data)) return;
-    var totI=0,totS=0;
-    data.forEach(function(t){totI+=t.stats.inbound;totS+=t.stats.sent;});
-    document.getElementById('adminStats').innerHTML =
-      '<div class="stat"><div class="num">'+data.length+'</div><div class="lbl">Kunder</div></div>'+
-      '<div class="stat"><div class="num">'+totI+'</div><div class="lbl">Totalt innkommende</div></div>'+
-      '<div class="stat"><div class="num">'+totS+'</div><div class="lbl">Totalt sendte</div></div>';
+    if (!Array.isArray(data)) return;
+    allTenants = data;
+    populateGwSelect();
+    updateCounts();
+    renderDashboardPreviews();
+    renderBroadcastList();
+  });
+}
 
-    allTenantsCache = data;
-    updateGatewaySelect(data);
+function updateCounts() {
+  var dash = allTenants.filter(function(t) { return !t.isApiClient; });
+  var api = allTenants.filter(function(t) { return t.isApiClient; });
+  document.getElementById('dashCount').textContent = dash.length;
+  document.getElementById('apiCount').textContent = api.length;
+}
 
-    // Oppdater kunde-avkrysningsbokser
-    var cb = document.getElementById('customerCheckboxes');
-    if(data.length) {
-      cb.innerHTML = data.map(function(t){
-        var phone = t.contactPhone || t.phoneNumber;
-        return '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0;border-bottom:1px solid #ffffff0f">'+
-          '<input type="checkbox" class="customer-cb" value="'+t.id+'" style="accent-color:#6366f1;width:14px;height:14px">'+
-          '<span style="flex:1">'+
-            '<strong style="font-size:13px">'+t.name+'</strong>'+
-            (phone?'<span style="color:#475569;font-size:11px;margin-left:8px">📱 '+phone+'</span>':'<span style="color:#ef4444;font-size:11px;margin-left:8px">⚠ Ingen telefon</span>')+
-          '</span>'+
-        '</label>';
-      }).join('');
-    } else {
-      cb.innerHTML = '<div style="color:#475569;font-size:13px">Ingen kunder</div>';
-    }
+function renderDashboardPreviews() {
+  var dash = allTenants.filter(function(t) { return !t.isApiClient; }).slice(0, 4);
+  var api = allTenants.filter(function(t) { return t.isApiClient; }).slice(0, 4);
+  document.getElementById('dashCustomerPreview').innerHTML = dash.length
+    ? dash.map(function(t) { return customerMini(t); }).join('') + (allTenants.filter(function(t){return !t.isApiClient;}).length > 4 ? '<div style="text-align:center;padding:8px"><button class="btn-ghost" onclick="switchView(\'dash-customers\')">Se alle '+allTenants.filter(function(t){return !t.isApiClient;}).length+' →</button></div>' : '')
+    : '<div style="color:#475569;font-size:13px;padding:8px">Ingen dashboard-kunder ennå</div>';
+  document.getElementById('apiCustomerPreview').innerHTML = api.length
+    ? api.map(function(t) { return customerMini(t); }).join('') + (allTenants.filter(function(t){return t.isApiClient;}).length > 4 ? '<div style="text-align:center;padding:8px"><button class="btn-ghost" onclick="switchView(\'api-customers\')">Se alle '+allTenants.filter(function(t){return t.isApiClient;}).length+' →</button></div>' : '')
+    : '<div style="color:#475569;font-size:13px;padding:8px">Ingen API-kunder ennå</div>';
+}
 
-    if(!data.length) {
-      document.getElementById('tenantsTable').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#475569;padding:32px">Ingen kunder ennå</td></tr>';
+function customerMini(t) {
+  return '<div class="customer-card" onclick="openCustomerDetail(\'' + t.id + '\')">' +
+    '<div><div class="name">' + esc(t.name) + '</div>' +
+    '<div class="meta">' + (t.contactPerson ? '👤 ' + esc(t.contactPerson) + ' · ' : '') + '↓' + t.stats.inbound + ' ↑' + t.stats.sent + '</div></div>' +
+    '<div class="right">' +
+    (t.isApiClient ? '<span class="type-badge api">🔌 API</span>' : '<span class="type-badge dash">👤 Dashboard</span>') +
+    '<span style="color:#334155;font-size:14px">›</span></div></div>';
+}
+
+function renderCustomerList(type) {
+  var list = allTenants.filter(function(t) { return type === 'api' ? t.isApiClient : !t.isApiClient; });
+  var el = document.getElementById(type === 'api' ? 'apiCustomerList' : 'dashCustomerList');
+  if (!list.length) {
+    el.innerHTML = '<div class="card"><div style="text-align:center;color:#475569;padding:32px">' +
+      (type === 'api' ? 'Ingen API-kunder ennå.' : 'Ingen dashboard-kunder ennå.') +
+      ' <button class="btn-ghost" onclick="switchView(\'new-customer\')" style="margin-left:8px">➕ Opprett ny</button></div></div>';
+    return;
+  }
+  el.innerHTML = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px">' +
+    '<button class="btn btn-green btn-sm" onclick="switchView(\'new-customer\')">➕ Ny kunde</button></div>' +
+    list.map(function(t) {
+      return '<div class="customer-card" onclick="openCustomerDetail(\'' + t.id + '\')">' +
+        '<div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+        '<span class="name">' + esc(t.name) + '</span>' +
+        (t.isApiClient ? '<span class="type-badge api">🔌 API</span>' : '<span class="type-badge dash">👤 Dashboard</span>') +
+        (t.isApiClient && t.apiClientName ? '<span style="font-size:12px;color:#818cf8">↔ ' + esc(t.apiClientName) + '</span>' : '') +
+        '</div>' +
+        '<div class="meta">' +
+        (t.contactPerson ? '👤 ' + esc(t.contactPerson) + ' · ' : '') +
+        (t.email ? '✉️ ' + esc(t.email) + ' · ' : '') +
+        (t.city ? '📍 ' + esc(t.city) + ' · ' : '') +
+        '↓' + t.stats.inbound + ' mottatt · ↑' + t.stats.sent + ' sendt' +
+        (t.stats.pending > 0 ? ' · ⏳' + t.stats.pending + ' kø' : '') +
+        '</div></div>' +
+        '<div class="right"><span style="color:#334155;font-size:18px">›</span></div></div>';
+    }).join('');
+}
+
+// ── CUSTOMER DETAIL ──────────────────────────────────────────────
+function openCustomerDetail(id) {
+  var t = allTenants.find(function(x) { return x.id === id; });
+  if (!t) return;
+  currentCustomerId = id;
+  prevView = document.querySelector('.view.active') ? document.querySelector('.view.active').id.replace('view-', '') : 'dashboard';
+  document.getElementById('detailName').textContent = t.name;
+  document.getElementById('detailType').textContent = t.isApiClient ? '🔌 API-klient' + (t.apiClientName ? ' — ' + t.apiClientName : '') : '👤 Dashboard-kunde · /kunde/' + t.slug;
+  document.getElementById('devicesTabBtn').style.display = t.isApiClient ? 'none' : '';
+
+  // Tabs
+  document.querySelectorAll('.detail-tab').forEach(function(tab) { tab.classList.remove('active'); });
+  document.querySelectorAll('.detail-pane').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelector('.detail-tab[data-tab="info"]').classList.add('active');
+  document.getElementById('pane-info').classList.add('active');
+
+  renderInfoPane(t);
+  renderApiPane(t);
+  renderDangerPane(t);
+  loadDetailMessages(t);
+  if (!t.isApiClient) loadDetailDevices(t);
+
+  switchView('customer-detail');
+  pageTitles['customer-detail'] = t.name;
+  document.getElementById('pageTitle').textContent = t.name;
+}
+
+document.getElementById('backFromDetail').addEventListener('click', function() {
+  switchView(prevView || 'dashboard');
+});
+
+document.querySelectorAll('.detail-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.detail-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.detail-pane').forEach(function(p) { p.classList.remove('active'); });
+    this.classList.add('active');
+    document.getElementById('pane-' + this.getAttribute('data-tab')).classList.add('active');
+  });
+});
+
+function infoRow(label, val, mono) {
+  return '<div class="info-field"><label>' + label + '</label><div class="val' + (mono ? ' mono' : '') + (val ? '' : ' muted') + '">' + esc(val || '—') + '</div></div>';
+}
+
+function renderInfoPane(t) {
+  var el = document.getElementById('pane-info');
+  el.innerHTML =
+    '<div class="info-grid" style="margin-bottom:16px">' +
+      infoRow('Firmanavn', t.name) +
+      infoRow('Slug', t.slug, true) +
+      infoRow('Kontaktperson', t.contactPerson) +
+      infoRow('Kontakttelefon', t.contactPhone) +
+      infoRow('E-post', t.email) +
+      infoRow('Org.nummer', t.orgNumber) +
+      infoRow('Adresse', t.address) +
+      infoRow('Postnr / Sted', t.postalCode && t.city ? t.postalCode + ' ' + t.city : (t.city || '')) +
+      infoRow('Mobilnummer (reset)', t.phoneNumber) +
+      infoRow('Opprettet', t.createdAt ? new Date(parseInt(t.createdAt)).toLocaleDateString('nb-NO') : '') +
+    '</div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      '<button class="btn btn-gray btn-sm" onclick="openEditModal(\'' + t.id + '\')">✏️ Rediger info</button>' +
+      (!t.isApiClient ? '<a href="/kunde/' + t.slug + '/dashboard" target="_blank" class="btn btn-gray btn-sm" style="text-decoration:none">🔗 Åpne dashboard</a>' : '') +
+    '</div>';
+}
+
+function renderApiPane(t) {
+  var base = BASE;
+  document.getElementById('pane-api').innerHTML =
+    '<div class="api-box">' +
+      '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Konfigurasjon</div>' +
+      apiRow2('SMS_GATEWAY_URL', base) +
+      apiRow2('SMS_GATEWAY_API_KEY', t.apiKey) +
+      apiRow2('Authorization', 'Bearer ' + t.apiKey) +
+    '</div>' +
+    '<div class="api-box">' +
+      '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Endepunkter</div>' +
+      epRow2('POST', '/api/3rdparty/v1/message', 'Send SMS') +
+      epRow2('GET', '/api/3rdparty/v1/messages/sent', 'Hent sendte') +
+      epRow2('GET', '/api/3rdparty/v1/messages/inbox', 'Hent innkommende') +
+      epRow2('GET', '/api/3rdparty/v1/messages/{id}', 'Sjekk status') +
+    '</div>' +
+    '<div class="api-box">' +
+      '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Eksempel — Send SMS</div>' +
+      '<pre style="font-family:monospace;font-size:11px;color:#94a3b8;white-space:pre-wrap;line-height:1.7">POST ' + base + '/api/3rdparty/v1/message\nAuthorization: Bearer ' + t.apiKey + '\nContent-Type: application/json\n\n{\n  "to": "+4799887766",\n  "message": "Din time er bekreftet kl. 14:00"\n}</pre>' +
+    '</div>' +
+    '<button class="btn btn-gray btn-sm" onclick="regenApiKey(\'' + t.id + '\',\'' + esc(t.name) + '\')">↻ Regenerer API-nøkkel</button>';
+}
+
+function apiRow2(label, val) {
+  return '<div class="api-row">' +
+    '<span class="key">' + label + '</span>' +
+    '<div style="display:flex;align-items:center;gap:8px">' +
+      '<span class="val">' + esc(val) + '</span>' +
+      '<button onclick="navigator.clipboard.writeText(\'' + esc(val) + '\')" class="btn-ghost" style="padding:3px 8px;font-size:10px">Kopier</button>' +
+    '</div></div>';
+}
+function epRow2(method, path, desc) {
+  var c = {POST:'#818cf8',GET:'#34d399'};
+  return '<div class="api-row">' +
+    '<span style="font-family:monospace;font-size:11px;font-weight:600;color:' + (c[method]||'#818cf8') + ';min-width:40px">' + method + '</span>' +
+    '<span style="font-family:monospace;font-size:11px;color:#94a3b8;flex:1">' + path + '</span>' +
+    '<span style="font-size:11px;color:#475569">' + desc + '</span></div>';
+}
+
+function loadDetailMessages(t) {
+  adminApi('/admin/tenants/' + t.id + '/messages?limit=30').then(function(data) {
+    if (!Array.isArray(data)) { document.getElementById('pane-messages').innerHTML = '<div style="color:#475569;padding:16px">Ingen meldinger</div>'; return; }
+    document.getElementById('pane-messages').innerHTML = data.length
+      ? '<table><thead><tr><th>Retning</th><th>Nummer</th><th>Melding</th><th>Status</th><th>Tidspunkt</th></tr></thead><tbody>' +
+        data.map(function(m) {
+          var dir = m.direction === 'inbound' ? '↓ Inn' : '↑ Ut';
+          var dc = m.direction === 'inbound' ? '#34d399' : '#818cf8';
+          var sc = m.status === 'sent' ? '#34d399' : m.status === 'failed' ? '#ef4444' : '#fbbf24';
+          return '<tr><td style="color:'+dc+';font-weight:600">'+dir+'</td><td style="font-family:monospace;font-size:12px">'+(m.fromNumber||m.toNumber||'—')+'</td><td style="max-width:240px;font-size:12px">'+esc(m.body||'')+'</td><td style="color:'+sc+';font-size:12px">'+m.status+'</td><td style="font-size:12px;color:#475569;white-space:nowrap">'+timeAgo(m.createdAt)+'</td></tr>';
+        }).join('') + '</tbody></table>'
+      : '<div style="color:#475569;padding:16px">Ingen meldinger ennå</div>';
+  });
+}
+
+function loadDetailDevices(t) {
+  adminApi('/admin/tenants/' + t.id + '/devices').then(function(devices) {
+    var el = document.getElementById('pane-devices');
+    if (!devices.length) {
+      el.innerHTML = '<div style="color:#475569;padding:16px">Ingen enheter registrert.</div>' +
+        '<button class="btn btn-blue btn-sm" onclick="genQrForTenant(\'' + t.id + '\',\'' + esc(t.name) + '\')">📱 Generer QR-kode</button>';
       return;
     }
-    document.getElementById('tenantsTable').innerHTML = data.map(function(t) {
-      var isApi = t.isApiClient;
-      var badge = isApi
-        ? '<span style="background:#6366f120;color:#818cf8;border:1px solid #6366f140;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;margin-left:6px">🔌 API</span>'
-        : '<span style="background:#34d39920;color:#34d399;border:1px solid #34d39940;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;margin-left:6px">👤 Dashboard</span>';
-      return '<tr style="'+(isApi?'background:#6366f108':'')+'">' +
-        '<td><strong>'+t.name+'</strong>'+badge+
-        (isApi && t.apiClientName ? '<br><span style="color:#818cf8;font-size:12px">↔ '+t.apiClientName+'</span>' : '') +
-        (t.contactPerson?'<br><span style="color:#94a3b8;font-size:12px">👤 '+t.contactPerson+'</span>':'')+
-        (t.email?'<br><span style="color:#475569;font-size:11px">✉️ '+t.email+'</span>':'')+
-        (t.city?'<br><span style="color:#475569;font-size:11px">📍 '+(t.postalCode?t.postalCode+' ':'')+t.city+'</span>':'')+
-        '</td>'+
-        '<td>'+(isApi
-          ? '<div style="background:#0a0a0f;border:1px solid #6366f130;border-radius:8px;padding:8px 10px">' +
-            '<div style="color:#818cf8;font-weight:600;font-size:11px;margin-bottom:4px">🔌 API-endepunkter</div>' +
-            '<div style="font-family:monospace;font-size:10px;color:#64748b;line-height:1.8">' +
-            'POST /api/3rdparty/v1/message<br>' +
-            'GET &nbsp;/api/3rdparty/v1/messages/sent<br>' +
-            'GET &nbsp;/api/3rdparty/v1/messages/inbox</div></div>'
-          : '<a href="/kunde/'+t.slug+'/dashboard" target="_blank" style="color:#818cf8;font-size:13px">/kunde/'+t.slug+'</a>'+
-            (t.phoneNumber?'<br><span style="color:#475569;font-size:11px">📱 '+t.phoneNumber+'</span>':''))+
-        '</td>'+
-        '<td id="dev-'+t.id+'"><span style="color:#475569">'+(isApi?'—':'Laster...')+'</span></td>'+
-        '<td><span style="color:#34d399">↓'+t.stats.inbound+'</span> <span style="color:#818cf8">↑'+t.stats.sent+'</span>'+
-        (t.stats.pending>0?' <span style="color:#fbbf24">⏳'+t.stats.pending+'</span>':'')+
-        '</td>'+
-        '<td><div style="display:flex;flex-direction:column;gap:5px">'+
-          (isApi ? '' : '<button class="btn btn-blue btn-sm" onclick="generateQr(\''+t.id+'\',\''+t.name+'\')">📱 QR-kode</button>')+
-          '<button class="btn btn-gray btn-sm" onclick="showApiInfo(\''+t.id+'\',\''+t.name+'\',\''+t.apiKey+'\',\''+t.slug+'\')">🔑 API-info</button>'+
-          '<button class="btn btn-gray btn-sm" onclick="openEdit(\''+t.id+'\')">✏️ Rediger</button>'+
-          '<button class="btn btn-gray btn-sm" onclick="regenKey(\''+t.id+'\',\''+t.name+'\')">↻ Ny nøkkel</button>'+
-          '<button class="btn btn-danger btn-sm" onclick="deleteTenant(\''+t.id+'\',\''+t.name+'\')">🗑 Slett</button>'+
-        '</div></td>'+
-      '</tr>';
-    }).join('');
-    data.forEach(function(t){loadDevices(t.id);});
-  });
-}
-
-var tenantsCache = [];
-function loadTenantsWithCache() {
-  adminApi('/admin/tenants').then(function(data){
-    if(Array.isArray(data)) tenantsCache = data;
-    loadTenants();
-  });
-}
-
-function loadDevices(tenantId) {
-  adminApi('/admin/tenants/'+tenantId+'/devices').then(function(devices){
-    var el = document.getElementById('dev-'+tenantId);
-    if(!el) return;
-    if(!devices.length){el.innerHTML='<span style="color:#475569;font-size:12px">Ingen enheter</span>';return;}
-    el.innerHTML = devices.map(function(d){
-      var online = d.last_seen && (Date.now()-parseInt(d.last_seen)) < 120000;
-      return '<div class="device-item">'+
-        '<span><span class="device-dot'+(online?'':' offline')+'"></span>'+(d.device_name||'Ukjent')+'</span>'+
-        '<button class="btn btn-danger btn-sm" style="font-size:10px;padding:3px 8px" onclick="deleteDevice(\''+d.id+'\',\''+tenantId+'\')">Fjern</button>'+
-        '</div>';
+    el.innerHTML = devices.map(function(d) {
+      var online = d.last_seen && (Date.now() - parseInt(d.last_seen)) < 120000;
+      var warn = d.last_seen && (Date.now() - parseInt(d.last_seen)) < 600000;
+      var cls = online ? 'online' : warn ? 'warn' : 'offline';
+      var dot = online ? '' : warn ? 'warn' : 'offline';
+      return '<div class="gw-card ' + cls + '">' +
+        '<div><div style="font-weight:600;font-size:14px"><span class="gw-dot ' + dot + '" style="margin-right:8px"></span>' + esc(d.device_name || 'Ukjent enhet') + '</div>' +
+        '<div style="font-size:11px;color:#475569;margin-top:3px">Sist sett: ' + (d.last_seen ? timeAgo(d.last_seen) : 'Aldri') + ' · Batteri: ' + (d.battery_level ? d.battery_level + '%' : '—') + ' · Nett: ' + (d.network_type || '—') + '</div></div>' +
+        '<div style="display:flex;gap:8px">' +
+        '<button class="btn btn-blue btn-sm" onclick="genQrForTenant(\'' + t.id + '\',\'' + esc(t.name) + '\')">📱 Ny QR</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="deleteDevice(\'' + d.id + '\',\'' + t.id + '\')">Fjern</button></div></div>';
     }).join('');
   });
 }
 
-// QR
-function showApiInfo(id, name, apiKey, slug) {
-  var existing = document.getElementById('apiInfoModal');
-  if (existing) existing.remove();
-  var modal = document.createElement('div');
-  modal.id = 'apiInfoModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px';
-  var base = window.location.origin;
-  modal.innerHTML =
-    '<div style="background:#12121a;border:1px solid #6366f130;border-radius:16px;padding:28px;width:560px;max-width:100%">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
-        '<div>' +
-          '<h2 style="color:#f8fafc;font-size:17px;margin:0">🔌 API-tilkobling</h2>' +
-          '<div style="color:#818cf8;font-size:12px;margin-top:3px">'+name+'</div>' +
+function renderDangerPane(t) {
+  document.getElementById('pane-danger').innerHTML =
+    '<div class="card" style="border-color:#ef444430">' +
+      '<div class="card-header"><span class="card-title" style="color:#f87171">⚠️ Farlig sone</span></div>' +
+      '<div style="display:flex;flex-direction:column;gap:10px">' +
+        '<div style="background:#0a0a0f;border:1px solid #ffffff0f;border-radius:8px;padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
+          '<div><div style="font-size:13px;font-weight:600;color:#f8fafc">Endre passord</div><div style="font-size:12px;color:#64748b;margin-top:2px">Sett nytt innloggingspassord for dashboardet</div></div>' +
+          '<button class="btn btn-gray btn-sm" onclick="openChangePwdModal(\'' + t.id + '\',\'' + esc(t.name) + '\')">Endre passord</button>' +
         '</div>' +
-        '<button onclick="document.getElementById(\'apiInfoModal\').remove()" style="background:none;border:none;color:#64748b;font-size:20px;cursor:pointer">✕</button>' +
+        '<div style="background:#0a0a0f;border:1px solid #ffffff0f;border-radius:8px;padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
+          '<div><div style="font-size:13px;font-weight:600;color:#f8fafc">Regenerer API-nøkkel</div><div style="font-size:12px;color:#64748b;margin-top:2px">Den gamle nøkkelen slutter umiddelbart å fungere</div></div>' +
+          '<button class="btn btn-gray btn-sm" onclick="regenApiKey(\'' + t.id + '\',\'' + esc(t.name) + '\')">↻ Ny nøkkel</button>' +
+        '</div>' +
+        '<div style="background:#ef444410;border:1px solid #ef444430;border-radius:8px;padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
+          '<div><div style="font-size:13px;font-weight:600;color:#f87171">Slett kunde</div><div style="font-size:12px;color:#64748b;margin-top:2px">Alle meldinger og data slettes permanent</div></div>' +
+          '<button class="btn btn-danger btn-sm" onclick="deleteTenant(\'' + t.id + '\',\'' + esc(t.name) + '\')">🗑 Slett</button>' +
+        '</div>' +
       '</div>' +
-
-      '<div style="background:#0a0a0f;border:1px solid #ffffff0f;border-radius:10px;padding:14px;margin-bottom:14px">' +
-        '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Konfigurasjon</div>' +
-        row('SMS_GATEWAY_URL', base) +
-        row('SMS_GATEWAY_API_KEY', apiKey) +
-        row('Auth-header', 'Authorization: Bearer ' + apiKey) +
-      '</div>' +
-
-      '<div style="background:#0a0a0f;border:1px solid #ffffff0f;border-radius:10px;padding:14px;margin-bottom:14px">' +
-        '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Endepunkter</div>' +
-        epRow('POST', base + '/api/3rdparty/v1/message', 'Send SMS') +
-        epRow('GET',  base + '/api/3rdparty/v1/messages/sent', 'Hent sendte') +
-        epRow('GET',  base + '/api/3rdparty/v1/messages/inbox', 'Hent innkommende') +
-        epRow('GET',  base + '/api/3rdparty/v1/messages/{id}', 'Sjekk status') +
-      '</div>' +
-
-      '<div style="background:#0a0a0f;border:1px solid #ffffff0f;border-radius:10px;padding:14px;margin-bottom:16px">' +
-        '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Eksempel — Send SMS</div>' +
-        '<pre style="font-family:monospace;font-size:11px;color:#94a3b8;white-space:pre-wrap;line-height:1.7">POST '+base+'/api/3rdparty/v1/message\nAuthorization: Bearer '+apiKey+'\nContent-Type: application/json\n\n{\n  "to": "+4799887766",\n  "message": "Din time er bekreftet kl 14:00"\n}</pre>' +
-      '</div>' +
-
-      '<button onclick="document.getElementById(\'apiInfoModal\').remove()" class="btn btn-gray" style="width:100%">Lukk</button>' +
     '</div>';
+}
 
-  function row(label, val) {
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #ffffff0f">' +
-      '<span style="font-size:11px;color:#64748b;font-family:monospace">'+label+'</span>' +
-      '<div style="display:flex;align-items:center;gap:8px">' +
-        '<span style="font-size:11px;color:#e2e8f0;font-family:monospace;max-width:280px;overflow:hidden;text-overflow:ellipsis">'+val+'</span>' +
-        '<button onclick="navigator.clipboard.writeText(\''+val.replace(/'/g,"\\'")+'\')" style="background:#1e293b;border:1px solid #334155;border-radius:6px;color:#94a3b8;font-size:10px;padding:3px 8px;cursor:pointer">Kopier</button>' +
-      '</div></div>';
-  }
-  function epRow(method, url, desc) {
-    var colors = {POST:'#818cf8', GET:'#34d399'};
-    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #ffffff0f">' +
-      '<span style="color:'+colors[method]+';font-family:monospace;font-size:11px;font-weight:600;min-width:36px">'+method+'</span>' +
-      '<span style="font-family:monospace;font-size:11px;color:#94a3b8;flex:1">'+url+'</span>' +
-      '<span style="font-size:11px;color:#475569">'+desc+'</span>' +
-    '</div>';
-  }
+// ── QR / REGEN / DELETE ──────────────────────────────────────────
+function genQrForTenant(id, name) {
+  adminApi('/admin/tenants/' + id + '/qr-token', { method: 'POST' }).then(function(qr) {
+    if (qr.error) { toast(qr.error, 'err'); return; }
+    var modal = makeModal('📱 QR-kode — ' + name,
+      '<div class="qr-box"><div id="qrModalCode"></div>' +
+      '<div style="font-size:12px;color:#475569;margin-top:8px">Utløper: ' + new Date(qr.expiresAt).toLocaleString('nb-NO') + '</div>' +
+      '<p style="font-size:11px;color:#334155;margin-top:4px">Engangsbruk · Gyldig 24 timer</p></div>'
+    );
+    document.body.appendChild(modal);
+    new QRCode(document.getElementById('qrModalCode'), { text: qr.qrData, width: 200, height: 200, colorDark: '#000', colorLight: '#fff' });
+  });
+}
 
+function regenApiKey(id, name) {
+  if (!confirm('Regenerer API-nøkkel for ' + name + '?\nDen gamle nøkkelen slutter umiddelbart å fungere.')) return;
+  adminApi('/admin/tenants/' + id + '/regenerate-key', { method: 'POST' }).then(function() {
+    toast('Ny API-nøkkel generert'); loadAllTenants();
+    setTimeout(function() {
+      var t = allTenants.find(function(x) { return x.id === id; });
+      if (t) renderApiPane(t);
+    }, 1500);
+  });
+}
+
+function deleteTenant(id, name) {
+  if (!confirm('Slett ' + name + '?\nAlle meldinger slettes permanent. Kan ikke angres.')) return;
+  adminApi('/admin/tenants/' + id, { method: 'DELETE' }).then(function() {
+    toast('Slettet'); loadAllTenants();
+    switchView(prevView || 'dashboard');
+  });
+}
+
+function deleteDevice(deviceId, tenantId) {
+  if (!confirm('Fjerne enheten?')) return;
+  adminApi('/admin/devices/' + deviceId, { method: 'DELETE' }).then(function() {
+    toast('Enhet fjernet');
+    var t = allTenants.find(function(x) { return x.id === tenantId; });
+    if (t) loadDetailDevices(t);
+  });
+}
+
+// Mangler messages endpoint på admin — bruk tenant messages fra kunde
+function makeModal(title, content) {
+  var div = document.createElement('div');
+  div.className = 'modal-overlay';
+  div.innerHTML = '<div class="modal"><div class="modal-header"><h2>' + title + '</h2><button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()">✕</button></div>' + content + '</div>';
+  div.addEventListener('click', function(e) { if (e.target === div) div.remove(); });
+  return div;
+}
+
+// ── EDIT MODAL ───────────────────────────────────────────────────
+function openEditModal(id) {
+  var t = allTenants.find(function(x) { return x.id === id; });
+  if (!t) return;
+  var modal = makeModal('✏️ Rediger — ' + t.name,
+    '<div class="form-grid">' +
+      '<div class="form-group"><label>Firmanavn *</label><input id="eN" value="' + esc(t.name) + '"></div>' +
+      '<div class="form-group"><label>E-post</label><input id="eE" value="' + esc(t.email||'') + '"></div>' +
+      '<div class="form-group"><label>Kontaktperson</label><input id="eC" value="' + esc(t.contactPerson||'') + '"></div>' +
+      '<div class="form-group"><label>Kontakttelefon</label><input id="eCp" value="' + esc(t.contactPhone||'') + '"></div>' +
+      '<div class="form-group"><label>Adresse</label><input id="eA" value="' + esc(t.address||'') + '"></div>' +
+      '<div class="form-group"><label>Org.nummer</label><input id="eO" value="' + esc(t.orgNumber||'') + '"></div>' +
+      '<div class="form-group"><label>Postnr</label><input id="eP" value="' + esc(t.postalCode||'') + '" maxlength="4"></div>' +
+      '<div class="form-group"><label>Sted</label><input id="eCi" value="' + esc(t.city||'') + '"></div>' +
+      '<div class="form-group"><label>Mobilnummer</label><input id="ePh" value="' + esc(t.phoneNumber||'') + '"></div>' +
+      '<div class="form-group"><label>Maks enheter</label><input id="eMd" type="number" value="' + (t.maxDevices||1) + '" min="1" max="10"></div>' +
+      '<div class="form-group"><label>System-navn (API)</label><input id="eAn" value="' + esc(t.apiClientName||'') + '"></div>' +
+    '</div>' +
+    '<div style="margin-bottom:12px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="eApi"' + (t.isApiClient ? ' checked' : '') + ' style="accent-color:#6366f1"> API-klient</label></div>' +
+    '<div style="display:flex;gap:8px;margin-top:4px">' +
+      '<button class="btn btn-primary btn-sm" id="saveEditBtn">Lagre</button>' +
+      '<button class="btn btn-gray btn-sm" onclick="this.closest(\'.modal-overlay\').remove()">Avbryt</button>' +
+    '</div><div id="editErr" style="color:#f87171;font-size:12px;margin-top:8px"></div>'
+  );
   document.body.appendChild(modal);
-}
-
-function generateQr(tenantId, tenantName) {
-  currentTenantId = tenantId;
-  adminApi('/admin/tenants/'+tenantId+'/qr-token', {method:'POST'}).then(function(res){
-    if(res.error){toast(res.error,'err');return;}
-    var el = document.getElementById('qrcode');
-    el.innerHTML = '';
-    new QRCode(el, {text:res.qrData,width:200,height:200,colorDark:'#000',colorLight:'#fff'});
-    document.getElementById('qrExpires').textContent = 'Utløper: '+new Date(res.expiresAt).toLocaleString('nb-NO');
-    document.getElementById('welcomeResult').classList.remove('hidden');
-    window.scrollTo({top:0,behavior:'smooth'});
-    toast('QR-kode generert for '+tenantName+'!');
+  modal.querySelector('#saveEditBtn').addEventListener('click', function() {
+    var payload = {
+      name: modal.querySelector('#eN').value.trim(),
+      email: modal.querySelector('#eE').value.trim(),
+      contactPerson: modal.querySelector('#eC').value.trim(),
+      contactPhone: modal.querySelector('#eCp').value.trim(),
+      address: modal.querySelector('#eA').value.trim(),
+      orgNumber: modal.querySelector('#eO').value.trim(),
+      postalCode: modal.querySelector('#eP').value.trim(),
+      city: modal.querySelector('#eCi').value.trim(),
+      phoneNumber: modal.querySelector('#ePh').value.trim(),
+      maxDevices: parseInt(modal.querySelector('#eMd').value) || 1,
+      apiClientName: modal.querySelector('#eAn').value.trim(),
+      isApiClient: modal.querySelector('#eApi').checked
+    };
+    if (!payload.name) { modal.querySelector('#editErr').textContent = 'Navn er påkrevd'; return; }
+    adminApi('/admin/tenants/' + id, { method: 'PUT', body: JSON.stringify(payload) }).then(function(res) {
+      if (res.success) { modal.remove(); toast('Lagret!'); loadAllTenants(); setTimeout(function() { openCustomerDetail(id); }, 800); }
+      else { modal.querySelector('#editErr').textContent = res.error || 'Feil'; }
+    });
   });
 }
 
-// CREATE
-document.getElementById('newIsApiClient').addEventListener('change', function() {
-  document.getElementById('apiClientNameRow').style.display = this.checked ? 'block' : 'none';
-  document.getElementById('newPwd').required = !this.checked;
+function openChangePwdModal(id, name) {
+  var modal = makeModal('🔑 Endre passord — ' + name,
+    '<div class="form-group" style="margin-bottom:12px"><label>Nytt passord</label><input type="password" id="cpNew" placeholder="Min. 8 tegn"></div>' +
+    '<div class="form-group" style="margin-bottom:14px"><label>Bekreft passord</label><input type="password" id="cpCfm"></div>' +
+    '<div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" id="cpSaveBtn">Lagre</button><button class="btn btn-gray btn-sm" onclick="this.closest(\'.modal-overlay\').remove()">Avbryt</button></div>' +
+    '<div id="cpErr" style="color:#f87171;font-size:12px;margin-top:8px"></div>'
+  );
+  document.body.appendChild(modal);
+  modal.querySelector('#cpSaveBtn').addEventListener('click', function() {
+    var nw = modal.querySelector('#cpNew').value;
+    var cf = modal.querySelector('#cpCfm').value;
+    if (!nw || nw.length < 8) { modal.querySelector('#cpErr').textContent = 'Min. 8 tegn'; return; }
+    if (nw !== cf) { modal.querySelector('#cpErr').textContent = 'Passordene er ikke like'; return; }
+    adminApi('/admin/tenants/' + id, { method: 'PUT', body: JSON.stringify({ name: name, password: nw }) }).then(function(res) {
+      if (res.success) { modal.remove(); toast('Passord endret!'); }
+      else { modal.querySelector('#cpErr').textContent = res.error || 'Feil'; }
+    });
+  });
+}
+
+// ── NY KUNDE ─────────────────────────────────────────────────────
+document.getElementById('ncIsApi').addEventListener('change', function() {
+  document.getElementById('apiClientNameGroup').classList.toggle('hidden', !this.checked);
+  document.getElementById('ncPwdGroup').style.opacity = this.checked ? '.4' : '1';
 });
 
-function createTenant() {
-  var name = document.getElementById('newName').value.trim();
-  var password = document.getElementById('newPwd').value;
-  var isApiClient = document.getElementById('newIsApiClient').checked;
+document.getElementById('createBtn').addEventListener('click', function() {
+  var isApi = document.getElementById('ncIsApi').checked;
+  var name = document.getElementById('ncName').value.trim();
+  var pwd = document.getElementById('ncPwd').value;
   if (!name) { toast('Skriv firmanavn', 'err'); return; }
-  if (!isApiClient && (!password || password.length < 8)) { toast('Passord min 8 tegn', 'err'); return; }
-  // API-klienter får et tilfeldig passord — de logger ikke inn på dashboard
-  var effectivePassword = password || (Math.random().toString(36).slice(2,10) + 'Aa1!');
-  adminApi('/admin/tenants', {method:'POST', body:JSON.stringify({
-    name: name, password: effectivePassword,
-    phoneNumber: document.getElementById('newPhone').value.trim(),
-    maxDevices: parseInt(document.getElementById('newMaxDevices').value) || 1,
-    contactPerson: document.getElementById('newContactPerson').value.trim(),
-    contactPhone: document.getElementById('newContactPhone').value.trim(),
-    email: document.getElementById('newEmail').value.trim(),
-    orgNumber: document.getElementById('newOrgNumber').value.trim(),
-    address: document.getElementById('newAddress').value.trim(),
-    postalCode: document.getElementById('newPostalCode').value.trim(),
-    city: document.getElementById('newCity').value.trim(),
-    isApiClient: isApiClient,
-    apiClientName: isApiClient ? document.getElementById('newApiClientName').value.trim() : null
+  if (!isApi && (!pwd || pwd.length < 8)) { toast('Passord min. 8 tegn', 'err'); return; }
+  var btn = this; btn.disabled = true; btn.textContent = '⏳ Oppretter...';
+  adminApi('/admin/tenants', { method: 'POST', body: JSON.stringify({
+    name: name,
+    password: pwd || (Math.random().toString(36).slice(2,10) + 'Aa1!'),
+    phoneNumber: document.getElementById('ncPhone').value.trim(),
+    maxDevices: parseInt(document.getElementById('ncMaxDev').value) || 1,
+    contactPerson: document.getElementById('ncContact').value.trim(),
+    contactPhone: document.getElementById('ncContactPhone').value.trim(),
+    email: document.getElementById('ncEmail').value.trim(),
+    orgNumber: document.getElementById('ncOrg').value.trim(),
+    address: document.getElementById('ncAddress').value.trim(),
+    postalCode: document.getElementById('ncPostal').value.trim(),
+    city: document.getElementById('ncCity').value.trim(),
+    isApiClient: isApi,
+    apiClientName: document.getElementById('ncApiName').value.trim()
   })}).then(function(res) {
+    btn.disabled = false; btn.textContent = 'Opprett kunde';
     if (res.id) {
-      lastWelcome = res.welcomeMessage;
-      currentTenantId = res.id;
       document.getElementById('welcomeText').textContent = res.welcomeMessage;
-      document.getElementById('dashLink').href = res.dashboardUrl;
-      document.getElementById('welcomeResult').classList.remove('hidden');
-      ['newName','newPwd','newPhone','newContactPerson','newContactPhone',
-       'newEmail','newOrgNumber','newAddress','newPostalCode','newCity'].forEach(function(id){
-        document.getElementById(id).value='';
-      });
-      document.getElementById('newMaxDevices').value='1';
-      // Auto-generer QR
-      adminApi('/admin/tenants/'+res.id+'/qr-token',{method:'POST'}).then(function(qr){
-        if(qr.error) return;
-        var el=document.getElementById('qrcode');
-        el.innerHTML='';
-        new QRCode(el,{text:qr.qrData,width:200,height:200,colorDark:'#000',colorLight:'#fff'});
-        document.getElementById('qrExpires').textContent='Utløper: '+new Date(qr.expiresAt).toLocaleString('nb-NO');
-      });
-      loadTenants();
-      toast('Kunde opprettet!');
-    } else {
-      toast(res.error||'Feil','err');
-    }
-  });
-}
-
-function copyWelcome(){
-  navigator.clipboard.writeText(lastWelcome).then(function(){toast('Kopiert!');});
-}
-
-// EDIT
-var currentEditId = '';
-function openEdit(tenantId) {
-  currentEditId = tenantId;
-  adminApi('/admin/tenants').then(function(data){
-    var t = data.find(function(x){return x.id===tenantId;});
-    if(!t) return;
-    document.getElementById('editName').value = t.name||'';
-    document.getElementById('editEmail').value = t.email||'';
-    document.getElementById('editContactPerson').value = t.contactPerson||'';
-    document.getElementById('editContactPhone').value = t.contactPhone||'';
-    document.getElementById('editAddress').value = t.address||'';
-    document.getElementById('editPostalCode').value = t.postalCode||'';
-    document.getElementById('editCity').value = t.city||'';
-    document.getElementById('editOrgNumber').value = t.orgNumber||'';
-    document.getElementById('editPhone').value = t.phoneNumber||'';
-    document.getElementById('editMaxDevices').value = t.maxDevices||1;
-    document.getElementById('editPwd').value = '';
-    document.getElementById('editErr').textContent = '';
-    document.getElementById('editModal').classList.remove('hidden');
-  });
-}
-
-document.getElementById('saveEditBtn').addEventListener('click', function(){
-  var payload = {
-    name:document.getElementById('editName').value.trim(),
-    email:document.getElementById('editEmail').value.trim(),
-    contactPerson:document.getElementById('editContactPerson').value.trim(),
-    contactPhone:document.getElementById('editContactPhone').value.trim(),
-    address:document.getElementById('editAddress').value.trim(),
-    postalCode:document.getElementById('editPostalCode').value.trim(),
-    city:document.getElementById('editCity').value.trim(),
-    orgNumber:document.getElementById('editOrgNumber').value.trim(),
-    phoneNumber:document.getElementById('editPhone').value.trim(),
-    maxDevices:parseInt(document.getElementById('editMaxDevices').value)||1,
-    password:document.getElementById('editPwd').value||undefined
-  };
-  if(!payload.name){document.getElementById('editErr').textContent='Navn kan ikke være tomt';return;}
-  adminApi('/admin/tenants/'+currentEditId,{method:'PUT',body:JSON.stringify(payload)}).then(function(res){
-    if(res.success){document.getElementById('editModal').classList.add('hidden');loadTenants();toast('Kunde oppdatert!');}
-    else{document.getElementById('editErr').textContent=res.error||'Feil';}
+      document.getElementById('dashLinkBtn').href = res.dashboardUrl;
+      document.getElementById('qrSection').style.display = isApi ? 'none' : 'block';
+      document.getElementById('createResult').classList.remove('hidden');
+      document.getElementById('goToCustomerBtn').onclick = function() { loadAllTenants(); setTimeout(function() { openCustomerDetail(res.id); }, 600); };
+      if (!isApi && res.id) {
+        adminApi('/admin/tenants/' + res.id + '/qr-token', { method: 'POST' }).then(function(qr) {
+          if (qr.error) return;
+          var qrEl = document.getElementById('qrcode');
+          qrEl.innerHTML = '';
+          new QRCode(qrEl, { text: qr.qrData, width: 180, height: 180, colorDark: '#000', colorLight: '#fff' });
+          document.getElementById('qrExpires').textContent = 'Utløper: ' + new Date(qr.expiresAt).toLocaleString('nb-NO');
+        });
+      }
+      loadAllTenants(); toast('Kunde opprettet!');
+      ['ncName','ncPwd','ncPhone','ncContact','ncContactPhone','ncEmail','ncOrg','ncAddress','ncPostal','ncCity','ncApiName'].forEach(function(id) { var el = document.getElementById(id); if(el) el.value = ''; });
+      document.getElementById('ncMaxDev').value = '1';
+      document.getElementById('ncIsApi').checked = false;
+      document.getElementById('apiClientNameGroup').classList.add('hidden');
+    } else { toast(res.error || 'Feil ved opprettelse', 'err'); }
   });
 });
+document.getElementById('copyWelcomeBtn').addEventListener('click', function() {
+  navigator.clipboard.writeText(document.getElementById('welcomeText').textContent).then(function() { toast('Kopiert!'); });
+});
 
-function regenKey(id,name){
-  if(!confirm('Ny API-nøkkel for '+name+'? Alle enheter mister tilgang og må skanne ny QR-kode.'))return;
-  adminApi('/admin/tenants/'+id+'/regenerate-key',{method:'POST'}).then(function(){
-    toast('Ny nøkkel generert');loadTenants();
+// ── GATEWAY STATUS ───────────────────────────────────────────────
+function loadGatewayStatus() {
+  adminApi('/admin/gateway-status').then(function(devices) {
+    var el = document.getElementById('gatewayList');
+    if (!devices || !devices.length) { el.innerHTML = '<div style="color:#475569;font-size:13px">Ingen gateway-enheter registrert.</div>'; return; }
+    var now = Date.now();
+    el.innerHTML = devices.map(function(d) {
+      var age = now - parseInt(d.last_seen || 0);
+      var online = age < 120000, warn = age < 600000;
+      var cls = online ? 'online' : warn ? 'warn' : 'offline';
+      var dot = online ? '' : warn ? 'warn' : 'offline';
+      var status = online ? '🟢 Online' : warn ? '🟡 Inaktiv' : '🔴 Offline';
+      return '<div class="gw-card ' + cls + '">' +
+        '<div><div style="font-weight:600;font-size:14px"><span class="gw-dot ' + dot + '" style="margin-right:8px"></span>' + esc(d.device_name || 'Ukjent enhet') + '</div>' +
+        '<div style="font-size:11px;color:#475569;margin-top:3px">Kunde: <strong style="color:#94a3b8">' + esc(d.tenant_name) + '</strong> · Sist sett: ' + (d.last_seen ? timeAgo(d.last_seen) : 'Aldri') + '</div>' +
+        '<div style="font-size:11px;color:#475569;margin-top:2px">Nett: ' + (d.network_type||'—') + ' · Kø: ' + (d.pending_count||0) + '</div></div>' +
+        '<div style="text-align:right"><div style="font-size:13px;font-weight:600">' + status + '</div>' +
+        '<div style="font-size:11px;color:#475569">🔋 ' + (d.battery_level ? d.battery_level + '%' : '—') + '</div></div></div>';
+    }).join('');
   });
 }
 
-function deleteTenant(id,name){
-  if(!confirm('Slette '+name+'? Alle meldinger slettes permanent.'))return;
-  adminApi('/admin/tenants/'+id,{method:'DELETE'}).then(function(){
-    document.getElementById('welcomeResult').classList.add('hidden');
-    loadTenants();toast('Slettet');
+function loadGwPing() {
+  adminApi('/admin/gateway-status').then(function(devices) {
+    if (!devices || !devices.length) return;
+    var now = Date.now();
+    var anyOnline = devices.some(function(d) { return d.last_seen && (now - parseInt(d.last_seen)) < 120000; });
+    var anyWarn = devices.some(function(d) { return d.last_seen && (now - parseInt(d.last_seen)) < 600000; });
+    var dot = document.getElementById('gwDot');
+    var text = document.getElementById('gwPillText');
+    var pill = document.getElementById('gwPill');
+    if (anyOnline) { dot.className = 'gw-dot'; text.textContent = 'Gateway online'; pill.className = 'gateway-pill'; }
+    else if (anyWarn) { dot.className = 'gw-dot warn'; text.textContent = 'Gateway inaktiv'; pill.className = 'gateway-pill warn'; }
+    else { dot.className = 'gw-dot offline'; text.textContent = 'Gateway offline'; pill.className = 'gateway-pill offline'; }
   });
 }
 
-function deleteDevice(deviceId,tenantId){
-  if(!confirm('Fjerne enheten?'))return;
-  adminApi('/admin/devices/'+deviceId,{method:'DELETE'}).then(function(){
-    loadDevices(tenantId);toast('Enhet fjernet');
-  });
-}
-
-// GATEWAY STATUS
-document.getElementById('selectAllCustomers').addEventListener('click', function(){
-  document.querySelectorAll('.customer-cb').forEach(function(cb){cb.checked=true;});
-});
-document.getElementById('selectNoneCustomers').addEventListener('click', function(){
-  document.querySelectorAll('.customer-cb').forEach(function(cb){cb.checked=false;});
-});
-document.getElementById('adminSendBody').addEventListener('input', function(){
-  var len = this.value.length;
-  document.getElementById('adminSendCharCount').textContent = len+' / 160'+(len>160?' · '+Math.ceil(len/160)+' deler':'');
-});
-document.getElementById('adminSendBtn').addEventListener('click', function(){
-  var selected = Array.from(document.querySelectorAll('.customer-cb:checked')).map(function(cb){return cb.value;});
-  var body = document.getElementById('adminSendBody').value.trim();
-  var st = document.getElementById('adminSendStatus');
-  if(!selected.length){st.style.color='#f87171';st.textContent='✕ Velg minst én kunde';return;}
-  if(!body){st.style.color='#f87171';st.textContent='✕ Skriv en melding';return;}
-  if(!confirm('Send melding til '+selected.length+' kunde(r)?')) return;
-  var btn = this;
-  btn.disabled = true; btn.textContent = '⏳ Sender...';
-  adminApi('/admin/send-to-customers', {method:'POST', body:JSON.stringify({tenantIds:selected, body:body})}).then(function(res){
-    btn.disabled = false; btn.textContent = '📤 Send til valgte kunder';
-    if(res.success){
-      st.style.color='#34d399';
-      st.textContent='✓ Sendt til '+res.sent+' kunde(r)'+(res.failed>0?' · '+res.failed+' uten telefonnummer':'');
-      document.getElementById('adminSendBody').value='';
-      document.getElementById('adminSendCharCount').textContent='0 / 160';
-      document.querySelectorAll('.customer-cb').forEach(function(cb){cb.checked=false;});
-      setTimeout(function(){st.textContent='';},5000);
-    } else {
-      st.style.color='#f87171'; st.textContent='✕ '+(res.error||'Feil');
-    }
-  });
-});
-
-// AKTIV GATEWAY-KONTO
-var activeGatewayId = localStorage.getItem('active_gateway_id') || '';
-var activeGatewaySlug = localStorage.getItem('active_gateway_slug') || '';
-var activeGatewayName = localStorage.getItem('active_gateway_name') || '';
-var activeGatewayToken = localStorage.getItem('active_gateway_token') || '';
-var allTenantsCache = [];
-
-function customerApi(path, opts) {
-  opts = opts || {};
-  return fetch(BASE + '/kunde/' + activeGatewaySlug + path, Object.assign({}, opts, {
-    headers: Object.assign({'Content-Type':'application/json','X-Session-Token':activeGatewayToken}, opts.headers||{})
-  })).then(function(r){return r.json();});
-}
-
-async function ensureGatewayToken() {
-  if (!activeGatewayId || !activeGatewaySlug) return false;
-  // Sjekk om token er gyldig
-  const test = await customerApi('/api/stats').catch(function(){return {error:true};});
-  if (!test.error) return true;
-  return false;
-}
-
-function updateGatewaySelect(tenants) {
-  var sel = document.getElementById('activeGatewaySelect');
-  sel.innerHTML = '<option value="" style="background:#1a1a26">— Ingen valgt —</option>';
-  tenants.forEach(function(t) {
+// ── AKTIV GATEWAY-KONTO ──────────────────────────────────────────
+function populateGwSelect() {
+  var sel = document.getElementById('activeGwSelect');
+  sel.innerHTML = '<option value="">— Ingen valgt —</option>';
+  allTenants.forEach(function(t) {
     var opt = document.createElement('option');
-    opt.value = t.id;
-    opt.setAttribute('data-slug', t.slug);
-    opt.setAttribute('data-name', t.name);
-    opt.textContent = t.name;
+    opt.value = t.id; opt.setAttribute('data-slug', t.slug); opt.setAttribute('data-name', t.name);
+    opt.textContent = t.name + (t.isApiClient ? ' 🔌' : '');
     opt.style.background = '#1a1a26';
-    if (t.id === activeGatewayId) opt.selected = true;
+    if (t.id === activeGwId) opt.selected = true;
     sel.appendChild(opt);
   });
-  updateActiveGatewayUI();
+  updateActiveGwUI();
 }
 
-function updateActiveGatewayUI() {
-  var label = document.getElementById('activeAccountLabel');
-  var sendLabel = document.getElementById('activeSendLabel');
-  var sendCard = document.getElementById('activeSendCard');
-  var inboxEmpty = document.getElementById('activeInboxEmpty');
-  var inboxTable = document.getElementById('activeInboxTable');
-  var statusEl = document.getElementById('activeGatewayStatus');
-
-  if (!activeGatewayId) {
-    label.textContent = 'Ingen konto valgt';
-    sendCard.style.display = 'none';
-    inboxEmpty.style.display = 'block';
-    inboxTable.style.display = 'none';
-    statusEl.innerHTML = '';
-    return;
-  }
-
-  label.textContent = activeGatewayName;
-  if (sendLabel) sendLabel.textContent = activeGatewayName;
-  sendCard.style.display = 'block';
-  inboxEmpty.style.display = 'none';
-  inboxTable.style.display = 'table';
-  statusEl.innerHTML = '<span style="font-size:11px;color:#818cf8">✓ Valgt</span>';
-  loadActiveInbox();
-  loadActiveContacts();
-}
-
-document.getElementById('activeGatewaySelect').addEventListener('change', function() {
-  var sel = this;
-  var opt = sel.options[sel.selectedIndex];
+document.getElementById('activeGwSelect').addEventListener('change', function() {
+  var opt = this.options[this.selectedIndex];
   if (!opt.value) {
-    activeGatewayId = '';
-    activeGatewaySlug = '';
-    activeGatewayName = '';
-    activeGatewayToken = '';
-    localStorage.removeItem('active_gateway_id');
-    localStorage.removeItem('active_gateway_slug');
-    localStorage.removeItem('active_gateway_name');
-    localStorage.removeItem('active_gateway_token');
-    updateActiveGatewayUI();
-    return;
+    activeGwId = ''; activeGwSlug = ''; activeGwName = ''; activeGwToken = '';
+    ['active_gw_id','active_gw_slug','active_gw_name','active_gw_token'].forEach(function(k) { localStorage.removeItem(k); });
+    updateActiveGwUI(); return;
   }
-  activeGatewayId = opt.value;
-  activeGatewaySlug = opt.getAttribute('data-slug');
-  activeGatewayName = opt.getAttribute('data-name');
-  localStorage.setItem('active_gateway_id', activeGatewayId);
-  localStorage.setItem('active_gateway_slug', activeGatewaySlug);
-  localStorage.setItem('active_gateway_name', activeGatewayName);
-
-  // Logg inn på kunden for å få session-token
-  // Admin trenger passord — vis mini-dialog
-  var pwd = prompt('Skriv inn passord for ' + activeGatewayName + ':');
-  if (!pwd) { sel.value = ''; return; }
-  fetch(BASE + '/kunde/' + activeGatewaySlug + '/auth/login', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({password: pwd})
-  }).then(function(r){return r.json();}).then(function(res){
-    if (res.token) {
-      activeGatewayToken = res.token;
-      localStorage.setItem('active_gateway_token', activeGatewayToken);
-      updateActiveGatewayUI();
-      toast('Gateway-konto satt til ' + activeGatewayName + '!');
-    } else {
-      toast('Feil passord for ' + activeGatewayName, 'err');
-      sel.value = activeGatewayId ? activeGatewayId : '';
-    }
-  });
+  activeGwId = opt.value; activeGwSlug = opt.getAttribute('data-slug'); activeGwName = opt.getAttribute('data-name');
+  var pwd = prompt('Passord for ' + activeGwName + ':');
+  if (!pwd) { this.value = ''; return; }
+  fetch(BASE + '/kunde/' + activeGwSlug + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) })
+    .then(function(r) { return r.json(); }).then(function(res) {
+      if (res.token) {
+        activeGwToken = res.token;
+        localStorage.setItem('active_gw_id', activeGwId);
+        localStorage.setItem('active_gw_slug', activeGwSlug);
+        localStorage.setItem('active_gw_name', activeGwName);
+        localStorage.setItem('active_gw_token', activeGwToken);
+        updateActiveGwUI(); toast('Gateway-konto satt til ' + activeGwName + '!');
+      } else { toast('Feil passord', 'err'); document.getElementById('activeGwSelect').value = ''; }
+    });
 });
 
+function updateActiveGwUI() {
+  var label1 = document.getElementById('inboxAccountLabel');
+  var label2 = document.getElementById('sendAccountLabel');
+  var status = document.getElementById('activeGwStatus');
+  if (!activeGwId) {
+    label1.textContent = 'Ingen konto valgt';
+    label2.textContent = 'Ingen konto valgt';
+    status.textContent = '';
+    document.getElementById('inboxEmpty').style.display = 'block';
+    document.getElementById('inboxTable').classList.add('hidden');
+  } else {
+    label1.textContent = activeGwName;
+    label2.textContent = activeGwName;
+    status.innerHTML = '<span style="color:#34d399;font-size:11px">✓ Aktiv</span>';
+    loadActiveInbox();
+    loadSendContacts();
+  }
+}
+
+// ── INNBOKS ──────────────────────────────────────────────────────
 function loadActiveInbox() {
-  if (!activeGatewayToken || !activeGatewaySlug) return;
+  if (!activeGwToken) return;
   customerApi('/api/sms/inbox?limit=50').then(function(data) {
     if (!Array.isArray(data)) return;
-    var tbody = document.getElementById('activeInboxBody');
+    var empty = document.getElementById('inboxEmpty');
+    var table = document.getElementById('inboxTable');
+    var body = document.getElementById('inboxBody');
     if (!data.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#475569;padding:24px">Ingen innkommende meldinger</td></tr>';
-      return;
+      empty.style.display = 'block'; table.classList.add('hidden');
+      empty.textContent = 'Ingen innkommende meldinger ennå.'; return;
     }
-    tbody.innerHTML = data.map(function(m) {
-      return '<tr>' +
-        '<td style="font-family:monospace;font-size:12px">' + (m.from||'–') + '</td>' +
-        '<td style="max-width:360px;font-size:13px">' + esc(m.body||'') + '</td>' +
-        '<td style="white-space:nowrap;color:#475569;font-size:12px">' + timeAgo(m.receivedAt) + '</td>' +
-        '<td><button class="btn btn-gray btn-sm" style="font-size:11px" onclick="replyFromActive(\'' + esc(m.from) + '\')">Svar</button></td>' +
-      '</tr>';
+    empty.style.display = 'none'; table.classList.remove('hidden');
+    body.innerHTML = data.map(function(m) {
+      return '<tr><td style="font-family:monospace;font-size:12px">' + esc(m.from||'—') + '</td>' +
+        '<td style="max-width:360px">' + esc(m.body||'') + '</td>' +
+        '<td style="font-size:12px;color:#475569;white-space:nowrap">' + timeAgo(m.receivedAt) + '</td>' +
+        '<td><button class="btn-ghost" onclick="replyTo(\'' + esc(m.from) + '\')">Svar</button></td></tr>';
     }).join('');
+    var badge = document.getElementById('inboxBadge');
+    badge.style.display = data.length ? '' : 'none';
+    badge.textContent = data.length;
+    badge.className = 'badge amber';
   });
 }
 
-function loadActiveContacts() {
-  if (!activeGatewayToken || !activeGatewaySlug) return;
+function replyTo(num) {
+  document.getElementById('sendTo').value = num;
+  switchView('send');
+  document.getElementById('sendBody').focus();
+}
+
+// ── SEND SMS ─────────────────────────────────────────────────────
+function loadSendContacts() {
+  if (!activeGwToken) return;
   customerApi('/api/contacts').then(function(data) {
-    var el = document.getElementById('activeContactsList');
-    if (!Array.isArray(data) || !data.length) {
-      el.innerHTML = '<div style="padding:16px;color:#475569;font-size:13px">Ingen kontakter ennå</div>';
-      return;
-    }
+    var el = document.getElementById('sendContacts');
+    if (!Array.isArray(data) || !data.length) { el.innerHTML = '<div style="padding:16px;color:#475569;font-size:13px">Ingen kontakter ennå</div>'; return; }
     el.innerHTML = data.map(function(c) {
-      return '<div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #ffffff0f;display:flex;justify-content:space-between;align-items:center" onclick="selectActiveContact(\'' + esc(c.number) + '\')">' +
-        '<div><div style="font-size:13px;font-weight:500;font-family:monospace">' + c.number + '</div>' +
+      return '<div class="contact-row" onclick="document.getElementById(\'sendTo\').value=\'' + esc(c.number) + '\'">' +
+        '<div><div style="font-family:monospace;font-size:13px">' + esc(c.number) + '</div>' +
         '<div style="font-size:11px;color:#475569">' + c.messageCount + ' meldinger · ' + timeAgo(c.lastSeen) + '</div></div>' +
-        '<span style="color:#475569;font-size:12px">→</span>' +
-      '</div>';
+        '<span style="color:#475569">→</span></div>';
     }).join('');
   });
 }
 
-function selectActiveContact(num) {
-  document.getElementById('activeSendTo').value = num;
-  document.getElementById('activeSendBody').focus();
-}
-
-function replyFromActive(num) {
-  document.getElementById('activeSendTo').value = num;
-  document.getElementById('activeSendCard').scrollIntoView({behavior:'smooth'});
-  document.getElementById('activeSendBody').focus();
-}
-
-document.getElementById('activeSendBody').addEventListener('input', function() {
-  var len = this.value.length;
-  document.getElementById('activeSendCount').textContent = len + ' / 160' + (len > 160 ? ' · ' + Math.ceil(len/160) + ' deler' : '');
+document.getElementById('sendBody').addEventListener('input', function() {
+  var l = this.value.length;
+  document.getElementById('sendCount').textContent = l + '/160' + (l > 160 ? ' ·' + Math.ceil(l/160) + 'deler' : '');
 });
 
-document.getElementById('activeSendBtn').addEventListener('click', function() {
-  var to = document.getElementById('activeSendTo').value.trim();
-  var body = document.getElementById('activeSendBody').value.trim();
-  var st = document.getElementById('activeSendStatus');
+document.getElementById('sendSmsBtn').addEventListener('click', function() {
+  var to = document.getElementById('sendTo').value.trim();
+  var body = document.getElementById('sendBody').value.trim();
+  var st = document.getElementById('sendStatus');
   if (!to) { toast('Skriv inn mottaker', 'err'); return; }
   if (!body) { toast('Skriv inn melding', 'err'); return; }
-  if (!activeGatewayToken) { toast('Ingen gateway-konto valgt', 'err'); return; }
-  var btn = this;
-  btn.disabled = true; btn.textContent = '⏳ Sender...';
-  customerApi('/api/sms/send', {method:'POST', body:JSON.stringify({to:to, body:body})}).then(function(res) {
+  if (!activeGwToken) { toast('Velg gateway-konto øverst', 'err'); return; }
+  var btn = this; btn.disabled = true; btn.textContent = '⏳ Sender...';
+  customerApi('/api/sms/send', { method: 'POST', body: JSON.stringify({ to: to, body: body }) }).then(function(res) {
     btn.disabled = false; btn.textContent = '📤 Send SMS';
     if (res.success) {
-      st.style.color = '#34d399'; st.textContent = '✓ Melding lagt i kø!';
-      document.getElementById('activeSendTo').value = '';
-      document.getElementById('activeSendBody').value = '';
-      document.getElementById('activeSendCount').textContent = '0 / 160';
-      loadActiveContacts();
-      setTimeout(function(){st.textContent='';}, 4000);
-      toast('Melding sendt!');
-    } else {
-      st.style.color = '#f87171'; st.textContent = '✕ ' + (res.error || 'Feil');
-    }
+      st.style.color = '#34d399'; st.textContent = '✓ Lagt i kø!';
+      document.getElementById('sendTo').value = '';
+      document.getElementById('sendBody').value = '';
+      document.getElementById('sendCount').textContent = '0/160';
+      loadSendContacts(); toast('SMS sendt!');
+      setTimeout(function() { st.textContent = ''; }, 4000);
+    } else { st.style.color = '#f87171'; st.textContent = '✕ ' + (res.error || 'Feil'); }
   });
 });
 
-function loadAdminInbox() { loadActiveInbox(); }
-
-function loadGatewayStatus() {
-  adminApi('/admin/gateway-status').then(function(devices){
-    var el = document.getElementById('gatewayStatus');
-    if(!devices||!devices.length){
-      el.innerHTML='<div style="color:#475569;font-size:13px">Ingen gateway-enheter registrert ennå.</div>';
-      return;
-    }
-    var now = Date.now();
-    el.innerHTML = devices.map(function(d){
-      var age = now - parseInt(d.last_seen||0);
-      var online = age < 120000, warn = age < 600000;
-      var cls = online?'gw-online':warn?'gw-warn':'gw-offline';
-      var dot = online?'':'offline';
-      var status = online?'🟢 Online':warn?'🟡 Inaktiv':'🔴 Offline';
-      var battery = d.battery_level?d.battery_level+'%':'–';
-      return '<div class="gw-card '+cls+'">'+
-        '<div>'+
-          '<div style="font-weight:600;font-size:14px"><span class="device-dot '+dot+'" style="margin-right:8px"></span>'+(d.device_name||'Ukjent enhet')+'</div>'+
-          '<div class="gw-meta">Kunde: <strong style="color:#94a3b8">'+d.tenant_name+'</strong> · Sist sett: '+(d.last_seen?timeAgo(d.last_seen):'Aldri')+'</div>'+
-          '<div class="gw-meta">Nett: '+(d.network_type||'–')+' · Kø: '+(d.pending_count||0)+'</div>'+
-        '</div>'+
-        '<div style="text-align:right">'+
-          '<div style="font-size:13px;font-weight:600">'+status+'</div>'+
-          '<div class="gw-meta">🔋 '+battery+'</div>'+
-        '</div>'+
-      '</div>';
-    }).join('');
+// ── BROADCAST ────────────────────────────────────────────────────
+function renderBroadcastList() {
+  var el = document.getElementById('broadcastCheckboxes');
+  if (!allTenants.length) { el.innerHTML = '<div style="padding:12px;color:#475569;font-size:13px">Ingen kunder</div>'; return; }
+  el.innerHTML = allTenants.map(function(t) {
+    var phone = t.contactPhone || t.phoneNumber;
+    return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;border-bottom:1px solid #ffffff0f">' +
+      '<input type="checkbox" class="bc-cb" value="' + t.id + '" style="accent-color:#6366f1">' +
+      '<div style="flex:1"><strong style="font-size:13px">' + esc(t.name) + '</strong>' +
+      (phone ? ' <span style="color:#475569;font-size:11px">📱 ' + esc(phone) + '</span>' : ' <span style="color:#ef4444;font-size:11px">⚠ Ingen telefon</span>') +
+      '</div></label>';
+  }).join('');
+}
+document.getElementById('selectAllBtn').addEventListener('click', function() { document.querySelectorAll('.bc-cb').forEach(function(c) { c.checked = true; }); });
+document.getElementById('selectNoneBtn').addEventListener('click', function() { document.querySelectorAll('.bc-cb').forEach(function(c) { c.checked = false; }); });
+document.getElementById('broadcastBody').addEventListener('input', function() {
+  var l = this.value.length;
+  document.getElementById('broadcastCount').textContent = l + '/160' + (l > 160 ? ' ·' + Math.ceil(l/160) + 'deler' : '');
+});
+document.getElementById('broadcastBtn').addEventListener('click', function() {
+  var sel = Array.from(document.querySelectorAll('.bc-cb:checked')).map(function(c) { return c.value; });
+  var body = document.getElementById('broadcastBody').value.trim();
+  var st = document.getElementById('broadcastStatus');
+  if (!sel.length) { st.style.color = '#f87171'; st.textContent = '✕ Velg minst én kunde'; return; }
+  if (!body) { st.style.color = '#f87171'; st.textContent = '✕ Skriv en melding'; return; }
+  if (!confirm('Send melding til ' + sel.length + ' kunde(r)?')) return;
+  var btn = this; btn.disabled = true; btn.textContent = '⏳ Sender...';
+  adminApi('/admin/send-to-customers', { method: 'POST', body: JSON.stringify({ tenantIds: sel, body: body }) }).then(function(res) {
+    btn.disabled = false; btn.textContent = '📤 Send til valgte';
+    if (res.success) {
+      st.style.color = '#34d399'; st.textContent = '✓ Sendt til ' + res.sent + ' kunde(r)' + (res.failed > 0 ? ' · ' + res.failed + ' uten telefon' : '');
+      document.getElementById('broadcastBody').value = '';
+      document.querySelectorAll('.bc-cb').forEach(function(c) { c.checked = false; });
+      setTimeout(function() { st.textContent = ''; }, 5000);
+    } else { st.style.color = '#f87171'; st.textContent = '✕ ' + (res.error || 'Feil'); }
   });
+});
+
+// ── DASHBOARD ────────────────────────────────────────────────────
+function loadDashboard() {
+  if (!allTenants.length) { loadAllTenants(); return; }
+  var totI = 0, totS = 0;
+  allTenants.forEach(function(t) { totI += t.stats.inbound; totS += t.stats.sent; });
+  document.getElementById('mainStats').innerHTML =
+    stat(allTenants.length, 'Kunder') +
+    stat(totI, 'Totalt innkommende') +
+    stat(totS, 'Totalt sendte') +
+    stat(allTenants.filter(function(t) { return t.isApiClient; }).length, 'API-kunder');
+  renderDashboardPreviews();
+}
+function stat(num, lbl) {
+  return '<div class="stat"><div class="num">' + num + '</div><div class="lbl">' + lbl + '</div></div>';
 }
 
-// INNSTILLINGER
-document.getElementById('settingsBtn').addEventListener('click', function(){
-  document.getElementById('settingsModal').classList.remove('hidden');
-  // Last server-info
-  fetch(BASE+'/').then(function(r){return r.json();}).then(function(res){
-    adminApi('/admin/tenants').then(function(tenants){
-      var tot = Array.isArray(tenants)?tenants.reduce(function(a,t){return a+t.stats.inbound+t.stats.sent;},0):0;
-      document.getElementById('serverInfo').innerHTML =
-        'Versjon: '+(res.version||'–')+'\nStatus: '+(res.status||'–')+'\nKunder: '+(Array.isArray(tenants)?tenants.length:0)+'\nTotale meldinger: '+tot+'\nServer: sms.ay.no';
-    });
+// ── INNSTILLINGER ────────────────────────────────────────────────
+function loadSettings() {
+  fetch(BASE + '/').then(function(r) { return r.json(); }).then(function(res) {
+    document.getElementById('serverInfo').innerHTML =
+      'Versjon: ' + (res.version || '–') + '\nStatus: ' + (res.status || '–') + '\nKunder: ' + allTenants.length + '\nServer: sms.ay.no';
   });
-  var tpl=localStorage.getItem('welcome_template');
-  if(tpl) document.getElementById('welcomeTemplate').value=tpl;
-  var phone=localStorage.getItem('gateway_phone');
-  if(phone) document.getElementById('gatewayPhoneNumber').value=phone;
-});
-
-document.getElementById('changeAdminPwdBtn').addEventListener('click', function(){
-  var cur=document.getElementById('curAdminPwd').value;
-  var nw=document.getElementById('newAdminPwd').value;
-  var cf=document.getElementById('cfmAdminPwd').value;
-  var st=document.getElementById('adminPwdStatus');
-  if(!nw||nw.length<8){st.style.color='#f87171';st.textContent='✕ Min. 8 tegn';return;}
-  if(nw!==cf){st.style.color='#f87171';st.textContent='✕ Passordene er ikke like';return;}
-  adminApi('/admin/settings/password',{method:'POST',body:JSON.stringify({currentPassword:cur,newPassword:nw})}).then(function(res){
-    if(res.success){st.style.color='#34d399';st.textContent='✓ Passord endret!';toast('Passord endret!');document.getElementById('curAdminPwd').value='';document.getElementById('newAdminPwd').value='';document.getElementById('cfmAdminPwd').value='';}
-    else{st.style.color='#f87171';st.textContent='✕ '+(res.error||'Feil passord');}
-  });
-});
-
-document.getElementById('saveGatewayPhoneBtn').addEventListener('click', function(){
-  var phone=document.getElementById('gatewayPhoneNumber').value.trim();
-  var st=document.getElementById('gatewayPhoneStatus');
-  if(!phone){st.style.color='#f87171';st.textContent='✕ Skriv inn nummer';return;}
-  localStorage.setItem('gateway_phone',phone);
-  adminApi('/admin/settings/gateway-phone',{method:'POST',body:JSON.stringify({phoneNumber:phone})}).then(function(res){
-    if(res.success){st.style.color='#34d399';st.textContent='✓ Lagret!';toast('Nummer lagret!');}
-    else{st.style.color='#f87171';st.textContent='✕ '+(res.error||'Feil');}
-  });
-});
-
-document.getElementById('saveWelcomeTemplateBtn').addEventListener('click', function(){
-  var tpl=document.getElementById('welcomeTemplate').value;
-  localStorage.setItem('welcome_template',tpl);
-  adminApi('/admin/settings/welcome-template',{method:'POST',body:JSON.stringify({template:tpl})}).then(function(res){
-    var st=document.getElementById('welcomeTemplateStatus');
-    if(res.success){st.style.color='#34d399';st.textContent='✓ Lagret!';toast('Mal lagret!');}
-    else{st.style.color='#f87171';st.textContent='✕ '+(res.error||'Feil');}
-  });
-});
-
-document.getElementById('logoutBtn').addEventListener('click', adminLogout);
-document.getElementById('createBtn').addEventListener('click', createTenant);
-document.getElementById('copyBtn').addEventListener('click', copyWelcome);
-document.getElementById('newQrBtn').addEventListener('click', function(){
-  if(!currentTenantId)return;
-  adminApi('/admin/tenants/'+currentTenantId+'/qr-token',{method:'POST'}).then(function(qr){
-    if(qr.error){toast(qr.error,'err');return;}
-    var el=document.getElementById('qrcode');
-    el.innerHTML='';
-    new QRCode(el,{text:qr.qrData,width:200,height:200,colorDark:'#000',colorLight:'#fff'});
-    document.getElementById('qrExpires').textContent='Utløper: '+new Date(qr.expiresAt).toLocaleString('nb-NO');
-    toast('Ny QR-kode generert!');
-  });
-});
-
-// INIT
-function init() {
-  checkServerStatus();
-  loadTenants();
-  loadGatewayStatus();
-  if (activeGatewayToken) {
-    updateActiveGatewayUI();
-  }
-  setInterval(function(){
-    checkServerStatus();
-    loadTenants();
-    loadGatewayStatus();
-    if (activeGatewayToken) loadActiveInbox();
-  }, 15000);
+  var tpl = localStorage.getItem('welcome_template');
+  if (tpl) document.getElementById('sWelcomeTpl').value = tpl;
+  var phone = localStorage.getItem('gw_phone');
+  if (phone) document.getElementById('sGwPhone').value = phone;
 }
+document.getElementById('savePwdBtn').addEventListener('click', function() {
+  var cur = document.getElementById('sCurPwd').value;
+  var nw = document.getElementById('sNewPwd').value;
+  var cf = document.getElementById('sCfmPwd').value;
+  var st = document.getElementById('pwdStatus');
+  if (!nw || nw.length < 8) { st.style.color = '#f87171'; st.textContent = '✕ Min. 8 tegn'; return; }
+  if (nw !== cf) { st.style.color = '#f87171'; st.textContent = '✕ Ikke like'; return; }
+  adminApi('/admin/settings/password', { method: 'POST', body: JSON.stringify({ currentPassword: cur, newPassword: nw }) }).then(function(res) {
+    if (res.success) { st.style.color = '#34d399'; st.textContent = '✓ Passord endret!'; toast('Passord endret!'); }
+    else { st.style.color = '#f87171'; st.textContent = '✕ ' + (res.error || 'Feil'); }
+  });
+});
+document.getElementById('saveGwPhoneBtn').addEventListener('click', function() {
+  var v = document.getElementById('sGwPhone').value.trim();
+  var st = document.getElementById('gwPhoneStatus');
+  localStorage.setItem('gw_phone', v);
+  adminApi('/admin/settings/gateway-phone', { method: 'POST', body: JSON.stringify({ phoneNumber: v }) }).then(function(res) {
+    if (res.success) { st.style.color = '#34d399'; st.textContent = '✓ Lagret!'; toast('Lagret!'); }
+    else { st.style.color = '#f87171'; st.textContent = '✕ Feil'; }
+  });
+});
+document.getElementById('saveWelcomeBtn').addEventListener('click', function() {
+  var v = document.getElementById('sWelcomeTpl').value;
+  var st = document.getElementById('welcomeStatus');
+  localStorage.setItem('welcome_template', v);
+  adminApi('/admin/settings/welcome-template', { method: 'POST', body: JSON.stringify({ template: v }) }).then(function(res) {
+    if (res.success) { st.style.color = '#34d399'; st.textContent = '✓ Lagret!'; toast('Mal lagret!'); }
+    else { st.style.color = '#f87171'; st.textContent = '✕ Feil'; }
+  });
+});
 
-// SESSION CHECK
-(function(){
-  if(!adminToken) return;
-  adminApi('/admin/tenants').then(function(res){
-    if(Array.isArray(res)){showAdmin();}
-    else{localStorage.removeItem('admin_token');adminToken='';}
-  }).catch(function(){localStorage.removeItem('admin_token');adminToken='';});
+// ── MANGLER: /admin/tenants/:id/messages — bruk direkte DB ───────
+// Server-endepunkt trengs — legger til i server.js
+// ── SESSION CHECK ────────────────────────────────────────────────
+(function() {
+  if (!adminToken) return;
+  adminApi('/admin/tenants').then(function(res) {
+    if (Array.isArray(res)) { showApp(); }
+    else { localStorage.removeItem('admin_token'); adminToken = ''; }
+  }).catch(function() { localStorage.removeItem('admin_token'); adminToken = ''; });
 })();
 </script>
 </body>
