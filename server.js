@@ -870,6 +870,21 @@ document.getElementById('loginPwd').addEventListener('keydown',e=>{if(e.key==='E
 </script></body></html>`;
 }
 
+// Hent enheter for en kunde
+app.get('/admin/tenants/:id/devices', requireAdmin, async (req, res) => {
+    const result = await pool.query(
+        'SELECT * FROM devices WHERE tenant_id=$1 ORDER BY last_seen DESC NULLS LAST',
+        [req.params.id]
+    );
+    res.json(result.rows);
+});
+
+// Slett enhet
+app.delete('/admin/devices/:id', requireAdmin, async (req, res) => {
+    await pool.query('DELETE FROM devices WHERE id=$1', [req.params.id]);
+    res.json({ success: true });
+});
+
 // Hent meldingshistorikk for en kunde (admin)
 app.get('/admin/tenants/:id/messages', requireAdmin, async (req, res) => {
     const limit = parseInt(req.query.limit) || 30;
@@ -887,8 +902,8 @@ app.get('/admin/tenants/:id/messages', requireAdmin, async (req, res) => {
 // Opprett en kunde kalt "Demo" i admin-panelet og sett slug her
 
 const DEMO_TENANT_SLUG = process.env.DEMO_TENANT_SLUG || 'demo';
-const DEMO_MAX_PER_IP = 3;
-const DEMO_MAX_PER_PHONE = 1;
+const DEMO_MAX_PER_IP = 5;
+const DEMO_MAX_PER_PHONE = 5;
 const DEMO_SESSION_MINUTES = 10;
 const DEMO_RATE_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 timer
 
@@ -1033,11 +1048,14 @@ app.get('/api/demo/status', async (req, res) => {
     const tenant = await getDemoTenant();
     const ip = getClientIp(req);
     const ipCheck = await checkRateLimit('ip:' + ip, DEMO_MAX_PER_IP);
+    const usedToday = DEMO_MAX_PER_IP - (ipCheck.allowed ? ipCheck.remaining + 1 : 0);
     res.json({
         available: !!tenant,
-        remainingToday: Math.max(0, ipCheck.remaining + (ipCheck.allowed ? 0 : 0)),
+        remainingToday: ipCheck.allowed ? ipCheck.remaining + 1 : 0,
+        usedToday: usedToday,
         maxPerDay: DEMO_MAX_PER_IP,
-        sessionMinutes: DEMO_SESSION_MINUTES
+        sessionMinutes: DEMO_SESSION_MINUTES,
+        serverOnline: true
     });
 });
 
