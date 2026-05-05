@@ -235,7 +235,7 @@ const tenantSessions = {};
 function requireAdmin(req, res, next) {
     const token = req.headers['x-admin-token'];
     if (!token || !adminSessions[token] || adminSessions[token].expires < Date.now()) return res.status(401).json({ error: 'Ikke innlogget' });
-    adminSessions[token].expires = Date.now() + 28800000;
+    adminSessions[token].expires = Date.now() + 604800000; // 7 dager
     next();
 }
 
@@ -243,7 +243,7 @@ async function requireTenantSession(req, res, next) {
     const token = req.headers['x-session-token'];
     const session = tenantSessions[token];
     if (!token || !session || session.expires < Date.now()) return res.status(401).json({ error: 'Ikke innlogget' });
-    session.expires = Date.now() + 28800000;
+    session.expires = Date.now() + 604800000;
     const tenant = await pool.query('SELECT * FROM tenants WHERE id=$1', [session.tenantId]);
     if (!tenant.rows[0]) return res.status(401).json({ error: 'Kunde ikke funnet' });
     req.tenant = tenant.rows[0];
@@ -284,7 +284,7 @@ app.get('/', (req, res) => res.json({ status: 'ok', version: '4.0.0', message: '
 app.post('/admin/login', (req, res) => {
     if (req.body.password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Feil passord' });
     const token = uuidv4();
-    adminSessions[token] = { expires: Date.now() + 28800000 };
+    adminSessions[token] = { expires: Date.now() + 604800000 };
     res.json({ token });
 });
 
@@ -418,7 +418,7 @@ app.post('/kunde/:slug/auth/login', async (req, res) => {
     if (!tenant) return res.status(404).json({ error: 'Ikke funnet' });
     if (req.body.password !== tenant.password) return res.status(401).json({ error: 'Feil passord' });
     const token = uuidv4();
-    tenantSessions[token] = { tenantId: tenant.id, expires: Date.now() + 28800000 };
+    tenantSessions[token] = { tenantId: tenant.id, expires: Date.now() + 604800000 };
     res.json({ token, tenantName: tenant.name });
 });
 
