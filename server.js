@@ -89,6 +89,8 @@ async function initDB() {
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS city TEXT;
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS org_number TEXT;
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS email TEXT;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS is_api_client BOOLEAN DEFAULT FALSE;
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS api_client_name TEXT;
         ALTER TABLE devices ADD COLUMN IF NOT EXISTS battery_level INT;
         ALTER TABLE devices ADD COLUMN IF NOT EXISTS network_type TEXT;
         ALTER TABLE messages ADD COLUMN IF NOT EXISTS retry_count INT DEFAULT 0;
@@ -285,27 +287,31 @@ app.get('/admin/tenants', requireAdmin, async (req, res) => {
             contactPerson: t.contact_person, contactPhone: t.contact_phone,
             address: t.address, postalCode: t.postal_code, city: t.city,
             orgNumber: t.org_number, email: t.email,
+            isApiClient: t.is_api_client || false,
+            apiClientName: t.api_client_name || null,
             stats: { inbound: parseInt(inbound.rows[0].count), sent: parseInt(sent.rows[0].count), pending: parseInt(pending.rows[0].count) }
         };
     }));
     res.json(result);
 });
 
-// Rediger kunde
 app.put('/admin/tenants/:id', requireAdmin, async (req, res) => {
-    const { name, password, phoneNumber, maxDevices, contactPerson, contactPhone, address, postalCode, city, orgNumber, email } = req.body;
+    const { name, password, phoneNumber, maxDevices, contactPerson, contactPhone,
+            address, postalCode, city, orgNumber, email, isApiClient, apiClientName } = req.body;
     if (!name) return res.status(400).json({ error: 'Navn påkrevd' });
     const updates = [
         'name=$1', 'phone_number=$2', 'max_devices=$3',
         'contact_person=$4', 'contact_phone=$5',
         'address=$6', 'postal_code=$7', 'city=$8',
-        'org_number=$9', 'email=$10'
+        'org_number=$9', 'email=$10',
+        'is_api_client=$11', 'api_client_name=$12'
     ];
     const values = [
         name, phoneNumber || null, maxDevices || 1,
         contactPerson || null, contactPhone || null,
         address || null, postalCode || null, city || null,
-        orgNumber || null, email || null
+        orgNumber || null, email || null,
+        isApiClient || false, apiClientName || null
     ];
     if (password && password.length >= 8) {
         updates.push('password=$' + (values.length + 1));
@@ -849,7 +855,204 @@ document.getElementById('loginPwd').addEventListener('keydown',e=>{if(e.key==='E
 </script></body></html>`;
 }
 
-// ── START ─────────────────────────────────────────────────────────────────────
+// ── TREDJEPARTS API — KOMPATIBELT ENDEPUNKT ──────────────────────────────────
+// Kompatibelt med AppFabrikk og andre systemer som bruker Basic Auth + JSON
+// Støtter både Basic Auth og Bearer Token / API-nøkkel i header
+//
+// Eksempel AppFabrikk-kall:
+//   POST /api/3rdparty/v1/message
+//   Authorization: Basic base64(slug:passord)   ← session-basert
+//   Authorization: Bearer sk_xxxxx              ← API-nøkkel
+//   { "to": "+4799887766", "message": "Hei!", "from": "AppFabrikk" }
+//
+// Alternativt format (phoneNumbers array):
+//   { "phoneNumbers": ["+4799887766"], "message": "Hei!", "from": "AppFabrikk" }
+
+app.post('/api/3rdparty/v1/message', async (req, res) => {
+    let tenant = null;
+
+    // --- Autentisering ---
+    const authHeader = req.headers['authorization'] || '';
+
+    if (authHeader.startsWith('Basic ')) {
+        // Basic Auth: base64(slug:passord) eller base64(apiKey:)
+        const decoded = Buffer.from(authHeader.slice(6), 'base64').toString('utf8');
+        const [username, password] = decoded.split(':');
+
+        // Prøv slug + passord først
+        if (username && password) {
+            const result = await pool.query('SELECT * FROM tenants WHERE slug=$1', [username]);
+            if (result.rows[0] && result.rows[0].password === password) {
+                tenant = result.rows[0];
+            }
+        }
+        // Prøv API-nøkkel som brukernavn (passord ignoreres)
+        if (!tenant && username) {
+            tenant = await getTenantByApiKey(username);
+        }
+
+    } else if (authHeader.startsWith('Bearer ')) {
+        // Bearer Token — API-nøkkel
+        const token = authHeader.slice(7).trim();
+        tenant = await getTenantByApiKey(token);
+
+    } else if (req.headers['x-api-key']) {
+        // API-nøkkel i egen header
+        tenant = await getTenantByApiKey(req.headers['x-api-key']);
+    }
+
+    if (!tenant) {
+        return res.status(401).json({
+            status: 'error',
+            error: 'Ugyldig autentisering. Bruk Basic Auth (slug:passord), Bearer token eller X-Api-Key.'
+        });
+    }
+
+    // --- Payload-parsing ---
+    const body = req.body;
+    const messageText = body.message || body.body || body.text;
+
+    // Støtter både "to" (streng) og "phoneNumbers" (array)
+    let recipients = [];
+    if (body.to) {
+        recipients = Array.isArray(body.to) ? body.to : [body.to];
+    } else if (body.phoneNumbers) {
+        recipients = Array.isArray(body.phoneNumbers) ? body.phoneNumbers : [body.phoneNumbers];
+    }
+
+    if (!messageText || !recipients.length) {
+        return res.status(400).json({
+            status: 'error',
+            error: 'Påkrevd: "message" (eller "body") og "to" (eller "phoneNumbers")'
+        });
+    }
+
+    // Normaliser nummer til E.164
+    function normaliserNummer(nummer) {
+        const rent = String(nummer).replace(/[\s\-\(\)\.]/g, '');
+        if (rent.startsWith('+')) return rent;
+        if (rent.startsWith('00')) return '+' + rent.slice(2);
+        if (rent.length === 8) return '+47' + rent;
+        return rent;
+    }
+
+    // --- Legg meldinger i utgående kø ---
+    const messageIds = [];
+    for (const nummer of recipients) {
+        const id = uuidv4();
+        const to = normaliserNummer(nummer);
+        await pool.query(
+            'INSERT INTO messages (id,tenant_id,direction,status,to_number,body,created_at,source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+            [id, tenant.id, 'outbound', 'pending', to, messageText, Date.now(), '3rdparty']
+        );
+        messageIds.push({ id, to });
+    }
+
+    console.log(`[3rdparty] ${tenant.name} → ${recipients.length} melding(er) lagt i kø`);
+
+    // Respons kompatibel med AppFabrikk sitt forventede format
+    res.status(200).json({
+        status: 'sent',
+        messageId: messageIds.length === 1 ? messageIds[0].id : undefined,
+        messageIds: messageIds.length > 1 ? messageIds.map(m => m.id) : undefined,
+        queued: messageIds.length,
+        tenant: tenant.name
+    });
+});
+
+// Hent sendte meldinger via API-nøkkel (for AppFabrikk dashboard)
+app.get('/api/3rdparty/v1/messages/sent', async (req, res) => {
+    const tenant = await getTenantByApiKey(
+        req.headers['x-api-key'] ||
+        (req.headers['authorization'] || '').replace('Bearer ', '')
+    );
+    if (!tenant) return res.status(401).json({ status: 'error', error: 'Ugyldig API-nøkkel' });
+
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+    const result = await pool.query(
+        `SELECT id, to_number as "to", body as message, status, created_at as "createdAt",
+                sent_at as "sentAt", error_message as "errorMessage", retry_count as "retryCount"
+         FROM messages WHERE tenant_id=$1 AND direction='outbound'
+         ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+        [tenant.id, limit, offset]
+    );
+    res.json({
+        status: 'ok',
+        total: result.rowCount,
+        messages: result.rows.map(m => ({
+            ...m,
+            createdAt: m.createdAt ? new Date(parseInt(m.createdAt)).toISOString() : null,
+            sentAt: m.sentAt ? new Date(parseInt(m.sentAt)).toISOString() : null
+        }))
+    });
+});
+
+// Hent innkommende meldinger via API-nøkkel (for AppFabrikk dashboard)
+app.get('/api/3rdparty/v1/messages/inbox', async (req, res) => {
+    const tenant = await getTenantByApiKey(
+        req.headers['x-api-key'] ||
+        (req.headers['authorization'] || '').replace('Bearer ', '')
+    );
+    if (!tenant) return res.status(401).json({ status: 'error', error: 'Ugyldig API-nøkkel' });
+
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+    const since = req.query.since; // ISO timestamp for polling
+
+    let query = `SELECT id, from_number as "from", body as message, received_at as "receivedAt"
+                 FROM messages WHERE tenant_id=$1 AND direction='inbound'`;
+    const params = [tenant.id];
+
+    if (since) {
+        params.push(new Date(since).getTime());
+        query += ` AND received_at > $${params.length}`;
+    }
+
+    query += ` ORDER BY received_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+    res.json({
+        status: 'ok',
+        total: result.rowCount,
+        messages: result.rows.map(m => ({
+            ...m,
+            receivedAt: m.receivedAt ? new Date(parseInt(m.receivedAt)).toISOString() : null
+        }))
+    });
+});
+
+// Hent status på én melding
+app.get('/api/3rdparty/v1/messages/:id', async (req, res) => {
+    const tenant = await getTenantByApiKey(
+        req.headers['x-api-key'] ||
+        (req.headers['authorization'] || '').replace('Bearer ', '')
+    );
+    if (!tenant) return res.status(401).json({ status: 'error', error: 'Ugyldig API-nøkkel' });
+
+    const result = await pool.query(
+        'SELECT * FROM messages WHERE id=$1 AND tenant_id=$2',
+        [req.params.id, tenant.id]
+    );
+    if (!result.rows[0]) return res.status(404).json({ status: 'error', error: 'Melding ikke funnet' });
+
+    const m = result.rows[0];
+    res.json({
+        status: 'ok',
+        message: {
+            id: m.id,
+            to: m.to_number,
+            from: m.from_number,
+            message: m.body,
+            direction: m.direction,
+            status: m.status,
+            createdAt: m.created_at ? new Date(parseInt(m.created_at)).toISOString() : null,
+            sentAt: m.sent_at ? new Date(parseInt(m.sent_at)).toISOString() : null,
+            errorMessage: m.error_message || null
+        }
+    });
+});
 initDB().then(() => {
     app.listen(PORT, () => {
         console.log('SMS Gateway Server v4.0 med PostgreSQL');
