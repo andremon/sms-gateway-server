@@ -394,40 +394,6 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
         </div>
       </div>
 
-        <div class="card" style="margin-bottom:16px">
-          <div class="card-header" style="cursor:pointer" onclick="toggleWebhookInfo()">
-            <span class="card-title">Legg til webhook</span>
-            <button class="btn-ghost" style="font-size:11px">ℹ️ Hva er webhooks?</button>
-          </div>
-          <div id="webhookInfoBox" style="display:none;background:#6366f110;border:1px solid #6366f130;border-radius:8px;padding:14px;margin:0 16px 14px;font-size:12px;color:var(--text2);line-height:1.7">
-            <strong style="color:var(--text)">🔗 Webhooks</strong> lar deg koble Ayno Connect til andre systemer automatisk.<br><br>
-            Når en SMS mottas eller sendes, sender Ayno Connect et HTTP POST-kall til din URL med meldingsdetaljer. Dette brukes til å:<br>
-            • Oppdatere ditt CRM eller bookingsystem automatisk<br>
-            • Trigge svar eller handlinger i egne systemer<br>
-            • Logge meldinger til eksterne tjenester<br><br>
-            <strong style="color:var(--text)">Hemmelig nøkkel</strong> brukes til å verifisere at kallet faktisk kommer fra Ayno Connect.
-          </div>
-        <div class="card-body">
-          <div class="form-2col">
-            <div class="field"><label>URL</label><input type="url" id="webhookUrl" placeholder="https://ditt-system.no/webhook"></div>
-            <div class="field"><label>Hemmelig nøkkel (valgfri)</label><input type="text" id="webhookSecret" placeholder="Genereres automatisk"></div>
-          </div>
-          <div class="field" style="margin-bottom:14px"><label>Hendelser</label>
-            <div class="checkbox-group">
-              <label><input type="checkbox" value="sms.received" checked> Innkommende</label>
-              <label><input type="checkbox" value="sms.sent" checked> Sendt</label>
-              <label><input type="checkbox" value="sms.failed"> Mislykket</label>
-            </div>
-          </div>
-          <button class="submit-btn" id="addWebhookBtn">Legg til webhook</button>
-        </div></div>
-        <div class="card"><div class="card-header"><span class="card-title">Aktive webhooks</span></div>
-        <div class="card-body">
-          <table><thead><tr><th>URL</th><th>Hendelser</th><th>Status</th><th></th></tr></thead>
-          <tbody id="webhooksTable"><tr class="empty-row"><td colspan="4">Ingen webhooks</td></tr></tbody></table>
-        </div></div>
-      </div>
-
       <div id="tab-rules" class="tab-content">
         <!-- AKTIVE REGLER ØVERST -->
         <div class="card" style="margin-bottom:16px">
@@ -603,7 +569,13 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
 
         </div>
       </div>
-<div id="contactModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px">
+
+    </div><!-- /tab-content-wrap -->
+  </main>
+</div><!-- /app -->
+
+<!-- MODALER -->
+<div id="contactModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:20px">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:500px;max-width:100%">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
       <h2 style="font-size:16px;font-weight:600;color:var(--text)" id="contactModalTitle">Ny kontakt</h2>
@@ -893,7 +865,7 @@ document.getElementById('loginBtn').addEventListener('click',doLogin);
 document.getElementById('loginPwd').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
 
 // Vis demo-info på innloggingssiden
-if (SLUG === (window.DEMO_SLUG || 'demo')) {
+if (SLUG === 'demo') {
   document.getElementById('loginSub').innerHTML = '🚀 Demo-modus';
   var demoInfo = document.createElement('div');
   demoInfo.style.cssText = 'background:linear-gradient(135deg,#34d39910,#6366f110);border:1px solid #34d39930;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.6;text-align:left';
@@ -1129,7 +1101,7 @@ document.getElementById('sentExport').addEventListener('click',function(){window
 
 function loadWebhooks(){api('/api/webhooks').then(function(data){document.getElementById('webhooksTable').innerHTML=data.length?data.map(function(w){var ev=Array.isArray(w.events)?w.events.join(', '):w.events;return'<tr><td style="max-width:240px;word-break:break-all;font-size:12px">'+esc(w.url)+'</td><td style="font-size:12px">'+esc(ev)+'</td><td><span class="badge badge-green">Aktiv</span></td><td><button class="del-btn" data-id="'+w.id+'">Slett</button></td></tr>';}).join(''):'<tr class="empty-row"><td colspan="4">Ingen webhooks</td></tr>';document.querySelectorAll('#webhooksTable .del-btn').forEach(function(btn){btn.addEventListener('click',function(){api('/api/webhooks/'+btn.getAttribute('data-id'),{method:'DELETE'}).then(function(){loadWebhooks();toast('Webhook slettet');});});});});}
 
-document.getElementById('addWebhookBtn').addEventListener('click',function(){var url=document.getElementById('webhookUrl').value.trim(),secret=document.getElementById('webhookSecret').value.trim(),events=Array.from(document.querySelectorAll('#tab-webhooks input[type=checkbox]:checked')).map(function(c){return c.value;});if(!url){toast('Skriv inn URL','err');return;}api('/api/webhooks',{method:'POST',body:JSON.stringify({url:url,secret:secret,events:events})}).then(function(){document.getElementById('webhookUrl').value='';loadWebhooks();toast('Webhook lagt til!');});});
+document.getElementById('addWebhookBtn').addEventListener('click',function(){var url=document.getElementById('webhookUrl').value.trim(),secret=document.getElementById('webhookSecret').value.trim(),events=Array.from(document.querySelectorAll('#acc-webhooks input[type=checkbox]:checked')).map(function(c){return c.value;});if(!url){toast('Skriv inn URL','err');return;}api('/api/webhooks',{method:'POST',body:JSON.stringify({url:url,secret:secret,events:events})}).then(function(){document.getElementById('webhookUrl').value='';loadWebhooks();toast('Webhook lagt til!');});});
 
 function loadRules(){api('/api/rules').then(function(data){document.getElementById('rulesTable').innerHTML=data.length?data.map(function(r){return'<tr><td>'+esc(r.name)+'</td><td><span class="mono">'+esc(r.trigger)+'</span></td><td style="max-width:180px;font-size:12px">'+esc(r.response)+'</td><td><label class="switch"><input type="checkbox" '+(r.enabled?'checked':'')+' data-id="'+r.id+'"><span class="slider"></span></label></td><td><button class="del-btn" data-id="'+r.id+'">Slett</button></td></tr>';}).join(''):'<tr class="empty-row"><td colspan="5">Ingen regler</td></tr>';document.querySelectorAll('#rulesTable input[type=checkbox]').forEach(function(cb){cb.addEventListener('change',function(){api('/api/rules/'+cb.getAttribute('data-id'),{method:'PUT',body:JSON.stringify({enabled:cb.checked})});});});document.querySelectorAll('#rulesTable .del-btn').forEach(function(btn){btn.addEventListener('click',function(){api('/api/rules/'+btn.getAttribute('data-id'),{method:'DELETE'}).then(function(){loadRules();toast('Regel slettet');});});});});}
 
@@ -1277,7 +1249,7 @@ document.getElementById('newTemplateBtn').addEventListener('click',function(){
   toast('Mal lagret!');
 });
 
-(function(){if(!token)return;api('/api/stats').then(function(res){if(res&&!res.error){document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('sidebarTenant').textContent=SLUG;init();}else{localStorage.removeItem('sms_token_'+SLUG);token='';}}).catch(function(){localStorage.removeItem('sms_token_'+SLUG);token='';});})();
+(function(){if(!token)return;api('/api/stats').then(function(res){if(res&&!res.error){document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('sidebarTenant').textContent=SLUG;if(SLUG==='demo'){enableDemoMode();}init();}else{localStorage.removeItem('sms_token_'+SLUG);token='';}}).catch(function(){localStorage.removeItem('sms_token_'+SLUG);token='';});})();
 </script>
 </body>
 </html>
