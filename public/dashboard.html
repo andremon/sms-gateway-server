@@ -79,7 +79,18 @@ nav{flex:1;display:flex;flex-direction:column;gap:2px}
 .tpl-del{padding:4px 8px;background:transparent;color:var(--text3);border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit}.tpl-del:hover{color:var(--red)}
 .contacts-panel{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);max-height:280px;overflow-y:auto}
 .contact-row{padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);transition:background .15s}.contact-row:last-child{border-bottom:none}.contact-row:hover{background:var(--accent-dim)}
-.acc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s}
+.inbox-msg-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:14px}
+.inbox-msg-card:hover{border-color:var(--border2);background:#1e1e2e}
+.inbox-msg-card.unread{border-left:3px solid var(--accent)}
+.inbox-msg-card.replied{border-left:3px solid var(--green)}
+.inbox-sender{font-weight:600;font-size:13px;color:var(--text);margin-bottom:2px}
+.inbox-ingress{font-size:13px;color:var(--text2);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.inbox-meta{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.inbox-time{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+.reply-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px}
+.reply-badge.yes{background:#34d39920;color:var(--green);border:1px solid #34d39940}
+.reply-badge.no{background:#f8717120;color:var(--red);border:1px solid #f8717140}
+.inbox-avatar{width:36px;height:36px;border-radius:10px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent2);flex-shrink:0;font-family:'DM Mono',monospace}border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s}
 .acc-card.acc-open{border-color:var(--border2)}
 .acc-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none;transition:background .15s}
 .acc-header:hover{background:var(--surface2)}
@@ -169,13 +180,12 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
       </div>
     </div>
     <nav>
-      <button class="nav-item active" data-tab="overview"><span class="icon">📊</span>Oversikt</button>
+      <button class="nav-item active" data-tab="inbox"><span class="icon">📨</span>Innkommende</button>
       <button class="nav-item" data-tab="send"><span class="icon">✉️</span>Send SMS</button>
-      <button class="nav-item" data-tab="inbox"><span class="icon">📨</span>Innkommende</button>
       <button class="nav-item" data-tab="sent"><span class="icon">✅</span>Sendte</button>
       <button class="nav-item" data-tab="failed"><span class="icon">⚠️</span>Feilede</button>
       <button class="nav-item" data-tab="contacts"><span class="icon">👥</span>Kontakter</button>
-      <button class="nav-item" data-tab="webhooks"><span class="icon">🔗</span>Webhooks</button>
+      <button class="nav-item" data-tab="overview"><span class="icon">📊</span>Statistikk</button>
       <button class="nav-item" data-tab="rules"><span class="icon">🤖</span>Auto-svar</button>
       <button class="nav-item" data-tab="settings"><span class="icon">⚙️</span>Innstillinger</button>
     </nav>
@@ -191,7 +201,7 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
     </div>
     <div class="content">
 
-      <div id="tab-overview" class="tab-content active">
+      <div id="tab-overview" class="tab-content">
         <div class="stats-grid" id="statsGrid"></div>
         <div class="card">
           <div class="card-header"><span class="card-title">Aktivitet — siste 7 dager</span></div>
@@ -300,17 +310,38 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
         </div>
       </div>
 
-      <div id="tab-inbox" class="tab-content">
-        <div class="card"><div class="card-header"><span class="card-title">Innkommende meldinger</span></div>
-        <div class="card-body">
-          <div class="toolbar">
-            <input type="text" class="search-input" id="inboxSearch" placeholder="🔍 Søk...">
-            <button class="btn-ghost" id="inboxRefresh">↻ Oppdater</button>
-            <button class="btn-ghost" id="inboxExport">⬇ CSV</button>
+      <div id="tab-inbox" class="tab-content active">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Innkommende meldinger</span>
+            <div style="display:flex;gap:8px">
+              <input type="text" class="search-input" id="inboxSearch" placeholder="🔍 Søk..." style="width:180px">
+              <button class="btn-ghost" id="inboxRefresh">↻</button>
+              <button class="btn-ghost" id="inboxExport">⬇ CSV</button>
+            </div>
           </div>
-          <table><thead><tr><th>Fra</th><th>Melding</th><th>Tidspunkt</th><th></th></tr></thead>
-          <tbody id="inboxTable"><tr class="empty-row"><td colspan="4">Ingen meldinger</td></tr></tbody></table>
-        </div></div>
+          <div id="inboxCards" style="display:flex;flex-direction:column;gap:8px;padding:0 0 4px"></div>
+          <div id="inboxEmpty" style="padding:32px;text-align:center;color:var(--text3);font-size:13px;display:none">Ingen innkommende meldinger</div>
+        </div>
+
+        <!-- MELDINGSDETALJ -->
+        <div id="inboxDetail" style="display:none;margin-top:12px">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div style="font-weight:600;font-size:14px;color:var(--text)" id="detailFrom"></div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px" id="detailTime"></div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button class="btn-ghost" style="font-size:11px" onclick="closeDetail()">✕ Lukk</button>
+                <button class="submit-btn" style="font-size:12px;padding:7px 16px" id="detailReplyBtn">✉️ Svar</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="detailBody" style="font-size:14px;color:var(--text);line-height:1.7;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;white-space:pre-wrap"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="tab-sent" class="tab-content">
@@ -398,21 +429,42 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
       </div>
 
       <div id="tab-rules" class="tab-content">
-        <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Ny auto-svar regel</span></div>
-        <div class="card-body">
-          <div class="form-2col">
-            <div class="field"><label>Navn</label><input type="text" id="ruleName" placeholder="F.eks. Velkomstmelding"></div>
-            <div class="field"><label>Trigger</label><input type="text" id="ruleTrigger" placeholder="F.eks. HJELP"></div>
+        <!-- AKTIVE REGLER ØVERST -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <span class="card-title">Aktive auto-svar regler</span>
+            <button class="btn-ghost" id="showAddRuleBtn" style="font-size:12px">+ Ny regel</button>
           </div>
-          <div class="field" style="margin-bottom:12px"><label>Automatisk svar</label><textarea id="ruleResponse" placeholder="Teksten som sendes tilbake..."></textarea></div>
-          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:14px;cursor:pointer"><input type="checkbox" id="ruleIsRegex" style="accent-color:var(--accent)"> Bruk regex</label>
-          <button class="submit-btn" id="addRuleBtn">Lagre regel</button>
-        </div></div>
-        <div class="card"><div class="card-header"><span class="card-title">Aktive regler</span></div>
-        <div class="card-body">
-          <table><thead><tr><th>Navn</th><th>Trigger</th><th>Svar</th><th>Aktiv</th><th></th></tr></thead>
-          <tbody id="rulesTable"><tr class="empty-row"><td colspan="5">Ingen regler</td></tr></tbody></table>
-        </div></div>
+          <div class="card-body">
+            <table><thead><tr><th>Trigger</th><th>Svar</th><th>Aktiv</th><th></th></tr></thead>
+            <tbody id="rulesTable"><tr class="empty-row"><td colspan="4">Ingen regler ennå — bruk forslagene under</td></tr></tbody></table>
+          </div>
+        </div>
+
+        <!-- NY REGEL (skjult til klikk) -->
+        <div class="card" id="addRuleCard" style="margin-bottom:16px;display:none">
+          <div class="card-header"><span class="card-title">Ny regel</span><button class="btn-ghost" onclick="document.getElementById('addRuleCard').style.display='none'" style="font-size:12px">✕ Lukk</button></div>
+          <div class="card-body">
+            <div class="form-2col">
+              <div class="field"><label>Navn</label><input type="text" id="ruleName" placeholder="F.eks. Velkomstmelding"></div>
+              <div class="field"><label>Trigger-ord</label><input type="text" id="ruleTrigger" placeholder="F.eks. HJELP"></div>
+            </div>
+            <div class="field" style="margin-bottom:12px"><label>Automatisk svar</label><textarea id="ruleResponse" placeholder="Teksten som sendes tilbake automatisk..."></textarea></div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:14px;cursor:pointer"><input type="checkbox" id="ruleIsRegex" style="accent-color:var(--accent)"> Bruk regex (avansert)</label>
+            <button class="submit-btn" id="addRuleBtn">Lagre regel</button>
+          </div>
+        </div>
+
+        <!-- FORSLAG TIL AUTO-SVAR -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">💡 Forslag til regler</span></div>
+          <div class="card-body">
+            <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Klikk på et forslag for å legge det til som regel med ett klikk.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="ruleSuggestions">
+              <!-- Fylles av JS -->
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="tab-settings" class="tab-content">
@@ -515,13 +567,42 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
             </div>
           </div>
 
+          <!-- WEBHOOKS -->
+          <div id="acc-webhooks" class="acc-card" style="margin-bottom:8px">
+            <div class="acc-header" onclick="toggleAcc('webhooks')">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:16px">🔗</span>
+                <div>
+                  <div style="font-weight:600;font-size:13px;color:var(--text)">Webhooks</div>
+                  <div style="font-size:11px;color:var(--text3)">Koble til eksterne systemer automatisk</div>
+                </div>
+              </div>
+              <span class="acc-arrow" id="arrow-webhooks">▼</span>
+            </div>
+            <div class="acc-body" id="body-webhooks" style="display:none">
+              <div style="background:#6366f110;border:1px solid #6366f130;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.7">
+                🔗 Webhooks sender automatisk varsel til et annet system når en SMS mottas eller sendes.<br>Brukes av utviklere for å koble Ayno Connect til CRM, bookingsystem osv.
+              </div>
+              <div class="form-2col" style="margin-bottom:12px">
+                <div class="field"><label>URL</label><input type="url" id="webhookUrl" placeholder="https://ditt-system.no/webhook"></div>
+                <div class="field"><label>Hemmelig nøkkel (valgfri)</label><input type="text" id="webhookSecret" placeholder="Genereres automatisk"></div>
+              </div>
+              <div class="field" style="margin-bottom:12px"><label>Hendelser</label>
+                <div class="checkbox-group">
+                  <label><input type="checkbox" value="sms.received" checked> Innkommende</label>
+                  <label><input type="checkbox" value="sms.sent" checked> Sendt</label>
+                  <label><input type="checkbox" value="sms.failed"> Mislykket</label>
+                </div>
+              </div>
+              <button class="submit-btn" id="addWebhookBtn" style="margin-bottom:14px">Legg til webhook</button>
+              <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Aktive webhooks</div>
+              <table><thead><tr><th>URL</th><th>Hendelser</th><th>Status</th><th></th></tr></thead>
+              <tbody id="webhooksTable"><tr class="empty-row"><td colspan="4">Ingen webhooks</td></tr></tbody></table>
+            </div>
+          </div>
+
         </div>
       </div>
-
-    </div>
-  </main>
-</div>
-<!-- KONTAKT MODAL -->
 <div id="contactModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:500px;max-width:100%">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
@@ -575,7 +656,7 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
 
 <script>
 var BASE=window.location.origin,SLUG=window.location.pathname.split('/')[2];
-var token=localStorage.getItem('sms_token_'+SLUG)||'',allContacts=[],activeTab='overview';
+var token=localStorage.getItem('sms_token_'+SLUG)||'',allContacts=[],activeTab='inbox';
 // ── KONTAKTER ──────────────────────────────────────────────────────
 var allFullContacts = [];
 
@@ -855,7 +936,7 @@ function enableDemoMode(){
 document.getElementById('logoutBtn').addEventListener('click',function(){localStorage.removeItem('sms_token_'+SLUG);location.reload();});
 document.querySelectorAll('.nav-item[data-tab]').forEach(function(btn){btn.addEventListener('click',function(){switchTab(btn.getAttribute('data-tab'));});});
 
-function switchTab(name){activeTab=name;document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});document.getElementById('tab-'+name).classList.add('active');document.querySelector('.nav-item[data-tab="'+name+'"]').classList.add('active');document.getElementById('pageTitle').textContent={'overview':'Oversikt','send':'Send SMS','inbox':'Innkommende','sent':'Sendte','failed':'Feilede meldinger','contacts':'Kontakter','webhooks':'Webhooks','rules':'Auto-svar','settings':'Innstillinger'}[name]||name;if(name==='overview')loadStats();if(name==='inbox')loadInbox();if(name==='sent')loadSent();if(name==='webhooks')loadWebhooks();if(name==='rules')loadRules();if(name==='send')loadContacts();if(name==='contacts')loadFullContacts();if(name==='settings'){loadTenantSettings();initSettingsListeners();}
+function switchTab(name){activeTab=name;document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});document.getElementById('tab-'+name).classList.add('active');document.querySelector('.nav-item[data-tab="'+name+'"]').classList.add('active');document.getElementById('pageTitle').textContent={'inbox':'Innkommende','send':'Send SMS','sent':'Sendte','failed':'Feilede meldinger','contacts':'Kontakter','overview':'Statistikk','rules':'Auto-svar','settings':'Innstillinger'}[name]||name;if(name==='overview')loadStats();if(name==='inbox')loadInbox();if(name==='sent')loadSent();if(name==='webhooks')loadWebhooks();if(name==='contacts')loadFullContacts();if(name==='rules'){loadRules();renderRuleSuggestions();}if(name==='send')loadContacts();if(name==='settings'){loadTenantSettings();initSettingsListeners();}
   if(name==='failed')loadFailed();
   if(name==='settings')initSettingsListeners();}
 
@@ -934,9 +1015,106 @@ function toggleAcc(id){
   card.classList.toggle('acc-open',!open);
 }
 
-function toggleWebhookInfo(){var el=document.getElementById('webhookInfoBox');el.style.display=el.style.display==='none'?'block':'none';}
+// AUTO-SVAR FORSLAG
+var ruleSuggestions = [
+  { name:'Hjelp', trigger:'HJELP', response:'Hei! For hjelp, ring oss på tlf eller besøk nettsiden vår. Vi svarer på henvendelser innen 24 timer.' },
+  { name:'Timebestilling', trigger:'TIME', response:'Hei! For å bestille time, ring oss eller besøk vår nettside. Vi gleder oss til å hjelpe deg!' },
+  { name:'Åpningstider', trigger:'ÅPENT', response:'Vi er åpne man-fre 08-16, lør 10-14. Velkommen innom!' },
+  { name:'Bekreftelse', trigger:'OK', response:'Takk for bekreftelsen! Vi ser frem til å se deg. Ta kontakt hvis du trenger å endre tidspunktet.' },
+  { name:'Avmelding', trigger:'STOPP', response:'Du er nå avmeldt fra våre SMS-varsler. Svar START for å melde deg på igjen.' },
+  { name:'Påmelding', trigger:'START', response:'Velkommen tilbake! Du vil nå motta SMS-varsler fra oss igjen.' },
+];
+
+function renderRuleSuggestions() {
+  var el = document.getElementById('ruleSuggestions');
+  if (!el) return;
+  el.innerHTML = ruleSuggestions.map(function(s) {
+    return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all .15s" ' +
+      'onclick="useSuggestion(\''+esc(s.name)+'\',\''+esc(s.trigger)+'\',\''+esc(s.response)+'\')" ' +
+      'onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+        '<strong style="font-size:13px;color:var(--text)">'+esc(s.name)+'</strong>' +
+        '<span style="background:var(--accent-dim);color:var(--accent2);border-radius:6px;padding:2px 8px;font-size:11px;font-family:\'DM Mono\',monospace">'+esc(s.trigger)+'</span>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--text2);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+esc(s.response)+'</div>' +
+      '<div style="font-size:11px;color:var(--accent2);margin-top:8px">+ Legg til som regel →</div>' +
+    '</div>';
+  }).join('');
+}
+
+function useSuggestion(name, trigger, response) {
+  document.getElementById('addRuleCard').style.display = 'block';
+  document.getElementById('ruleName').value = name;
+  document.getElementById('ruleTrigger').value = trigger;
+  document.getElementById('ruleResponse').value = response;
+  document.getElementById('addRuleCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+document.getElementById('showAddRuleBtn').addEventListener('click', function() {
+  var card = document.getElementById('addRuleCard');
+  card.style.display = card.style.display === 'none' ? 'block' : 'none';
+});
+var repliedNumbers = new Set();
 function getContactName(phone){var c=allFullContacts.find(function(x){return x.phone===phone;});return c?c.name:null;}
-function loadInbox(){var s=document.getElementById('inboxSearch').value||'';api('/api/sms/inbox?limit=100&search='+encodeURIComponent(s)).then(function(data){document.getElementById('inboxTable').innerHTML=data.length?data.map(function(m){var name=getContactName(m.from);var fromDisplay=name?'<span style="font-weight:600;color:var(--text)">'+esc(name)+'</span><br><span class="mono" style="font-size:11px;color:var(--text3)">'+esc(m.from)+'</span>':'<span class="mono">'+esc(m.from)+'</span>';return'<tr><td>'+fromDisplay+'</td><td style="max-width:360px">'+esc(m.body)+'</td><td style="white-space:nowrap;color:var(--text2)">'+timeAgo(m.receivedAt)+'</td><td><button class="btn-ghost" style="font-size:11px;padding:5px 10px" onclick="replyTo(\''+esc(m.from)+'\')">Svar</button></td></tr>';}).join(''):'<tr class="empty-row"><td colspan="4">Ingen innkommende meldinger</td></tr>';});}
+
+function loadInbox(){
+  var s=document.getElementById('inboxSearch').value||'';
+  api('/api/sms/inbox?limit=100&search='+encodeURIComponent(s)).then(function(data){
+    var el=document.getElementById('inboxCards');
+    var empty=document.getElementById('inboxEmpty');
+    if(!data.length){el.innerHTML='';empty.style.display='block';return;}
+    empty.style.display='none';
+    // Sjekk hvem vi har svart til
+    api('/api/sms/sent?limit=200').then(function(sent){
+      var sentNums=new Set((sent||[]).map(function(m){return m.to;}));
+      el.innerHTML=data.map(function(m){
+        var name=getContactName(m.from)||m.from;
+        var initial=name.charAt(0).toUpperCase();
+        var replied=sentNums.has(m.from);
+        var shortBody=m.body.length>120?m.body.slice(0,120)+'…':m.body;
+        var t=timeAgo(m.receivedAt);
+        return '<div class="inbox-msg-card '+(replied?'replied':'unread')+'" onclick="openInboxDetail(\''+esc(m.from)+'\',\''+esc(name)+'\',\''+esc(m.body)+'\','+m.receivedAt+','+replied+')">' +
+          '<div class="inbox-avatar">'+initial+'</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div class="inbox-sender">'+esc(name)+(name!==m.from?'<span style="font-size:11px;color:var(--text3);font-weight:400;margin-left:8px;font-family:\'DM Mono\',monospace">'+esc(m.from)+'</span>':'')+'</div>' +
+            '<div class="inbox-ingress">'+esc(m.body)+'</div>' +
+            '<div class="inbox-meta">' +
+              '<span class="inbox-time">'+t+'</span>' +
+              '<span class="reply-badge '+(replied?'yes':'no')+'">' +
+                (replied?'✓ Svart':'✗ Ikke svart') +
+              '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }).catch(function(){
+      el.innerHTML=data.map(function(m){
+        var name=getContactName(m.from)||m.from;
+        var initial=name.charAt(0).toUpperCase();
+        return '<div class="inbox-msg-card unread" onclick="openInboxDetail(\''+esc(m.from)+'\',\''+esc(name)+'\',\''+esc(m.body)+'\','+m.receivedAt+',false)">' +
+          '<div class="inbox-avatar">'+initial+'</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div class="inbox-sender">'+esc(name)+'</div>' +
+            '<div class="inbox-ingress">'+esc(m.body)+'</div>' +
+            '<div class="inbox-meta"><span class="inbox-time">'+timeAgo(m.receivedAt)+'</span></div>' +
+          '</div></div>';
+      }).join('');
+    });
+  });
+}
+
+function openInboxDetail(from, name, body, ts, replied) {
+  document.getElementById('detailFrom').innerHTML = '<strong>'+esc(name)+'</strong>' + (name!==from?'<span style="font-size:12px;color:var(--text3);margin-left:8px;font-family:\'DM Mono\',monospace">'+esc(from)+'</span>':'');
+  document.getElementById('detailTime').textContent = new Date(ts).toLocaleString('nb-NO');
+  document.getElementById('detailBody').textContent = body;
+  document.getElementById('detailReplyBtn').onclick = function() { replyTo(from); };
+  document.getElementById('inboxDetail').style.display = 'block';
+  document.getElementById('inboxDetail').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function closeDetail() {
+  document.getElementById('inboxDetail').style.display = 'none';
+}
 function replyTo(num){document.getElementById('sendTo').value=num;switchTab('send');}
 
 document.getElementById('inboxSearch').addEventListener('input',loadInbox);
@@ -1047,7 +1225,7 @@ document.getElementById('verifyResetBtn').addEventListener('click',function(){
   });
 });
 
-function init(){loadStats();loadContacts();loadFullContacts();loadTenantSettings();loadTemplates();setInterval(function(){if(activeTab==='overview')loadStats();if(activeTab==='inbox')loadInbox();if(activeTab==='contacts')loadFullContacts();},10000);}
+function init(){loadInbox();loadContacts();loadFullContacts();loadTenantSettings();loadTemplates();setInterval(function(){if(activeTab==='inbox')loadInbox();if(activeTab==='overview')loadStats();if(activeTab==='contacts')loadFullContacts();},10000);}
 
 // SYMBOL OG VARIABEL-KNAPPER
 document.querySelectorAll('.sym-btn').forEach(function(btn){
