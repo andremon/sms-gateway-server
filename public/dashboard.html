@@ -79,7 +79,12 @@ nav{flex:1;display:flex;flex-direction:column;gap:2px}
 .tpl-del{padding:4px 8px;background:transparent;color:var(--text3);border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit}.tpl-del:hover{color:var(--red)}
 .contacts-panel{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius2);max-height:280px;overflow-y:auto}
 .contact-row{padding:10px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);transition:background .15s}.contact-row:last-child{border-bottom:none}.contact-row:hover{background:var(--accent-dim)}
-.contact-num{font-size:13px;font-weight:500;font-family:'DM Mono',monospace}.contact-meta{font-size:11px;color:var(--text3)}
+.acc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s}
+.acc-card.acc-open{border-color:var(--border2)}
+.acc-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none;transition:background .15s}
+.acc-header:hover{background:var(--surface2)}
+.acc-arrow{font-size:10px;color:var(--text3);transition:transform .2s}
+.acc-body{padding:0 16px 16px}.contact-meta{font-size:11px;color:var(--text3)}
 .contacts-empty{padding:32px;text-align:center;color:var(--text3);font-size:13px}
 .recipient-wrap{position:relative}
 .contact-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius2);box-shadow:0 12px 40px #0008;z-index:100;max-height:200px;overflow-y:auto;margin-top:4px;display:none}
@@ -411,58 +416,104 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
       </div>
 
       <div id="tab-settings" class="tab-content">
-        <div style="max-width:500px">
+        <div style="max-width:480px">
 
-        <!-- MOBILNUMMER ØVERST -->
-        <div class="card" style="margin-bottom:16px;border-color:#6366f130">
-          <div class="card-header"><span class="card-title" style="color:var(--accent2)">📱 Passord-gjenoppretting</span></div>
-          <div class="card-body">
-            <div style="background:#6366f110;border:1px solid #6366f130;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)">
-              ⚠️ Fyll inn mobilnummer for å kunne gjenopprette passordet ditt via SMS hvis du blir låst ute.
+          <!-- MOBILNUMMER — alltid synlig og fremhevet -->
+          <div id="acc-phone" class="acc-card acc-open" style="border-color:#6366f130;margin-bottom:8px">
+            <div class="acc-header" onclick="toggleAcc('phone')">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:16px">📱</span>
+                <div>
+                  <div style="font-weight:600;font-size:13px;color:var(--text)">Passord-gjenoppretting</div>
+                  <div style="font-size:11px;color:var(--accent2)" id="phoneSubtitle">Anbefalt — ikke satt</div>
+                </div>
+              </div>
+              <span class="acc-arrow" id="arrow-phone">▲</span>
             </div>
-            <div class="field"><label>Mobilnummer</label><input type="tel" id="phoneNumber" placeholder="+47 xxx xx xxx" autocomplete="tel"></div>
-            <button class="submit-btn" id="savePhoneBtn">Lagre mobilnummer</button>
-            <div id="phoneStatus" style="margin-top:10px;font-size:13px"></div>
-          </div>
-        </div>
-
-        <!-- FIRMAINFO -->
-        <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">🏢 Firmainfo</span></div>
-        <div class="card-body">
-          <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Brukes automatisk i meldingsmaler som <code style="background:#ffffff10;padding:1px 6px;border-radius:4px">{firma}</code></p>
-          <div class="field"><label>Firmanavn</label><input type="text" id="settingCompany" placeholder="Firma AS"></div>
-          <div class="field"><label>Kontaktperson</label><input type="text" id="settingContact" placeholder="Fornavn Etternavn"></div>
-          <div class="field"><label>Signatur</label><textarea id="settingSignature" rows="2" placeholder="Mvh Firma AS" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;resize:none;outline:none"></textarea></div>
-          <button class="submit-btn" id="saveSettingsBtn">Lagre firmainfo</button>
-          <div id="settingsStatus" style="margin-top:10px;font-size:13px"></div>
-        </div></div>
-
-        <!-- PASSORD -->
-        <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">🔑 Bytt passord</span></div>
-        <div class="card-body">
-          <div class="field"><label>Nåværende passord</label><input type="password" id="curPwd" autocomplete="current-password"></div>
-          <div class="field"><label>Nytt passord</label><input type="password" id="newPwdField" placeholder="Minimum 8 tegn" autocomplete="new-password"></div>
-          <div class="field"><label>Bekreft nytt passord</label><input type="password" id="cfmPwd" autocomplete="new-password"></div>
-          <button class="submit-btn" id="changePwdBtn">Lagre nytt passord</button>
-          <div id="pwdStatus" style="margin-top:10px;font-size:13px"></div>
-        </div></div>
-
-        <!-- BACKUP OG EKSPORT -->
-        <div class="card"><div class="card-header"><span class="card-title">📦 Backup og eksport</span></div>
-        <div class="card-body">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px">
-              <div style="font-weight:600;margin-bottom:4px;font-size:13px;color:var(--text)">👥 Kontakter</div>
-              <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">Alle kontakter med navn, nummer, firma og e-post</div>
-              <a href="#" id="dlContacts" class="btn-ghost" style="text-decoration:none;font-size:12px">⬇ Last ned CSV</a>
-            </div>
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px">
-              <div style="font-weight:600;margin-bottom:4px;font-size:13px;color:var(--text)">💬 Meldingslogg</div>
-              <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">Alle innkommende og utgående meldinger</div>
-              <a href="#" id="dlMessages" class="btn-ghost" style="text-decoration:none;font-size:12px">⬇ Last ned CSV</a>
+            <div class="acc-body" id="body-phone">
+              <div style="background:#6366f110;border:1px solid #6366f130;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)">
+                Lagre mobilnummer slik at du kan få nytt passord via SMS hvis du blir låst ute.
+              </div>
+              <div class="field"><label>Mobilnummer</label><input type="tel" id="phoneNumber" placeholder="+47 xxx xx xxx" autocomplete="tel"></div>
+              <button class="submit-btn" id="savePhoneBtn" style="margin-top:4px">Lagre</button>
+              <div id="phoneStatus" style="margin-top:8px;font-size:12px"></div>
             </div>
           </div>
-        </div></div>
+
+          <!-- FIRMAINFO -->
+          <div id="acc-company" class="acc-card" style="margin-bottom:8px">
+            <div class="acc-header" onclick="toggleAcc('company')">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:16px">🏢</span>
+                <div>
+                  <div style="font-weight:600;font-size:13px;color:var(--text)">Firmainfo</div>
+                  <div style="font-size:11px;color:var(--text3)">Navn, kontaktperson og signatur</div>
+                </div>
+              </div>
+              <span class="acc-arrow" id="arrow-company">▼</span>
+            </div>
+            <div class="acc-body" id="body-company" style="display:none">
+              <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Brukes i maler som <code style="background:#ffffff10;padding:1px 6px;border-radius:4px">{firma}</code></p>
+              <div class="field"><label>Firmanavn</label><input type="text" id="settingCompany" placeholder="Firma AS"></div>
+              <div class="field"><label>Kontaktperson</label><input type="text" id="settingContact" placeholder="Fornavn Etternavn"></div>
+              <div class="field"><label>Signatur</label><textarea id="settingSignature" rows="2" placeholder="Mvh Firma AS" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;resize:none;outline:none"></textarea></div>
+              <button class="submit-btn" id="saveSettingsBtn" style="margin-top:4px">Lagre</button>
+              <div id="settingsStatus" style="margin-top:8px;font-size:12px"></div>
+            </div>
+          </div>
+
+          <!-- PASSORD -->
+          <div id="acc-pwd" class="acc-card" style="margin-bottom:8px">
+            <div class="acc-header" onclick="toggleAcc('pwd')">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:16px">🔑</span>
+                <div>
+                  <div style="font-weight:600;font-size:13px;color:var(--text)">Bytt passord</div>
+                  <div style="font-size:11px;color:var(--text3)">Endre innloggingspassord</div>
+                </div>
+              </div>
+              <span class="acc-arrow" id="arrow-pwd">▼</span>
+            </div>
+            <div class="acc-body" id="body-pwd" style="display:none">
+              <div class="field"><label>Nåværende passord</label><input type="password" id="curPwd" autocomplete="current-password"></div>
+              <div class="field"><label>Nytt passord</label><input type="password" id="newPwdField" placeholder="Min. 8 tegn" autocomplete="new-password"></div>
+              <div class="field"><label>Bekreft</label><input type="password" id="cfmPwd" autocomplete="new-password"></div>
+              <button class="submit-btn" id="changePwdBtn" style="margin-top:4px">Lagre passord</button>
+              <div id="pwdStatus" style="margin-top:8px;font-size:12px"></div>
+            </div>
+          </div>
+
+          <!-- BACKUP -->
+          <div id="acc-backup" class="acc-card" style="margin-bottom:8px">
+            <div class="acc-header" onclick="toggleAcc('backup')">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:16px">📦</span>
+                <div>
+                  <div style="font-weight:600;font-size:13px;color:var(--text)">Backup og eksport</div>
+                  <div style="font-size:11px;color:var(--text3)">Last ned kontakter og meldingslogg</div>
+                </div>
+              </div>
+              <span class="acc-arrow" id="arrow-backup">▼</span>
+            </div>
+            <div class="acc-body" id="body-backup" style="display:none">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 16px">
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:var(--text)">👥 Kontakter</div>
+                    <div style="font-size:11px;color:var(--text2);margin-top:2px">Navn, nummer, firma, e-post</div>
+                  </div>
+                  <a href="#" id="dlContacts" class="btn-ghost" style="text-decoration:none;font-size:12px;flex-shrink:0">⬇ CSV</a>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 16px">
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:var(--text)">💬 Meldingslogg</div>
+                    <div style="font-size:11px;color:var(--text2);margin-top:2px">Alle inn- og utgående meldinger</div>
+                  </div>
+                  <a href="#" id="dlMessages" class="btn-ghost" style="text-decoration:none;font-size:12px;flex-shrink:0">⬇ CSV</a>
+                </div>
+              </div>
+            </div>
+          </div>
 
         </div>
       </div>
@@ -744,6 +795,13 @@ function loadTenantSettings() {
     document.getElementById('settingContact').value = s.contactPerson || '';
     document.getElementById('settingSignature').value = s.signature || '';
   });
+  // Vis om mobilnummer er registrert
+  api('/api/contacts').then(function(){}).catch(function(){});
+  fetch(BASE+'/kunde/'+SLUG+'/api/settings',{headers:{'X-Session-Token':token}}).then(function(r){return r.json();}).then(function(s){
+    var sub = document.getElementById('phoneSubtitle');
+    if (sub && s.phoneNumber) { sub.textContent = '✓ ' + s.phoneNumber; sub.style.color = 'var(--green)'; }
+    if (document.getElementById('phoneNumber')) document.getElementById('phoneNumber').value = s.phoneNumber || '';
+  }).catch(function(){});
 }
 
 
@@ -865,6 +923,16 @@ document.getElementById('retryAllBtn').addEventListener('click',function(){
     else toast(res.error||'Feil','err');
   });
 });
+
+function toggleAcc(id){
+  var body=document.getElementById('body-'+id);
+  var arrow=document.getElementById('arrow-'+id);
+  var card=document.getElementById('acc-'+id);
+  var open=body.style.display!=='none';
+  body.style.display=open?'none':'block';
+  arrow.textContent=open?'▼':'▲';
+  card.classList.toggle('acc-open',!open);
+}
 
 function toggleWebhookInfo(){var el=document.getElementById('webhookInfoBox');el.style.display=el.style.display==='none'?'block':'none';}
 function getContactName(phone){var c=allFullContacts.find(function(x){return x.phone===phone;});return c?c.name:null;}
