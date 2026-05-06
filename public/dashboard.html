@@ -416,7 +416,9 @@ if (SLUG === (window.DEMO_SLUG || 'demo')) {
   demoInfo.style.cssText = 'background:linear-gradient(135deg,#34d39910,#6366f110);border:1px solid #34d39930;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.6;text-align:left';
   demoInfo.innerHTML = '<div style="color:#34d399;font-weight:600;margin-bottom:4px">👋 Velkommen til Ayno Connect demo</div>Utforsk dashboardet og send test-SMS til ditt eget nummer.<br><span style="color:var(--text)">Passord: <strong>demodemo</strong></span>';
   document.getElementById('loginCard').insertBefore(demoInfo, document.getElementById('loginPwd'));
-}var pwd=document.getElementById('loginPwd').value;fetch(BASE+'/kunde/'+SLUG+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})}).then(function(r){return r.json();}).then(function(res){if(res.token){token=res.token;localStorage.setItem('sms_token_'+SLUG,token);document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('sidebarTenant').textContent=res.tenantName||SLUG;if(res.isDemo){enableDemoMode();}init();}else{document.getElementById('loginErr').textContent='Feil passord. Prøv igjen.';}});}
+}
+
+function doLogin(){var pwd=document.getElementById('loginPwd').value;fetch(BASE+'/kunde/'+SLUG+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})}).then(function(r){return r.json();}).then(function(res){if(res.token){token=res.token;localStorage.setItem('sms_token_'+SLUG,token);document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('sidebarTenant').textContent=res.tenantName||SLUG;if(res.isDemo){enableDemoMode();}init();}else{document.getElementById('loginErr').textContent='Feil passord. Prøv igjen.';}});}
 
 function enableDemoMode(){
   // Vis demo-banner
