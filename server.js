@@ -91,6 +91,8 @@ async function initDB() {
 
         ALTER TABLE contacts ADD COLUMN IF NOT EXISTS birthday TEXT;
         CREATE UNIQUE INDEX IF NOT EXISTS contacts_tenant_phone ON contacts(tenant_id, phone);
+
+        CREATE TABLE IF NOT EXISTS demo_sessions (
             id TEXT PRIMARY KEY,
             phone TEXT NOT NULL,
             ip TEXT NOT NULL,
