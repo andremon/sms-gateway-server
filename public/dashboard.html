@@ -169,6 +169,7 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
       <button class="nav-item" data-tab="inbox"><span class="icon">📨</span>Innkommende</button>
       <button class="nav-item" data-tab="sent"><span class="icon">✅</span>Sendte</button>
       <button class="nav-item" data-tab="failed"><span class="icon">⚠️</span>Feilede</button>
+      <button class="nav-item" data-tab="contacts"><span class="icon">👥</span>Kontakter</button>
       <button class="nav-item" data-tab="webhooks"><span class="icon">🔗</span>Webhooks</button>
       <button class="nav-item" data-tab="rules"><span class="icon">🤖</span>Auto-svar</button>
       <button class="nav-item" data-tab="settings"><span class="icon">⚙️</span>Innstillinger</button>
@@ -334,6 +335,48 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
           </table>
         </div></div>
       </div>
+      </div>
+
+      <div id="tab-contacts" class="tab-content">
+        <!-- KONTAKTER TOOLBAR -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <span class="card-title">👥 Kontakter</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <input type="text" id="contactSearch" placeholder="Søk navn, nummer, firma..." style="padding:6px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;width:220px">
+              <button class="btn-ghost" id="addContactBtn">+ Ny kontakt</button>
+              <button class="btn-ghost" id="importCsvBtn">⬆ Importer CSV</button>
+              <a href="#" class="btn-ghost" id="exportContactsBtn" style="text-decoration:none">⬇ Eksporter CSV</a>
+            </div>
+          </div>
+          <div class="card-body">
+            <table id="contactsTable">
+              <thead><tr><th>Navn</th><th>Telefon</th><th>Firma</th><th>E-post</th><th>Notater</th><th></th></tr></thead>
+              <tbody id="contactsTbody"><tr class="empty-row"><td colspan="6">Ingen kontakter ennå — legg til manuelt eller importer CSV</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- EKSPORT MELDINGER -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">📦 Backup og eksport</span></div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px">
+                <div style="font-weight:600;margin-bottom:6px;font-size:14px">📋 Kontakter</div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Alle kontakter med navn, nummer, firma og e-post</div>
+                <a href="#" id="dlContacts" class="btn-ghost" style="text-decoration:none;font-size:12px">⬇ Last ned CSV</a>
+              </div>
+              <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px">
+                <div style="font-weight:600;margin-bottom:6px;font-size:14px">💬 Meldingslogg</div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Alle innkommende og utgående meldinger</div>
+                <a href="#" id="dlMessages" class="btn-ghost" style="text-decoration:none;font-size:12px">⬇ Last ned CSV</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
         <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Legg til webhook</span></div>
         <div class="card-body">
           <div class="form-2col">
@@ -375,7 +418,16 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
       </div>
 
       <div id="tab-settings" class="tab-content">
-        <div class="card" style="max-width:440px"><div class="card-header"><span class="card-title">Bytt passord</span></div>
+        <!-- FIRMAINFO -->
+        <div class="card" style="max-width:440px;margin-bottom:16px"><div class="card-header"><span class="card-title">🏢 Firmainfo</span></div>
+        <div class="card-body">
+          <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Brukes automatisk i meldingsmaler som <code style="background:#ffffff10;padding:1px 6px;border-radius:4px">{firma}</code></p>
+          <div class="field"><label>Firmanavn</label><input type="text" id="settingCompany" placeholder="Firma AS"></div>
+          <div class="field"><label>Kontaktperson</label><input type="text" id="settingContact" placeholder="Fornavn Etternavn"></div>
+          <div class="field"><label>Signatur (legges til på meldinger)</label><textarea id="settingSignature" rows="2" placeholder="Mvh Firma AS" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;resize:none;outline:none"></textarea></div>
+          <button class="submit-btn" id="saveSettingsBtn">Lagre firmainfo</button>
+          <div id="settingsStatus" style="margin-top:10px;font-size:13px"></div>
+        </div></div>
         <div class="card-body">
           <div class="field"><label>Nåværende passord</label><input type="password" id="curPwd" autocomplete="current-password"></div>
           <div class="field"><label>Nytt passord</label><input type="password" id="newPwdField" placeholder="Minimum 8 tegn" autocomplete="new-password"></div>
@@ -396,12 +448,282 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
     </div>
   </main>
 </div>
-<div id="toast"></div>
+<!-- KONTAKT MODAL -->
+<div id="contactModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:500px;max-width:100%">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h2 style="font-size:16px;font-weight:600;color:var(--text)" id="contactModalTitle">Ny kontakt</h2>
+      <button onclick="closeContactModal()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <input type="hidden" id="editContactId">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="field"><label>Navn *</label><input type="text" id="cName" placeholder="Fornavn Etternavn"></div>
+      <div class="field"><label>Telefon *</label><input type="tel" id="cPhone" placeholder="+47 xxx xx xxx"></div>
+      <div class="field"><label>Firma</label><input type="text" id="cCompany" placeholder="Firma AS"></div>
+      <div class="field"><label>E-post</label><input type="email" id="cEmail" placeholder="post@firma.no"></div>
+      <div class="field" style="grid-column:1/-1"><label>Notater</label><textarea id="cNotes" rows="3" placeholder="Interne notater..." style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;resize:vertical;outline:none"></textarea></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="submit-btn" id="saveContactBtn" style="flex:1">Lagre</button>
+      <button onclick="closeContactModal()" class="btn-ghost">Avbryt</button>
+    </div>
+    <div id="contactModalErr" style="color:var(--red);font-size:12px;margin-top:8px;min-height:16px"></div>
+  </div>
+</div>
+
+<!-- CSV IMPORT MODAL -->
+<div id="csvModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:600px;max-width:100%">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="font-size:16px;font-weight:600;color:var(--text)">⬆ Importer kontakter</h2>
+      <button onclick="closeCsvModal()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.7">
+      <strong style="color:var(--text)">Format:</strong> CSV med kolonnene: <code style="background:#ffffff10;padding:1px 6px;border-radius:4px">navn,telefon,firma,epost,notater</code><br>
+      Første rad kan være kolonnenavn (hoppes over). Telefon med eller uten +47.
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Last opp CSV-fil</div>
+      <input type="file" id="csvFile" accept=".csv,.txt" style="width:100%;padding:10px;background:var(--bg2);border:1px dashed var(--border);border-radius:8px;color:var(--text);font-size:13px;cursor:pointer">
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Eller lim inn fra Excel</div>
+      <textarea id="csvPaste" rows="6" placeholder="Lim inn innhold her fra Excel/Numbers..." style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:monospace;resize:vertical;outline:none"></textarea>
+    </div>
+    <div id="csvPreview" style="display:none;margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text2)"></div>
+    <div style="display:flex;gap:10px">
+      <button class="submit-btn" id="previewCsvBtn" style="flex:1">Forhåndsvis</button>
+      <button class="submit-btn" id="importCsvConfirmBtn" style="display:none;flex:1;background:#22c55e">✓ Importer</button>
+      <button onclick="closeCsvModal()" class="btn-ghost">Avbryt</button>
+    </div>
+    <div id="csvStatus" style="font-size:12px;margin-top:8px;min-height:16px"></div>
+  </div>
+</div></div>
 
 <script>
 var BASE=window.location.origin,SLUG=window.location.pathname.split('/')[2];
 var token=localStorage.getItem('sms_token_'+SLUG)||'',allContacts=[],activeTab='overview';
-var pageTitles={overview:'Oversikt',send:'Send SMS',inbox:'Innkommende',sent:'Sendte',failed:'Feilede meldinger',webhooks:'Webhooks',rules:'Auto-svar',settings:'Innstillinger'};
+// ── KONTAKTER ──────────────────────────────────────────────────────
+var allFullContacts = [];
+
+function loadFullContacts(search) {
+  var url = '/api/contacts' + (search ? '?search=' + encodeURIComponent(search) : '');
+  api(url).then(function(data) {
+    allFullContacts = data;
+    renderContactsTable(data);
+    // Oppdater kontaktliste i send-fanen
+    updateSendContactList(data);
+  });
+}
+
+function renderContactsTable(data) {
+  var tbody = document.getElementById('contactsTbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Ingen kontakter funnet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(function(c) {
+    return '<tr>' +
+      '<td><strong>' + esc(c.name) + '</strong></td>' +
+      '<td style="font-family:monospace;font-size:12px">' + esc(c.phone) + '</td>' +
+      '<td style="font-size:12px">' + esc(c.company||'—') + '</td>' +
+      '<td style="font-size:12px">' + esc(c.email||'—') + '</td>' +
+      '<td style="font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.notes||'—') + '</td>' +
+      '<td><div style="display:flex;gap:6px">' +
+        '<button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="sendToContact(\'' + esc(c.phone) + '\',\'' + esc(c.name) + '\')">✉️ Send</button>' +
+        '<button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editContact(\'' + c.id + '\')">✏️</button>' +
+        '<button class="btn-ghost" style="font-size:11px;padding:4px 10px;color:var(--red)" onclick="deleteContact(\'' + c.id + '\',\'' + esc(c.name) + '\')">🗑</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function updateSendContactList(data) {
+  var el = document.getElementById('contactsList');
+  if (!el) return;
+  if (!data || !data.length) { el.innerHTML = '<div class="contacts-empty">Ingen kontakter ennå.</div>'; return; }
+  el.innerHTML = data.map(function(c) {
+    return '<div class="contact-row" data-num="'+esc(c.phone)+'" data-name="'+esc(c.name)+'">' +
+      '<div><div class="contact-num">'+esc(c.name)+'</div>' +
+      '<div class="contact-meta" style="font-family:monospace">'+esc(c.phone)+'</div></div>' +
+      '<span style="color:var(--text3);font-size:12px">→</span></div>';
+  }).join('');
+  el.querySelectorAll('.contact-row').forEach(function(row) {
+    row.addEventListener('click', function() {
+      selectContact(row.getAttribute('data-num'));
+      // Auto-fyll {navn} i melding
+      var nameVal = row.getAttribute('data-name');
+      var body = document.getElementById('smsBody');
+      if (body && nameVal) body.value = body.value.replace(/\{navn\}/g, nameVal);
+    });
+  });
+}
+
+function sendToContact(phone, name) {
+  switchTab('send');
+  setTimeout(function() {
+    selectContact(phone);
+    var body = document.getElementById('smsBody');
+    if (body && body.value) body.value = body.value.replace(/\{navn\}/g, name);
+  }, 100);
+}
+
+// Søk
+document.getElementById('contactSearch').addEventListener('input', function() {
+  loadFullContacts(this.value);
+});
+
+// Ny kontakt
+document.getElementById('addContactBtn').addEventListener('click', function() { openContactModal(); });
+
+function openContactModal(contact) {
+  document.getElementById('editContactId').value = contact ? contact.id : '';
+  document.getElementById('contactModalTitle').textContent = contact ? 'Rediger kontakt' : 'Ny kontakt';
+  document.getElementById('cName').value = contact ? contact.name : '';
+  document.getElementById('cPhone').value = contact ? contact.phone : '';
+  document.getElementById('cCompany').value = contact ? (contact.company||'') : '';
+  document.getElementById('cEmail').value = contact ? (contact.email||'') : '';
+  document.getElementById('cNotes').value = contact ? (contact.notes||'') : '';
+  document.getElementById('contactModalErr').textContent = '';
+  document.getElementById('contactModal').style.display = 'flex';
+}
+
+function closeContactModal() {
+  document.getElementById('contactModal').style.display = 'none';
+}
+
+function editContact(id) {
+  var c = allFullContacts.find(function(x) { return x.id === id; });
+  if (c) openContactModal(c);
+}
+
+function deleteContact(id, name) {
+  if (!confirm('Slett ' + name + '?')) return;
+  api('/api/contacts/' + id, { method: 'DELETE' }).then(function() {
+    toast('Kontakt slettet'); loadFullContacts();
+  });
+}
+
+document.getElementById('saveContactBtn').addEventListener('click', function() {
+  var id = document.getElementById('editContactId').value;
+  var payload = {
+    name: document.getElementById('cName').value.trim(),
+    phone: document.getElementById('cPhone').value.trim(),
+    company: document.getElementById('cCompany').value.trim(),
+    email: document.getElementById('cEmail').value.trim(),
+    notes: document.getElementById('cNotes').value.trim()
+  };
+  var err = document.getElementById('contactModalErr');
+  if (!payload.name || !payload.phone) { err.textContent = 'Navn og nummer er påkrevd'; return; }
+  var method = id ? 'PUT' : 'POST';
+  var url = id ? '/api/contacts/' + id : '/api/contacts';
+  api(url, { method: method, body: JSON.stringify(payload) }).then(function(res) {
+    if (res.success || res.id) { closeContactModal(); loadFullContacts(); toast(id ? 'Kontakt oppdatert!' : 'Kontakt lagt til!'); }
+    else { err.textContent = res.error || 'Feil'; }
+  });
+});
+
+// ── CSV IMPORT ─────────────────────────────────────────────────────
+var parsedCsvContacts = [];
+
+document.getElementById('importCsvBtn').addEventListener('click', function() {
+  document.getElementById('csvModal').style.display = 'flex';
+  document.getElementById('csvStatus').textContent = '';
+  document.getElementById('csvPreview').style.display = 'none';
+  document.getElementById('importCsvConfirmBtn').style.display = 'none';
+  document.getElementById('csvFile').value = '';
+  document.getElementById('csvPaste').value = '';
+});
+
+function closeCsvModal() { document.getElementById('csvModal').style.display = 'none'; }
+
+function parseCsvText(text) {
+  var lines = text.trim().split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+  if (!lines.length) return [];
+  var contacts = [];
+  var isHeader = /navn|name|phone|telefon|firma|company/i.test(lines[0]);
+  var start = isHeader ? 1 : 0;
+  for (var i = start; i < lines.length; i++) {
+    var cols = lines[i].split(/[,;\t]/).map(function(c) { return c.trim().replace(/^["']|["']$/g,''); });
+    if (!cols[0] && !cols[1]) continue;
+    // Normaliser nummer
+    var phone = (cols[1]||'').replace(/\s/g,'');
+    if (phone && !phone.startsWith('+') && phone.length === 8) phone = '+47' + phone;
+    else if (phone && phone.startsWith('47') && phone.length === 10) phone = '+' + phone;
+    contacts.push({ name: cols[0]||'', phone: phone, company: cols[2]||'', email: cols[3]||'', notes: cols[4]||'' });
+  }
+  return contacts.filter(function(c) { return c.name || c.phone; });
+}
+
+document.getElementById('csvFile').addEventListener('change', function() {
+  var file = this.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) { document.getElementById('csvPaste').value = e.target.result; };
+  reader.readAsText(file, 'UTF-8');
+});
+
+document.getElementById('previewCsvBtn').addEventListener('click', function() {
+  var text = document.getElementById('csvPaste').value;
+  if (!text.trim()) { document.getElementById('csvStatus').style.color='var(--red)'; document.getElementById('csvStatus').textContent='Ingen data å importere'; return; }
+  parsedCsvContacts = parseCsvText(text);
+  var preview = document.getElementById('csvPreview');
+  if (!parsedCsvContacts.length) { preview.style.display='none'; document.getElementById('csvStatus').style.color='var(--red)'; document.getElementById('csvStatus').textContent='Ingen gyldige kontakter funnet'; return; }
+  preview.style.display = 'block';
+  preview.innerHTML = '<strong style="color:var(--text)">Fant ' + parsedCsvContacts.length + ' kontakter:</strong><br><br>' +
+    parsedCsvContacts.slice(0,5).map(function(c) { return '• ' + c.name + ' · ' + c.phone + (c.company?' · '+c.company:''); }).join('<br>') +
+    (parsedCsvContacts.length > 5 ? '<br>... og ' + (parsedCsvContacts.length-5) + ' til' : '');
+  document.getElementById('importCsvConfirmBtn').style.display = '';
+  document.getElementById('csvStatus').textContent = '';
+});
+
+document.getElementById('importCsvConfirmBtn').addEventListener('click', function() {
+  var st = document.getElementById('csvStatus');
+  st.style.color = 'var(--text2)'; st.textContent = 'Importerer...';
+  api('/api/contacts/import', { method: 'POST', body: JSON.stringify({ contacts: parsedCsvContacts }) }).then(function(res) {
+    if (res.success) {
+      st.style.color = 'var(--green)';
+      st.textContent = '✓ Importert ' + res.imported + ' kontakter' + (res.skipped > 0 ? ' (' + res.skipped + ' hoppet over)' : '');
+      loadFullContacts();
+      setTimeout(closeCsvModal, 2000);
+    } else { st.style.color = 'var(--red)'; st.textContent = res.error || 'Feil'; }
+  });
+});
+
+// ── EKSPORT ────────────────────────────────────────────────────────
+document.getElementById('exportContactsBtn').addEventListener('click', function(e) {
+  e.preventDefault(); window.location.href = BASE + '/kunde/' + SLUG + '/api/export/contacts?token=' + token;
+});
+document.getElementById('dlContacts').addEventListener('click', function(e) {
+  e.preventDefault(); window.location.href = BASE + '/kunde/' + SLUG + '/api/export/contacts?token=' + token;
+});
+document.getElementById('dlMessages').addEventListener('click', function(e) {
+  e.preventDefault(); window.location.href = BASE + '/kunde/' + SLUG + '/api/export/messages?token=' + token;
+});
+
+// ── VARIABEL AUTO-UTFYLLING I SEND ────────────────────────────────
+function applyTemplateVars(text, name, phone) {
+  var now = new Date();
+  var dato = now.toLocaleDateString('nb-NO', { weekday:'long', day:'numeric', month:'long' });
+  var tid = now.toLocaleTimeString('nb-NO', { hour:'2-digit', minute:'2-digit' });
+  return text
+    .replace(/\{navn\}/g, name || '{navn}')
+    .replace(/\{dato\}/g, dato)
+    .replace(/\{tid\}/g, tid)
+    .replace(/\{firma\}/g, tenantSettings.companyName || '{firma}');
+}
+
+// ── INNSTILLINGER (firma) ──────────────────────────────────────────
+var tenantSettings = {};
+function loadTenantSettings() {
+  api('/api/settings').then(function(s) {
+    tenantSettings = s;
+    document.getElementById('settingCompany').value = s.companyName || '';
+    document.getElementById('settingContact').value = s.contactPerson || '';
+    document.getElementById('settingSignature').value = s.signature || '';
+  });
+}
+
 
 function api(path,opts){opts=opts||{};return fetch(BASE+'/kunde/'+SLUG+path,Object.assign({},opts,{headers:Object.assign({'Content-Type':'application/json','X-Session-Token':token},opts.headers||{})})).then(function(r){return r.json();});}
 
@@ -453,7 +775,7 @@ function enableDemoMode(){
 document.getElementById('logoutBtn').addEventListener('click',function(){localStorage.removeItem('sms_token_'+SLUG);location.reload();});
 document.querySelectorAll('.nav-item[data-tab]').forEach(function(btn){btn.addEventListener('click',function(){switchTab(btn.getAttribute('data-tab'));});});
 
-function switchTab(name){activeTab=name;document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});document.getElementById('tab-'+name).classList.add('active');document.querySelector('.nav-item[data-tab="'+name+'"]').classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[name]||name;if(name==='overview')loadStats();if(name==='inbox')loadInbox();if(name==='sent')loadSent();if(name==='webhooks')loadWebhooks();if(name==='rules')loadRules();if(name==='send')loadContacts();
+function switchTab(name){activeTab=name;document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});document.getElementById('tab-'+name).classList.add('active');document.querySelector('.nav-item[data-tab="'+name+'"]').classList.add('active');document.getElementById('pageTitle').textContent={'overview':'Oversikt','send':'Send SMS','inbox':'Innkommende','sent':'Sendte','failed':'Feilede meldinger','contacts':'Kontakter','webhooks':'Webhooks','rules':'Auto-svar','settings':'Innstillinger'}[name]||name;if(name==='overview')loadStats();if(name==='inbox')loadInbox();if(name==='sent')loadSent();if(name==='webhooks')loadWebhooks();if(name==='rules')loadRules();if(name==='send')loadContacts();if(name==='contacts')loadFullContacts();if(name==='settings'){loadTenantSettings();initSettingsListeners();}
   if(name==='failed')loadFailed();
   if(name==='settings')initSettingsListeners();}
 
@@ -544,7 +866,24 @@ function loadRules(){api('/api/rules').then(function(data){document.getElementBy
 document.getElementById('addRuleBtn').addEventListener('click',function(){var name=document.getElementById('ruleName').value.trim(),trigger=document.getElementById('ruleTrigger').value.trim(),response=document.getElementById('ruleResponse').value.trim(),isRegex=document.getElementById('ruleIsRegex').checked;if(!name||!trigger||!response){toast('Fyll inn alle felter','err');return;}api('/api/rules',{method:'POST',body:JSON.stringify({name:name,trigger:trigger,response:response,isRegex:isRegex})}).then(function(){document.getElementById('ruleName').value='';document.getElementById('ruleTrigger').value='';document.getElementById('ruleResponse').value='';loadRules();toast('Regel lagt til!');});});
 
 function initSettingsListeners() {
-  var changePwdBtn = document.getElementById('changePwdBtn');
+  var saveSettingsBtn = document.getElementById('saveSettingsBtn');
+  if (saveSettingsBtn && !saveSettingsBtn._init) {
+    saveSettingsBtn._init = true;
+    saveSettingsBtn.addEventListener('click', function() {
+      var st = document.getElementById('settingsStatus');
+      api('/api/settings', { method: 'POST', body: JSON.stringify({
+        companyName: document.getElementById('settingCompany').value.trim(),
+        contactPerson: document.getElementById('settingContact').value.trim(),
+        signature: document.getElementById('settingSignature').value.trim()
+      })}).then(function(res) {
+        if (res.success) {
+          st.style.color = 'var(--green)'; st.textContent = '✓ Lagret!';
+          loadTenantSettings();
+          setTimeout(function(){st.textContent='';},3000);
+        } else { st.style.color='var(--red)'; st.textContent=res.error||'Feil'; }
+      });
+    });
+  }
   var savePhoneBtn = document.getElementById('savePhoneBtn');
   if (changePwdBtn && !changePwdBtn._init) {
     changePwdBtn._init = true;
@@ -616,7 +955,7 @@ document.getElementById('verifyResetBtn').addEventListener('click',function(){
   });
 });
 
-function init(){loadStats();loadContacts();loadTemplates();setInterval(function(){if(activeTab==='overview')loadStats();if(activeTab==='inbox')loadInbox();},10000);}
+function init(){loadStats();loadContacts();loadFullContacts();loadTenantSettings();loadTemplates();setInterval(function(){if(activeTab==='overview')loadStats();if(activeTab==='inbox')loadInbox();if(activeTab==='contacts')loadFullContacts();},10000);}
 
 // SYMBOL OG VARIABEL-KNAPPER
 document.querySelectorAll('.sym-btn').forEach(function(btn){
