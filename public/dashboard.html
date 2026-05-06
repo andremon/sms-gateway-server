@@ -409,7 +409,44 @@ document.getElementById('loginSub').textContent=SLUG;
 document.getElementById('loginBtn').addEventListener('click',doLogin);
 document.getElementById('loginPwd').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
 
-function doLogin(){var pwd=document.getElementById('loginPwd').value;fetch(BASE+'/kunde/'+SLUG+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})}).then(function(r){return r.json();}).then(function(res){if(res.token){token=res.token;localStorage.setItem('sms_token_'+SLUG,token);document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('sidebarTenant').textContent=res.tenantName||SLUG;init();}else{document.getElementById('loginErr').textContent='Feil passord. Prøv igjen.';}});}
+// Vis demo-info på innloggingssiden
+if (SLUG === (window.DEMO_SLUG || 'demo')) {
+  document.getElementById('loginSub').innerHTML = '🚀 Demo-modus';
+  var demoInfo = document.createElement('div');
+  demoInfo.style.cssText = 'background:linear-gradient(135deg,#34d39910,#6366f110);border:1px solid #34d39930;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.6;text-align:left';
+  demoInfo.innerHTML = '<div style="color:#34d399;font-weight:600;margin-bottom:4px">👋 Velkommen til Ayno Connect demo</div>Utforsk dashboardet og send test-SMS til ditt eget nummer.<br><span style="color:var(--text)">Passord: <strong>demodemo</strong></span>';
+  document.getElementById('loginCard').insertBefore(demoInfo, document.getElementById('loginPwd'));
+}var pwd=document.getElementById('loginPwd').value;fetch(BASE+'/kunde/'+SLUG+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})}).then(function(r){return r.json();}).then(function(res){if(res.token){token=res.token;localStorage.setItem('sms_token_'+SLUG,token);document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('sidebarTenant').textContent=res.tenantName||SLUG;if(res.isDemo){enableDemoMode();}init();}else{document.getElementById('loginErr').textContent='Feil passord. Prøv igjen.';}});}
+
+function enableDemoMode(){
+  // Vis demo-banner
+  var banner=document.createElement('div');
+  banner.style.cssText='background:linear-gradient(90deg,#34d39915,#6366f115);border-bottom:1px solid #34d39930;padding:8px 24px;display:flex;align-items:center;justify-content:space-between;font-size:12px;flex-shrink:0';
+  banner.innerHTML='<div style="display:flex;align-items:center;gap:8px"><span style="background:#34d39920;border:1px solid #34d39940;border-radius:20px;padding:3px 10px;color:#34d399;font-weight:600;font-size:11px">🚀 DEMO</span><span style="color:var(--text2)">Du er i demo-modus — utforsk fritt! Passord: <strong style="color:#f8fafc">demodemo</strong></span></div><a href="https://ay.no" style="color:var(--indigo-light);text-decoration:none;font-size:12px">Kom i gang →</a>';
+  var app=document.getElementById('app');
+  app.insertBefore(banner,app.firstChild);
+
+  // Skjul begrensede meny-valg
+  var hidden=['webhooks','rules','settings'];
+  hidden.forEach(function(tab){
+    var btn=document.querySelector('.nav-item[data-tab="'+tab+'"]');
+    if(btn)btn.style.display='none';
+  });
+
+  // Fyll inn demo-kontakter og eksempelmelding
+  setTimeout(function(){
+    var toField=document.getElementById('toNumber');
+    if(toField&&!toField.value)toField.placeholder='Skriv inn ditt nummer for å teste';
+    var bodyField=document.getElementById('smsBody');
+    if(bodyField&&!bodyField.value)bodyField.value='Hei! Dette er en testmelding fra Ayno Connect SMS Gateway. 😊';
+  },500);
+
+  // Bytt send-knapp tekst
+  setTimeout(function(){
+    var sendBtn=document.querySelector('#tab-send .btn-primary');
+    if(sendBtn)sendBtn.textContent='📤 Send test-SMS';
+  },600);
+}
 
 document.getElementById('logoutBtn').addEventListener('click',function(){localStorage.removeItem('sms_token_'+SLUG);location.reload();});
 document.querySelectorAll('.nav-item[data-tab]').forEach(function(btn){btn.addEventListener('click',function(){switchTab(btn.getAttribute('data-tab'));});});
