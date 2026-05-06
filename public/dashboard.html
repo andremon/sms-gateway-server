@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#ffffff0f;--border2:#ffffff18;--accent:#6366f1;--accent2:#818cf8;--accent-dim:#6366f114;--green:#34d399;--green-dim:#34d39914;--amber:#fbbf24;--red:#f87171;--text:#f1f5f9;--text2:#94a3b8;--text3:#475569;--radius:12px;--radius2:8px}
+:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#ffffff0f;--border2:#ffffff18;--accent:#6366f1;--accent2:#818cf8;--accent-dim:#6366f114;--green:#34d399;--green-dim:#34d39914;--amber:#fbbf24;--red:#f87171;--text:#f8fafc;--text2:#cbd5e1;--text3:#94a3b8;--radius:12px;--radius2:8px}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
@@ -38,12 +38,12 @@ nav{flex:1;display:flex;flex-direction:column;gap:2px}
 .content{padding:20px 28px 32px;flex:1}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px}
 .card-header{padding:18px 20px 0;display:flex;align-items:center;justify-content:space-between}
-.card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px}
+.card-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.8px}
 .card-body{padding:16px 20px 20px}
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;transition:border-color .2s}.stat-card:hover{border-color:var(--border2)}
 .stat-num{font-size:28px;font-weight:600;letter-spacing:-1px;line-height:1;margin-bottom:6px}
-.stat-lbl{font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.6px}
+.stat-lbl{font-size:11px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:.6px}
 .stat-trend{font-size:11px;margin-top:6px;color:var(--green)}
 .stat-accent{color:var(--accent2)}.stat-green{color:var(--green)}.stat-amber{color:var(--amber)}
 .chart-wrap{padding:16px 20px 20px}
@@ -56,7 +56,7 @@ nav{flex:1;display:flex;flex-direction:column;gap:2px}
 .chart-legend{display:flex;gap:16px;margin-top:12px}.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)}.legend-dot{width:8px;height:8px;border-radius:50%}
 .send-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
-.field label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.field label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px}
 .field input,.field textarea{padding:11px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius2);color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s}
 .field input:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
 .field textarea{resize:vertical;min-height:110px;line-height:1.6}
@@ -356,28 +356,21 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
             </table>
           </div>
         </div>
-
-        <!-- EKSPORT MELDINGER -->
-        <div class="card">
-          <div class="card-header"><span class="card-title">📦 Backup og eksport</span></div>
-          <div class="card-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px">
-                <div style="font-weight:600;margin-bottom:6px;font-size:14px">📋 Kontakter</div>
-                <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Alle kontakter med navn, nummer, firma og e-post</div>
-                <a href="#" id="dlContacts" class="btn-ghost" style="text-decoration:none;font-size:12px">⬇ Last ned CSV</a>
-              </div>
-              <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px">
-                <div style="font-weight:600;margin-bottom:6px;font-size:14px">💬 Meldingslogg</div>
-                <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Alle innkommende og utgående meldinger</div>
-                <a href="#" id="dlMessages" class="btn-ghost" style="text-decoration:none;font-size:12px">⬇ Last ned CSV</a>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
-        <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Legg til webhook</span></div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header" style="cursor:pointer" onclick="toggleWebhookInfo()">
+            <span class="card-title">Legg til webhook</span>
+            <button class="btn-ghost" style="font-size:11px">ℹ️ Hva er webhooks?</button>
+          </div>
+          <div id="webhookInfoBox" style="display:none;background:#6366f110;border:1px solid #6366f130;border-radius:8px;padding:14px;margin:0 16px 14px;font-size:12px;color:var(--text2);line-height:1.7">
+            <strong style="color:var(--text)">🔗 Webhooks</strong> lar deg koble Ayno Connect til andre systemer automatisk.<br><br>
+            Når en SMS mottas eller sendes, sender Ayno Connect et HTTP POST-kall til din URL med meldingsdetaljer. Dette brukes til å:<br>
+            • Oppdatere ditt CRM eller bookingsystem automatisk<br>
+            • Trigge svar eller handlinger i egne systemer<br>
+            • Logge meldinger til eksterne tjenester<br><br>
+            <strong style="color:var(--text)">Hemmelig nøkkel</strong> brukes til å verifisere at kallet faktisk kommer fra Ayno Connect.
+          </div>
         <div class="card-body">
           <div class="form-2col">
             <div class="field"><label>URL</label><input type="url" id="webhookUrl" placeholder="https://ditt-system.no/webhook"></div>
@@ -418,16 +411,34 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
       </div>
 
       <div id="tab-settings" class="tab-content">
+        <div style="max-width:500px">
+
+        <!-- MOBILNUMMER ØVERST -->
+        <div class="card" style="margin-bottom:16px;border-color:#6366f130">
+          <div class="card-header"><span class="card-title" style="color:var(--accent2)">📱 Passord-gjenoppretting</span></div>
+          <div class="card-body">
+            <div style="background:#6366f110;border:1px solid #6366f130;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)">
+              ⚠️ Fyll inn mobilnummer for å kunne gjenopprette passordet ditt via SMS hvis du blir låst ute.
+            </div>
+            <div class="field"><label>Mobilnummer</label><input type="tel" id="phoneNumber" placeholder="+47 xxx xx xxx" autocomplete="tel"></div>
+            <button class="submit-btn" id="savePhoneBtn">Lagre mobilnummer</button>
+            <div id="phoneStatus" style="margin-top:10px;font-size:13px"></div>
+          </div>
+        </div>
+
         <!-- FIRMAINFO -->
-        <div class="card" style="max-width:440px;margin-bottom:16px"><div class="card-header"><span class="card-title">🏢 Firmainfo</span></div>
+        <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">🏢 Firmainfo</span></div>
         <div class="card-body">
           <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Brukes automatisk i meldingsmaler som <code style="background:#ffffff10;padding:1px 6px;border-radius:4px">{firma}</code></p>
           <div class="field"><label>Firmanavn</label><input type="text" id="settingCompany" placeholder="Firma AS"></div>
           <div class="field"><label>Kontaktperson</label><input type="text" id="settingContact" placeholder="Fornavn Etternavn"></div>
-          <div class="field"><label>Signatur (legges til på meldinger)</label><textarea id="settingSignature" rows="2" placeholder="Mvh Firma AS" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;resize:none;outline:none"></textarea></div>
+          <div class="field"><label>Signatur</label><textarea id="settingSignature" rows="2" placeholder="Mvh Firma AS" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit;resize:none;outline:none"></textarea></div>
           <button class="submit-btn" id="saveSettingsBtn">Lagre firmainfo</button>
           <div id="settingsStatus" style="margin-top:10px;font-size:13px"></div>
         </div></div>
+
+        <!-- PASSORD -->
+        <div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">🔑 Bytt passord</span></div>
         <div class="card-body">
           <div class="field"><label>Nåværende passord</label><input type="password" id="curPwd" autocomplete="current-password"></div>
           <div class="field"><label>Nytt passord</label><input type="password" id="newPwdField" placeholder="Minimum 8 tegn" autocomplete="new-password"></div>
@@ -436,13 +447,24 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
           <div id="pwdStatus" style="margin-top:10px;font-size:13px"></div>
         </div></div>
 
-        <div class="card" style="max-width:440px;margin-top:16px"><div class="card-header"><span class="card-title">Gjenopprett passord via SMS</span></div>
+        <!-- BACKUP OG EKSPORT -->
+        <div class="card"><div class="card-header"><span class="card-title">📦 Backup og eksport</span></div>
         <div class="card-body">
-          <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Registrer ditt mobilnummer for å motta reset-kode via SMS hvis du glemmer passordet.</p>
-          <div class="field"><label>Mobilnummer</label><input type="tel" id="phoneNumber" placeholder="+47 xxx xx xxx" autocomplete="tel"></div>
-          <button class="submit-btn" id="savePhoneBtn">Lagre mobilnummer</button>
-          <div id="phoneStatus" style="margin-top:10px;font-size:13px"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px">
+              <div style="font-weight:600;margin-bottom:4px;font-size:13px;color:var(--text)">👥 Kontakter</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">Alle kontakter med navn, nummer, firma og e-post</div>
+              <a href="#" id="dlContacts" class="btn-ghost" style="text-decoration:none;font-size:12px">⬇ Last ned CSV</a>
+            </div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px">
+              <div style="font-weight:600;margin-bottom:4px;font-size:13px;color:var(--text)">💬 Meldingslogg</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">Alle innkommende og utgående meldinger</div>
+              <a href="#" id="dlMessages" class="btn-ghost" style="text-decoration:none;font-size:12px">⬇ Last ned CSV</a>
+            </div>
+          </div>
         </div></div>
+
+        </div>
       </div>
 
     </div>
@@ -792,7 +814,7 @@ function mkStat(num,lbl,trend,color,tab){
   return'<div class="stat-card" '+click+'><div class="stat-num stat-'+color+'">'+num+'</div><div class="stat-lbl">'+lbl+'</div>'+(trend?'<div class="stat-trend">'+trend+'</div>':'')+'</div>';
 }
 
-function loadContacts(){api('/api/contacts').then(function(data){allContacts=data;var el=document.getElementById('contactsList');if(!data.length){el.innerHTML='<div class="contacts-empty">Ingen kontakter ennå.<br>Kontakter hentes fra meldingshistorikken.</div>';return;}el.innerHTML=data.map(function(c){return'<div class="contact-row" data-num="'+c.number+'"><div><div class="contact-num">'+c.number+'</div><div class="contact-meta">'+c.messageCount+' meldinger · '+timeAgo(c.lastSeen)+'</div></div><span style="color:var(--text3);font-size:12px">→</span></div>';}).join('');el.querySelectorAll('.contact-row').forEach(function(row){row.addEventListener('click',function(){selectContact(row.getAttribute('data-num'));});});});}
+function loadContacts(){api('/api/contacts').then(function(data){allContacts=data;var el=document.getElementById('contactsList');if(!data.length){el.innerHTML='<div class="contacts-empty">Ingen kontakter ennå.<br>Legg til i Kontakter-fanen.</div>';return;}el.innerHTML=data.map(function(c){var name=c.name||c.number||c.phone;var phone=c.phone||c.number;return'<div class="contact-row" data-num="'+esc(phone)+'" data-name="'+esc(name)+'"><div><div class="contact-num">'+esc(name)+'</div><div class="contact-meta" style="font-family:monospace;font-size:11px">'+esc(phone)+'</div></div><span style="color:var(--text3);font-size:12px">→</span></div>';}).join('');el.querySelectorAll('.contact-row').forEach(function(row){row.addEventListener('click',function(){selectContact(row.getAttribute('data-num'));var nm=row.getAttribute('data-name');var body=document.getElementById('smsBody');if(body&&nm)body.value=body.value.replace(/\{navn\}/g,nm);});});});}
 
 function selectContact(num){document.getElementById('sendTo').value=num;document.getElementById('contactDropdown').classList.remove('open');document.getElementById('sendBody').focus();}
 
@@ -844,7 +866,9 @@ document.getElementById('retryAllBtn').addEventListener('click',function(){
   });
 });
 
-function loadInbox(){var s=document.getElementById('inboxSearch').value||'';api('/api/sms/inbox?limit=100&search='+encodeURIComponent(s)).then(function(data){document.getElementById('inboxTable').innerHTML=data.length?data.map(function(m){return'<tr><td><span class="mono">'+esc(m.from)+'</span></td><td style="max-width:360px">'+esc(m.body)+'</td><td style="white-space:nowrap;color:var(--text3)">'+timeAgo(m.receivedAt)+'</td><td><button class="btn-ghost" style="font-size:11px;padding:5px 10px" onclick="replyTo(\''+esc(m.from)+'\')">Svar</button></td></tr>';}).join(''):'<tr class="empty-row"><td colspan="4">Ingen innkommende meldinger</td></tr>';});}
+function toggleWebhookInfo(){var el=document.getElementById('webhookInfoBox');el.style.display=el.style.display==='none'?'block':'none';}
+function getContactName(phone){var c=allFullContacts.find(function(x){return x.phone===phone;});return c?c.name:null;}
+function loadInbox(){var s=document.getElementById('inboxSearch').value||'';api('/api/sms/inbox?limit=100&search='+encodeURIComponent(s)).then(function(data){document.getElementById('inboxTable').innerHTML=data.length?data.map(function(m){var name=getContactName(m.from);var fromDisplay=name?'<span style="font-weight:600;color:var(--text)">'+esc(name)+'</span><br><span class="mono" style="font-size:11px;color:var(--text3)">'+esc(m.from)+'</span>':'<span class="mono">'+esc(m.from)+'</span>';return'<tr><td>'+fromDisplay+'</td><td style="max-width:360px">'+esc(m.body)+'</td><td style="white-space:nowrap;color:var(--text2)">'+timeAgo(m.receivedAt)+'</td><td><button class="btn-ghost" style="font-size:11px;padding:5px 10px" onclick="replyTo(\''+esc(m.from)+'\')">Svar</button></td></tr>';}).join(''):'<tr class="empty-row"><td colspan="4">Ingen innkommende meldinger</td></tr>';});}
 function replyTo(num){document.getElementById('sendTo').value=num;switchTab('send');}
 
 document.getElementById('inboxSearch').addEventListener('input',loadInbox);
