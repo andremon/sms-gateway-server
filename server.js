@@ -419,7 +419,8 @@ app.post('/kunde/:slug/auth/login', async (req, res) => {
     if (req.body.password !== tenant.password) return res.status(401).json({ error: 'Feil passord' });
     const token = uuidv4();
     tenantSessions[token] = { tenantId: tenant.id, expires: Date.now() + 604800000 };
-    res.json({ token, tenantName: tenant.name });
+    const isDemo = req.params.slug === (process.env.DEMO_TENANT_SLUG || 'demo');
+    res.json({ token, tenantName: tenant.name, isDemo });
 });
 
 app.post('/kunde/:slug/auth/change-password', requireTenantSession, async (req, res) => {
