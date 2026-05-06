@@ -864,6 +864,8 @@ document.getElementById('loginSub').textContent=SLUG;
 document.getElementById('loginBtn').addEventListener('click',doLogin);
 document.getElementById('loginPwd').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
 
+function doLogin(){var pwd=document.getElementById('loginPwd').value;fetch(BASE+'/kunde/'+SLUG+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})}).then(function(r){return r.json();}).then(function(res){if(res.token){token=res.token;localStorage.setItem('sms_token_'+SLUG,token);document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('sidebarTenant').textContent=res.tenantName||SLUG;init();}else{document.getElementById('loginErr').textContent='Feil passord. Prøv igjen.';}});}
+
 document.getElementById('logoutBtn').addEventListener('click',function(){localStorage.removeItem('sms_token_'+SLUG);location.reload();});
 document.querySelectorAll('.nav-item[data-tab]').forEach(function(btn){btn.addEventListener('click',function(){switchTab(btn.getAttribute('data-tab'));});});
 
