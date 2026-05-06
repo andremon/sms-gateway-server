@@ -196,7 +196,7 @@ input:checked+.slider{background:var(--accent);border-color:var(--accent)}input:
 
   <main class="main">
     <div class="topbar">
-      <h1 id="pageTitle">Oversikt</h1>
+      <h1 id="pageTitle">Innkommende</h1>
       <div class="status-pill"><div class="status-dot"></div>Tilkoblet</div>
     </div>
     <div class="content">
@@ -876,12 +876,13 @@ if (SLUG === 'demo') {
 function doLogin(){var pwd=document.getElementById('loginPwd').value;fetch(BASE+'/kunde/'+SLUG+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})}).then(function(r){return r.json();}).then(function(res){if(res.token){token=res.token;localStorage.setItem('sms_token_'+SLUG,token);document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('sidebarTenant').textContent=res.tenantName||SLUG;if(res.isDemo){enableDemoMode();}init();}else{document.getElementById('loginErr').textContent='Feil passord. Prøv igjen.';}});}
 
 function enableDemoMode(){
-  // Vis demo-banner
+  // Vis demo-banner øverst i main-kolonnen (ikke i sidebar)
   var banner=document.createElement('div');
-  banner.style.cssText='background:linear-gradient(90deg,#34d39915,#6366f115);border-bottom:1px solid #34d39930;padding:8px 24px;display:flex;align-items:center;justify-content:space-between;font-size:12px;flex-shrink:0';
-  banner.innerHTML='<div style="display:flex;align-items:center;gap:8px"><span style="background:#34d39920;border:1px solid #34d39940;border-radius:20px;padding:3px 10px;color:#34d399;font-weight:600;font-size:11px">🚀 DEMO</span><span style="color:var(--text2)">Du er i demo-modus — utforsk fritt! Passord: <strong style="color:#f8fafc">demodemo</strong></span></div><a href="https://ay.no" style="color:var(--indigo-light);text-decoration:none;font-size:12px">Kom i gang →</a>';
-  var app=document.getElementById('app');
-  app.insertBefore(banner,app.firstChild);
+  banner.id='demoBanner';
+  banner.style.cssText='background:linear-gradient(90deg,#34d39915,#6366f115);border-bottom:1px solid #34d39930;padding:7px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;flex-shrink:0';
+  banner.innerHTML='<div style="display:flex;align-items:center;gap:8px"><span style="background:#34d39920;border:1px solid #34d39940;border-radius:20px;padding:3px 10px;color:#34d399;font-weight:600;font-size:11px">🚀 DEMO</span><span style="color:var(--text2)">Utforsk fritt! Passord: <strong style="color:#f8fafc">demodemo</strong></span></div><a href="https://ay.no" style="color:var(--indigo-light);text-decoration:none;font-size:12px">Kom i gang →</a>';
+  var main=document.querySelector('.main');
+  main.insertBefore(banner,main.firstChild);
 
   // Skjul begrensede meny-valg
   var hidden=['webhooks','rules','settings'];
@@ -1041,7 +1042,7 @@ function loadInbox(){
       var sentNums=new Set((sent||[]).map(function(m){return m.to;}));
       el.innerHTML=data.map(function(m){
         var name=getContactName(m.from)||m.from;
-        var initial=name.charAt(0).toUpperCase();
+        var initial=name&&!name.startsWith('+')?name.charAt(0).toUpperCase():m.from.slice(-2);
         var replied=sentNums.has(m.from);
         var shortBody=m.body.length>120?m.body.slice(0,120)+'…':m.body;
         var t=timeAgo(m.receivedAt);
@@ -1062,7 +1063,7 @@ function loadInbox(){
     }).catch(function(){
       el.innerHTML=data.map(function(m){
         var name=getContactName(m.from)||m.from;
-        var initial=name.charAt(0).toUpperCase();
+        var initial=name&&!name.startsWith('+')?name.charAt(0).toUpperCase():m.from.slice(-2);
         return '<div class="inbox-msg-card unread" onclick="openInboxDetail(\''+esc(m.from)+'\',\''+esc(name)+'\',\''+esc(m.body)+'\','+m.receivedAt+',false)">' +
           '<div class="inbox-avatar">'+initial+'</div>' +
           '<div style="flex:1;min-width:0">' +
