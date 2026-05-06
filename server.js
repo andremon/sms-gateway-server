@@ -69,7 +69,28 @@ async function initDB() {
         CREATE INDEX IF NOT EXISTS idx_messages_direction ON messages(direction);
         CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(status);
 
-        CREATE TABLE IF NOT EXISTS demo_sessions (
+        CREATE TABLE IF NOT EXISTS contacts (
+            id TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            company TEXT,
+            email TEXT,
+            notes TEXT,
+            created_at BIGINT NOT NULL,
+            updated_at BIGINT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS tenant_settings (
+            tenant_id TEXT PRIMARY KEY,
+            company_name TEXT,
+            contact_person TEXT,
+            signature TEXT,
+            updated_at BIGINT
+        );
+
+        ALTER TABLE contacts ADD COLUMN IF NOT EXISTS birthday TEXT;
+        CREATE UNIQUE INDEX IF NOT EXISTS contacts_tenant_phone ON contacts(tenant_id, phone);
             id TEXT PRIMARY KEY,
             phone TEXT NOT NULL,
             ip TEXT NOT NULL,
@@ -898,7 +919,151 @@ app.get('/admin/tenants/:id/messages', requireAdmin, async (req, res) => {
     res.json(result.rows);
 });
 
-// ── DEMO API ──────────────────────────────────────────────────────────────────
+// ── KONTAKTER ─────────────────────────────────────────────────────────────────
+
+// Hent alle kontakter
+app.get('/kunde/:slug/api/contacts', requireTenantSession, async (req, res) => {
+    const search = req.query.search || '';
+    let query = 'SELECT * FROM contacts WHERE tenant_id=$1';
+    const params = [req.tenant.id];
+    if (search) {
+        params.push('%' + search.toLowerCase() + '%');
+        query += ` AND (LOWER(name) LIKE $2 OR phone LIKE $2 OR LOWER(company) LIKE $2)`;
+    }
+    query += ' ORDER BY name ASC';
+    const result = await pool.query(query, params);
+    res.json(result.rows.map(function(c) {
+        return { id: c.id, name: c.name, phone: c.phone, company: c.company, email: c.email, notes: c.notes, createdAt: parseInt(c.created_at), updatedAt: parseInt(c.updated_at) };
+    }));
+});
+
+// Opprett kontakt
+app.post('/kunde/:slug/api/contacts', requireTenantSession, async (req, res) => {
+    const { name, phone, company, email, notes } = req.body;
+    if (!name || !phone) return res.status(400).json({ error: 'Navn og nummer er påkrevd' });
+    const id = uuidv4();
+    const now = Date.now();
+    try {
+        await pool.query(
+            'INSERT INTO contacts (id,tenant_id,name,phone,company,email,notes,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+            [id, req.tenant.id, name.trim(), phone.trim(), company||null, email||null, notes||null, now, now]
+        );
+        res.json({ success: true, id });
+    } catch(e) {
+        if (e.code === '23505') return res.status(400).json({ error: 'Nummer finnes allerede' });
+        throw e;
+    }
+});
+
+// Oppdater kontakt
+app.put('/kunde/:slug/api/contacts/:id', requireTenantSession, async (req, res) => {
+    const { name, phone, company, email, notes } = req.body;
+    if (!name || !phone) return res.status(400).json({ error: 'Navn og nummer er påkrevd' });
+    await pool.query(
+        'UPDATE contacts SET name=$1,phone=$2,company=$3,email=$4,notes=$5,updated_at=$6 WHERE id=$7 AND tenant_id=$8',
+        [name.trim(), phone.trim(), company||null, email||null, notes||null, Date.now(), req.params.id, req.tenant.id]
+    );
+    res.json({ success: true });
+});
+
+// Slett kontakt
+app.delete('/kunde/:slug/api/contacts/:id', requireTenantSession, async (req, res) => {
+    await pool.query('DELETE FROM contacts WHERE id=$1 AND tenant_id=$2', [req.params.id, req.tenant.id]);
+    res.json({ success: true });
+});
+
+// Import kontakter fra CSV (array av objekter)
+app.post('/kunde/:slug/api/contacts/import', requireTenantSession, async (req, res) => {
+    const { contacts } = req.body;
+    if (!Array.isArray(contacts) || !contacts.length) return res.status(400).json({ error: 'Ingen kontakter' });
+    let imported = 0, skipped = 0, errors = [];
+    const now = Date.now();
+    for (const c of contacts) {
+        if (!c.name || !c.phone) { skipped++; continue; }
+        try {
+            await pool.query(
+                `INSERT INTO contacts (id,tenant_id,name,phone,company,email,notes,created_at,updated_at)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+                 ON CONFLICT (tenant_id,phone) DO UPDATE SET name=$3,company=$5,email=$6,notes=$7,updated_at=$9`,
+                [uuidv4(), req.tenant.id, c.name.trim(), c.phone.trim(), c.company||null, c.email||null, c.notes||null, now, now]
+            );
+            imported++;
+        } catch(e) { skipped++; errors.push(c.phone); }
+    }
+    res.json({ success: true, imported, skipped, errors });
+});
+
+// ── INNSTILLINGER (TENANT) ────────────────────────────────────────────────────
+
+app.get('/kunde/:slug/api/settings', requireTenantSession, async (req, res) => {
+    const result = await pool.query('SELECT * FROM tenant_settings WHERE tenant_id=$1', [req.tenant.id]);
+    const s = result.rows[0] || {};
+    res.json({ companyName: s.company_name || req.tenant.name, contactPerson: s.contact_person || '', signature: s.signature || '' });
+});
+
+app.post('/kunde/:slug/api/settings', requireTenantSession, async (req, res) => {
+    const { companyName, contactPerson, signature } = req.body;
+    await pool.query(
+        `INSERT INTO tenant_settings (tenant_id,company_name,contact_person,signature,updated_at)
+         VALUES ($1,$2,$3,$4,$5)
+         ON CONFLICT (tenant_id) DO UPDATE SET company_name=$2,contact_person=$3,signature=$4,updated_at=$5`,
+        [req.tenant.id, companyName||null, contactPerson||null, signature||null, Date.now()]
+    );
+    res.json({ success: true });
+});
+
+// ── EKSPORT / BACKUP ──────────────────────────────────────────────────────────
+
+async function requireTenantSessionOrToken(req, res, next) {
+    // Støtter både header og query-param for eksport-lenker
+    const token = req.headers['x-session-token'] || req.query.token;
+    if (!token || !tenantSessions[token] || tenantSessions[token].expires < Date.now()) {
+        return res.status(401).json({ error: 'Ikke innlogget' });
+    }
+    tenantSessions[token].expires = Date.now() + 604800000;
+    const tenant = await getTenantById(tenantSessions[token].tenantId);
+    if (!tenant) return res.status(401).json({ error: 'Ugyldig sesjon' });
+    req.tenant = tenant;
+    next();
+}
+
+// Eksport kontakter som CSV
+app.get('/kunde/:slug/api/export/contacts', requireTenantSessionOrToken, async (req, res) => {
+    const result = await pool.query('SELECT * FROM contacts WHERE tenant_id=$1 ORDER BY name ASC', [req.tenant.id]);
+    const rows = result.rows;
+    const csv = ['Navn,Telefon,Firma,E-post,Notater,Opprettet',
+        ...rows.map(function(r) {
+            return [r.name, r.phone, r.company||'', r.email||'', (r.notes||'').replace(/,/g,';').replace(/\n/g,' '), new Date(parseInt(r.created_at)).toLocaleDateString('nb-NO')]
+                .map(function(v) { return '"'+v+'"'; }).join(',');
+        })
+    ].join('\n');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="kontakter.csv"');
+    res.send('\uFEFF' + csv);
+});
+
+// Eksport meldinger som CSV
+app.get('/kunde/:slug/api/export/messages', requireTenantSessionOrToken, async (req, res) => {
+    const result = await pool.query(
+        'SELECT * FROM messages WHERE tenant_id=$1 ORDER BY created_at DESC',
+        [req.tenant.id]
+    );
+    const rows = result.rows;
+    const csv = ['Retning,Fra/Til,Melding,Status,Tidspunkt',
+        ...rows.map(function(r) {
+            return [r.direction === 'inbound' ? 'Inn' : 'Ut', r.from_number||r.to_number||'',
+                (r.body||'').replace(/,/g,';').replace(/\n/g,' '), r.status,
+                new Date(parseInt(r.created_at)).toLocaleString('nb-NO')]
+                .map(function(v) { return '"'+v+'"'; }).join(',');
+        })
+    ].join('\n');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="meldinger.csv"');
+    res.send('\uFEFF' + csv);
+});
+
+// ── KONTAKTER (gammel enkel versjon) ─────────────────────────────────────────
+
 // Henter demo-tenant slug fra miljøvariabel DEMO_TENANT_SLUG
 // Opprett en kunde kalt "Demo" i admin-panelet og sett slug her
 
