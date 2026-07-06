@@ -11,6 +11,10 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+    console.log('KEY:', req.headers['x-api-key'] || 'MANGLER');
+    next();
+});
 
 // ── DATABASE ──────────────────────────────────────────────────────────────────
 const pool = new Pool({
