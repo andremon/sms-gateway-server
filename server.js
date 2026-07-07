@@ -431,6 +431,22 @@ app.post('/admin/tenants/:id/regenerate-key', requireAdmin, async (req, res) => 
     res.json({ apiKey: newKey });
 });
 
+// ── QR-TOKEN FOR GATEWAY-APP ─────────────────────────────────────────────────
+app.post('/admin/tenants/:id/qr-token', requireAdmin, async (req, res) => {
+    const tenant = await pool.query('SELECT * FROM tenants WHERE id=$1', [req.params.id]);
+    if (!tenant.rows[0]) return res.status(404).json({ error: 'Kunde ikke funnet' });
+    const t = tenant.rows[0];
+    const serverUrl = process.env.SERVER_URL || ('https://' + req.headers.host);
+    const expiresAt = Date.now() + 3600000; // 1 time
+    const qrData = JSON.stringify({
+        serverUrl: serverUrl,
+        apiKey: t.api_key,
+        tenantName: t.name,
+        expiresAt: expiresAt
+    });
+    res.json({ qrData, expiresAt });
+});
+
 // ── ADMIN INNSTILLINGER ───────────────────────────────────────────────────────
 
 // Hent admin-innstillinger
@@ -1463,7 +1479,7 @@ app.get('/api/3rdparty/v1/messages/:id', async (req, res) => {
 });
 initDB().then(() => {
     app.listen(PORT, () => {
-        console.log('SMS Gateway Server v5.1 med PostgreSQL');
+        console.log('SMS Gateway Server v4.0 med PostgreSQL');
         console.log('Admin: http://localhost:' + PORT + '/admin');
     });
 }).catch(err => {
