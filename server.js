@@ -438,13 +438,50 @@ app.post('/admin/tenants/:id/qr-token', requireAdmin, async (req, res) => {
     const t = tenant.rows[0];
     const serverUrl = process.env.SERVER_URL || ('https://' + req.headers.host);
     const expiresAt = Date.now() + 3600000; // 1 time
+    // Generer ein-gangs registreringstoken
+    const token = require('crypto').randomBytes(16).toString('hex');
+    // Lagre token midlertidig i DB
+    await pool.query(
+        'INSERT INTO sessions (token, type, tenant_id, expires_at) VALUES ($1, $2, $3, $4) ON CONFLICT (token) DO NOTHING',
+        [token, 'qr_register', t.id, expiresAt]
+    );
     const qrData = JSON.stringify({
         serverUrl: serverUrl,
         apiKey: t.api_key,
         tenantName: t.name,
+        token: token,
         expiresAt: expiresAt
     });
     res.json({ qrData, expiresAt });
+});
+
+// ── GATEWAY APP REGISTRERING VIA QR ──────────────────────────────────────────
+app.post('/api/register', async (req, res) => {
+    const { token, deviceId, deviceName } = req.body;
+    if (!token || !deviceId) return res.status(400).json({ error: 'Mangler token eller deviceId' });
+
+    // Valider QR-token
+    const session = await pool.query(
+        "SELECT * FROM sessions WHERE token=$1 AND type='qr_register' AND expires_at > $2",
+        [token, Date.now()]
+    );
+    if (!session.rows[0]) return res.status(401).json({ error: 'Ugyldig eller utløpt QR-kode' });
+
+    const tenantId = session.rows[0].tenant_id;
+
+    // Registrer enhet
+    const { v4: uuidv4 } = require('uuid');
+    await pool.query(
+        `INSERT INTO devices (id, tenant_id, device_id, device_name, last_seen, status, network_type, battery_level, created_at)
+         VALUES ($1,$2,$3,$4,$5,'online','–',100,$5)
+         ON CONFLICT (device_id) DO UPDATE SET tenant_id=$2, device_name=$4, last_seen=$5, status='online'`,
+        [uuidv4(), tenantId, deviceId, deviceName || 'Ukjent enhet', Date.now()]
+    );
+
+    // Slett brukt QR-token
+    await pool.query('DELETE FROM sessions WHERE token=$1', [token]);
+
+    res.json({ success: true, message: 'Enhet registrert' });
 });
 
 // ── ADMIN INNSTILLINGER ───────────────────────────────────────────────────────
