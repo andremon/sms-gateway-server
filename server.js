@@ -1463,7 +1463,7 @@ app.get('/api/3rdparty/v1/messages/:id', async (req, res) => {
 });
 initDB().then(() => {
     app.listen(PORT, () => {
-        console.log('SMS Gateway Server v4.0 med PostgreSQL');
+        console.log('SMS Gateway Server v5.1 med PostgreSQL');
         console.log('Admin: http://localhost:' + PORT + '/admin');
     });
 }).catch(err => {
