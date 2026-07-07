@@ -11,10 +11,6 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 app.use(cors());
 app.use(express.json());
-app.use((req, res, next) => {
-    console.log('KEY:', req.headers['x-api-key'] || 'MANGLER');
-    next();
-});
 
 // ── DATABASE ──────────────────────────────────────────────────────────────────
 const pool = new Pool({
@@ -252,7 +248,7 @@ async function checkAutoReply(tenantId, from, body) {
 }
 
 function generateWelcomeMessage(tenant, serverUrl) {
-    return `Hei!\n\nDu har nå tilgang til SMS Gateway.\n\nDashboard: ${serverUrl}/kunde/${tenant.slug}/dashboard\nPassord: (det du valgte)\n\nAndroid-app innstillinger:\nServer URL: ${serverUrl}\nAPI-nøkkel: ${tenant.api_key}\n\nTa kontakt ved spørsmål.`;
+    return `Hei!\n\nDu har nå tilgang til Ayno Connect SMS.\n\nLogg inn her:\n${serverUrl}/kunde/${tenant.slug}/dashboard\n\nPassord: (det du valgte)\n\nTa kontakt ved spørsmål.`;
 }
 
 // ── SESSIONS ──────────────────────────────────────────────────────────────────
