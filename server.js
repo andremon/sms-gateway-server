@@ -92,6 +92,14 @@ async function initDB() {
         ALTER TABLE contacts ADD COLUMN IF NOT EXISTS birthday TEXT;
         CREATE UNIQUE INDEX IF NOT EXISTS contacts_tenant_phone ON contacts(tenant_id, phone);
 
+        CREATE TABLE IF NOT EXISTS sessions (
+            token TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            tenant_id TEXT,
+            expires_at BIGINT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+
         CREATE TABLE IF NOT EXISTS demo_sessions (
             id TEXT PRIMARY KEY,
             phone TEXT NOT NULL,
@@ -252,22 +260,52 @@ function generateWelcomeMessage(tenant, serverUrl) {
 }
 
 // ── SESSIONS ──────────────────────────────────────────────────────────────────
-const adminSessions = {};
-const tenantSessions = {};
+// ── POSTGRESQL-BASERTE SESJONER ───────────────────────────────────────────────
+const SESSION_TTL = 604800000; // 7 dager
 
-function requireAdmin(req, res, next) {
+async function createSession(type, tenantId = null) {
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expiresAt = Date.now() + SESSION_TTL;
+    await pool.query(
+        'INSERT INTO sessions (token, type, tenant_id, expires_at) VALUES ($1, $2, $3, $4)',
+        [token, type, tenantId, expiresAt]
+    );
+    return token;
+}
+
+async function getSession(token, type) {
+    if (!token) return null;
+    const res = await pool.query(
+        "SELECT * FROM sessions WHERE token=$1 AND type=$2 AND expires_at > $3",
+        [token, type, Date.now()]
+    );
+    if (!res.rows[0]) return null;
+    // Forny sesjon
+    await pool.query('UPDATE sessions SET expires_at=$1 WHERE token=$2', [Date.now() + SESSION_TTL, token]);
+    return res.rows[0];
+}
+
+async function deleteSession(token) {
+    await pool.query('DELETE FROM sessions WHERE token=$1', [token]);
+}
+
+// Rydd opp utgåtte sesjoner hvert 30. minutt
+setInterval(async () => {
+    try { await pool.query('DELETE FROM sessions WHERE expires_at < $1', [Date.now()]); } catch(e) {}
+}, 1800000);
+
+async function requireAdmin(req, res, next) {
     const token = req.headers['x-admin-token'];
-    if (!token || !adminSessions[token] || adminSessions[token].expires < Date.now()) return res.status(401).json({ error: 'Ikke innlogget' });
-    adminSessions[token].expires = Date.now() + 604800000; // 7 dager
+    const session = await getSession(token, 'admin');
+    if (!session) return res.status(401).json({ error: 'Ikke innlogget' });
     next();
 }
 
 async function requireTenantSession(req, res, next) {
     const token = req.headers['x-session-token'];
-    const session = tenantSessions[token];
-    if (!token || !session || session.expires < Date.now()) return res.status(401).json({ error: 'Ikke innlogget' });
-    session.expires = Date.now() + 604800000;
-    const tenant = await pool.query('SELECT * FROM tenants WHERE id=$1', [session.tenantId]);
+    const session = await getSession(token, 'tenant');
+    if (!session) return res.status(401).json({ error: 'Ikke innlogget' });
+    const tenant = await pool.query('SELECT * FROM tenants WHERE id=$1', [session.tenant_id]);
     if (!tenant.rows[0]) return res.status(401).json({ error: 'Kunde ikke funnet' });
     req.tenant = tenant.rows[0];
     next();
@@ -304,10 +342,9 @@ async function requireApiKey(req, res, next) {
 app.get('/', (req, res) => res.json({ status: 'ok', version: '4.0.0', message: 'SMS Gateway Server' }));
 
 // ── ADMIN API ─────────────────────────────────────────────────────────────────
-app.post('/admin/login', (req, res) => {
+app.post('/admin/login', async (req, res) => {
     if (req.body.password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Feil passord' });
-    const token = uuidv4();
-    adminSessions[token] = { expires: Date.now() + 604800000 };
+    const token = await createSession('admin');
     res.json({ token });
 });
 
@@ -440,8 +477,7 @@ app.post('/kunde/:slug/auth/login', async (req, res) => {
     const tenant = await getTenantBySlug(req.params.slug);
     if (!tenant) return res.status(404).json({ error: 'Ikke funnet' });
     if (req.body.password !== tenant.password) return res.status(401).json({ error: 'Feil passord' });
-    const token = uuidv4();
-    tenantSessions[token] = { tenantId: tenant.id, expires: Date.now() + 604800000 };
+    const token = await createSession('tenant', tenant.id);
     const isDemo = req.params.slug === (process.env.DEMO_TENANT_SLUG || 'demo');
     res.json({ token, tenantName: tenant.name, isDemo });
 });
@@ -1019,11 +1055,9 @@ app.post('/kunde/:slug/api/settings', requireTenantSession, async (req, res) => 
 async function requireTenantSessionOrToken(req, res, next) {
     // Støtter både header og query-param for eksport-lenker
     const token = req.headers['x-session-token'] || req.query.token;
-    if (!token || !tenantSessions[token] || tenantSessions[token].expires < Date.now()) {
-        return res.status(401).json({ error: 'Ikke innlogget' });
-    }
-    tenantSessions[token].expires = Date.now() + 604800000;
-    const tenant = await getTenantById(tenantSessions[token].tenantId);
+    const session = await getSession(token, 'tenant');
+    if (!session) return res.status(401).json({ error: 'Ikke innlogget' });
+    const tenant = await getTenantById(session.tenant_id);
     if (!tenant) return res.status(401).json({ error: 'Ugyldig sesjon' });
     req.tenant = tenant;
     next();
