@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const QRCodeLib = require('qrcode');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -167,13 +168,56 @@ async function initDB() {
     `);
     console.log('Database initialisert');
 
-    // Last lagret admin-passord fra database
-    const savedSettings = await pool.query('SELECT * FROM admin_settings WHERE id=$1', ['main']).catch(() => ({ rows: [] }));
-    if (savedSettings.rows[0]?.admin_password) {
-        process.env.ADMIN_PASSWORD = savedSettings.rows[0].admin_password;
-        console.log('Admin-passord lastet fra database');
-    }
+    // Admin-passord byttet i Innstillinger lagres som hash (se sjekkAdminPassord).
+    // Et gammelt passord i klartekst ble aldri brukt ved innlogging – fjern det fra databasen.
+    await pool.query("UPDATE admin_settings SET admin_password=NULL WHERE id='main' AND admin_password IS NOT NULL AND admin_password !~ '^\\$2[aby]\\$'").catch(() => {});
 }
+
+// ── PASSORD (bcrypt) ──────────────────────────────────────────────────────────
+// Passord lagres som bcrypt-hash. Gamle passord i klartekst virker fortsatt, og gjøres om
+// til hash første gang de brukes riktig – ingen trenger å bytte passord.
+const erHash = (p) => typeof p === 'string' && /^\$2[aby]\$/.test(p);
+const hashPassord = (p) => bcrypt.hash(String(p), 10);
+async function sjekkPassord(oppgitt, lagret) {
+    if (!lagret || oppgitt == null) return false;
+    if (erHash(lagret)) return bcrypt.compare(String(oppgitt), lagret);
+    const a = Buffer.from(String(oppgitt)), b = Buffer.from(String(lagret));
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+/** Kundepassord: sjekker, og oppgraderer klartekst til hash ved riktig passord */
+async function sjekkKundePassord(tenant, oppgitt) {
+    const ok = await sjekkPassord(oppgitt, tenant.password);
+    if (ok && !erHash(tenant.password)) {
+        await pool.query('UPDATE tenants SET password=$1 WHERE id=$2', [await hashPassord(oppgitt), tenant.id]);
+    }
+    return ok;
+}
+/** Admin-passord: byttet i Innstillinger (lagret som hash) – ellers ADMIN_PASSWORD fra Railway.
+ *  Et gammelt klartekst-passord i admin_settings ble aldri brukt ved innlogging før, og ignoreres fortsatt,
+ *  så innloggingen virker akkurat som før til du bytter passord i Innstillinger. */
+async function sjekkAdminPassord(oppgitt) {
+    const r = await pool.query("SELECT admin_password FROM admin_settings WHERE id='main'").catch(() => ({ rows: [] }));
+    const lagret = r.rows[0] && r.rows[0].admin_password;
+    if (erHash(lagret)) return sjekkPassord(oppgitt, lagret);
+    return sjekkPassord(oppgitt, ADMIN_PASSWORD);
+}
+
+// ── BEGRENSNING AV INNLOGGINGSFORSØK ──────────────────────────────────────────
+// Maks 10 feil per 15 min per IP og konto. Stopper gjetting av passord og koder.
+const feilForsok = new Map();
+const forsokNokkel = (req, konto) => (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim() + '|' + konto;
+function erSperret(req, konto) {
+    const f = feilForsok.get(forsokNokkel(req, konto));
+    return !!(f && f.antall >= 10 && Date.now() - f.forst < 15 * 60 * 1000);
+}
+function registrerFeil(req, konto) {
+    const k = forsokNokkel(req, konto), naa = Date.now();
+    const f = feilForsok.get(k);
+    if (!f || naa - f.forst > 15 * 60 * 1000) feilForsok.set(k, { antall: 1, forst: naa });
+    else f.antall++;
+}
+const nullstillFeil = (req, konto) => feilForsok.delete(forsokNokkel(req, konto));
+const SPERRET = { error: 'For mange feil forsøk. Vent 15 minutter.' };
 
 // ── HJELPEFUNKSJONER ──────────────────────────────────────────────────────────
 function generateApiKey() {
@@ -388,10 +432,46 @@ async function requireApiKey(req, res, next) {
 app.get('/', (req, res) => res.json({ status: 'ok', version: '4.0.0', message: 'SMS Gateway Server' }));
 
 // ── ADMIN API ─────────────────────────────────────────────────────────────────
+// Innlogging: passord, og (når ADMIN_TELEFON er satt) en kode på SMS til din telefon
 app.post('/admin/login', async (req, res) => {
-    if (req.body.password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Feil passord' });
+    if (erSperret(req, 'admin')) return res.status(429).json(SPERRET);
+    if (!(await sjekkAdminPassord(req.body && req.body.password))) {
+        registrerFeil(req, 'admin');
+        return res.status(401).json({ error: 'Feil passord' });
+    }
+    nullstillFeil(req, 'admin');
+    if (!stepupPa()) return res.json({ token: await createSession('admin') });
+    // Steg 2: midlertidig innlogging som venter på SMS-koden (10 min)
+    const venter = crypto.randomBytes(32).toString('hex');
+    await pool.query('INSERT INTO sessions (token, type, tenant_id, expires_at) VALUES ($1, $2, $3, $4)', [venter, 'admin-venter', null, Date.now() + 10 * 60 * 1000]);
+    const r = await sendAdminKode(venter);
+    res.json({ trengerKode: true, venter, ...(r.status === 200 ? r.svar : { telefon: maskertTelefon(), sendFeil: r.svar.error }) });
+});
+
+// Logg ut: sletter innloggingen og eventuell SMS-godkjenning på serveren
+app.post('/admin/logout', requireAdmin, async (req, res) => {
+    await pool.query('DELETE FROM sessions WHERE token=$1 OR token=$2', [req.headers['x-admin-token'], req.headers['x-stepup-token'] || '']);
+    res.json({ success: true });
+});
+
+app.post('/admin/login/ny-kode', async (req, res) => {
+    const venter = req.body && req.body.venter;
+    if (!venter || !(await getSession(venter, 'admin-venter'))) return res.status(401).json({ error: 'Innloggingen har gått ut. Start på nytt.' });
+    const r = await sendAdminKode(venter);
+    res.status(r.status).json(r.svar);
+});
+
+app.post('/admin/login/kode', async (req, res) => {
+    if (erSperret(req, 'admin-kode')) return res.status(429).json(SPERRET);
+    const venter = req.body && req.body.venter;
+    if (!venter || !(await getSession(venter, 'admin-venter'))) return res.status(401).json({ error: 'Innloggingen har gått ut. Start på nytt.' });
+    const feil = sjekkAdminKode(venter, req.body.kode);
+    if (feil) { registrerFeil(req, 'admin-kode'); return res.status(feil.status).json(feil.svar); }
+    nullstillFeil(req, 'admin-kode');
+    await pool.query('DELETE FROM sessions WHERE token=$1', [venter]);
     const token = await createSession('admin');
-    res.json({ token });
+    const stepup = await lagStepupToken(); // nettopp bekreftet – slipper ny kode de neste 15 min
+    res.json({ token, stepupToken: stepup.token, stepupUtloper: stepup.utloper });
 });
 
 app.get('/admin/stepup/status', requireAdmin, async (req, res) => {
@@ -399,49 +479,64 @@ app.get('/admin/stepup/status', requireAdmin, async (req, res) => {
 });
 
 // Sender en 6-sifret kode på SMS til ADMIN_TELEFON via gateway-telefonen som sist var online
-app.post('/admin/stepup/start', requireAdmin, async (req, res) => {
-    if (!stepupPa()) return res.json({ pa: false });
+/** Sender en 6-sifret kode på SMS til ADMIN_TELEFON via gateway-telefonen som sist var online.
+ *  [nokkel] knytter koden til én innlogging/økt. Gir { status, svar }. */
+async function sendAdminKode(nokkel) {
     const naa = Date.now();
     while (stepupSendt.length && naa - stepupSendt[0] > 3600000) stepupSendt.shift();
-    if (stepupSendt.length >= 6) return res.status(429).json({ error: 'For mange koder siste time. Bruk nødkoden eller vent litt.' });
+    if (stepupSendt.length >= 6) return { status: 429, svar: { error: 'For mange koder siste time. Bruk nødkoden eller vent litt.' } };
     if (stepupSendt.length && naa - stepupSendt[stepupSendt.length - 1] < 30000) {
-        return res.status(429).json({ error: 'Vent 30 sekunder før du ber om en ny kode.' });
+        return { status: 429, svar: { error: 'Vent 30 sekunder før du ber om en ny kode.' } };
     }
     const enhet = await pool.query('SELECT tenant_id, last_seen FROM devices ORDER BY last_seen DESC NULLS LAST LIMIT 1');
-    if (!enhet.rows[0]) return res.status(503).json({ error: 'Ingen gateway-telefon er registrert. Bruk nødkoden.' });
+    if (!enhet.rows[0]) return { status: 503, svar: { error: 'Ingen gateway-telefon er registrert. Bruk nødkoden.' } };
     const kode = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
     await pool.query(
         'INSERT INTO messages (id,tenant_id,direction,status,to_number,body,created_at,source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
         [uuidv4(), enhet.rows[0].tenant_id, 'outbound', 'pending', adminTelefon(),
          'sms.ay.no admin: koden er ' + kode + '. Gyldig i 5 min. Ikke del den med noen.', naa, 'admin-kode']
     );
-    stepupKoder.set(req.headers['x-admin-token'], { hash: hashKode(kode), utloper: naa + KODE_TTL, forsok: 0 });
+    stepupKoder.set(nokkel, { hash: hashKode(kode), utloper: naa + KODE_TTL, forsok: 0 });
     stepupSendt.push(naa);
     const sist = parseInt(enhet.rows[0].last_seen || 0, 10);
-    res.json({ pa: true, telefon: maskertTelefon(), telefonOnline: naa - sist < 120000 });
+    return { status: 200, svar: { pa: true, telefon: maskertTelefon(), telefonOnline: naa - sist < 120000 } };
+}
+
+/** Sjekker koden (eller ADMIN_NODKODE). Gir null hvis riktig, ellers { status, svar }. */
+function sjekkAdminKode(nokkel, kodeInn) {
+    const kode = String(kodeInn || '').replace(/\s/g, '');
+    const nod = process.env.ADMIN_NODKODE;
+    if (nod && kode.length >= 8 && likeTekster(kode, nod)) {
+        console.log('[stepup] nødkode brukt');
+        stepupKoder.delete(nokkel);
+        return null;
+    }
+    const k = stepupKoder.get(nokkel);
+    if (!k || Date.now() > k.utloper) return { status: 400, svar: { error: 'Koden har gått ut. Be om en ny.' } };
+    if (++k.forsok > 5) { stepupKoder.delete(nokkel); return { status: 429, svar: { error: 'For mange forsøk. Be om en ny kode.' } }; }
+    if (!likeTekster(hashKode(kode), k.hash)) return { status: 400, svar: { error: 'Feil kode (' + Math.max(0, 5 - k.forsok) + ' forsøk igjen)' } };
+    stepupKoder.delete(nokkel);
+    return null;
+}
+
+async function lagStepupToken() {
+    const token = crypto.randomBytes(32).toString('hex');
+    const utloper = Date.now() + STEPUP_TTL;
+    await pool.query('INSERT INTO sessions (token, type, tenant_id, expires_at) VALUES ($1, $2, $3, $4)', [token, 'stepup', null, utloper]);
+    return { token, utloper };
+}
+
+app.post('/admin/stepup/start', requireAdmin, async (req, res) => {
+    if (!stepupPa()) return res.json({ pa: false });
+    const r = await sendAdminKode(req.headers['x-admin-token']);
+    res.status(r.status).json(r.svar);
 });
 
 app.post('/admin/stepup/verify', requireAdmin, async (req, res) => {
     if (!stepupPa()) return res.json({ token: null, pa: false });
-    const adminToken = req.headers['x-admin-token'];
-    const kode = String((req.body && req.body.kode) || '').replace(/\s/g, '');
-    const nod = process.env.ADMIN_NODKODE;
-    let ok = false;
-    if (nod && kode.length >= 8 && likeTekster(kode, nod)) {
-        ok = true;
-        console.log('[stepup] nødkode brukt');
-    } else {
-        const k = stepupKoder.get(adminToken);
-        if (!k || Date.now() > k.utloper) return res.status(400).json({ error: 'Koden har gått ut. Be om en ny.' });
-        if (++k.forsok > 5) { stepupKoder.delete(adminToken); return res.status(429).json({ error: 'For mange forsøk. Be om en ny kode.' }); }
-        ok = likeTekster(hashKode(kode), k.hash);
-        if (!ok) return res.status(400).json({ error: 'Feil kode (' + Math.max(0, 5 - k.forsok) + ' forsøk igjen)' });
-    }
-    stepupKoder.delete(adminToken);
-    const token = crypto.randomBytes(32).toString('hex');
-    const utloper = Date.now() + STEPUP_TTL;
-    await pool.query('INSERT INTO sessions (token, type, tenant_id, expires_at) VALUES ($1, $2, $3, $4)', [token, 'stepup', null, utloper]);
-    res.json({ token, utloper });
+    const feil = sjekkAdminKode(req.headers['x-admin-token'], req.body && req.body.kode);
+    if (feil) return res.status(feil.status).json(feil.svar);
+    res.json(await lagStepupToken());
 });
 
 // API-nøkkelen vises bare etter SMS-bekreftelse
@@ -498,7 +593,7 @@ app.put('/admin/tenants/:id', requireAdmin, async (req, res) => {
             if (!st || !(await getSession(st, 'stepup'))) return res.status(403).json({ error: 'Bekreft med SMS-kode først', stepup: true });
         }
         updates.push('password=$' + (values.length + 1));
-        values.push(password);
+        values.push(await hashPassord(password));
     }
     values.push(req.params.id);
     await pool.query(`UPDATE tenants SET ${updates.join(',')} WHERE id=$${values.length}`, values);
@@ -512,7 +607,7 @@ app.post('/admin/tenants', requireAdmin, async (req, res) => {
     const existing = await getTenantBySlug(slug);
     if (existing) return res.status(400).json({ error: 'Kunde med dette navnet finnes allerede' });
 
-    const tenant = { id: uuidv4(), name, slug, password, api_key: generateApiKey(), created_at: Date.now() };
+    const tenant = { id: uuidv4(), name, slug, password: await hashPassord(password), api_key: generateApiKey(), created_at: Date.now() };
     await pool.query(
         `INSERT INTO tenants (id,name,slug,password,api_key,created_at,phone_number,max_devices,
          contact_person,contact_phone,address,postal_code,city,org_number,email)
@@ -627,15 +722,13 @@ app.get('/admin/settings', requireAdmin, async (req, res) => {
 // Endre admin-passord
 app.post('/admin/settings/password', requireAdmin, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
-    if (currentPassword !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Feil nåværende passord' });
+    if (!(await sjekkAdminPassord(currentPassword))) return res.status(401).json({ error: 'Feil nåværende passord' });
     if (!newPassword || newPassword.length < 8) return res.status(400).json({ error: 'Minimum 8 tegn' });
-    // Oppdater miljøvariabel i minnet
-    process.env.ADMIN_PASSWORD = newPassword;
-    // Lagre i database for persistering
+    // Lagres som hash i databasen og gjelder fra neste innlogging (også etter omstart)
     await pool.query(`
         INSERT INTO admin_settings (id, admin_password) VALUES ('main', $1)
         ON CONFLICT (id) DO UPDATE SET admin_password = $1
-    `, [newPassword]).catch(() => {});
+    `, [await hashPassord(newPassword)]);
     res.json({ success: true });
 });
 
@@ -661,7 +754,12 @@ app.post('/admin/settings/welcome-template', requireAdmin, async (req, res) => {
 app.post('/kunde/:slug/auth/login', async (req, res) => {
     const tenant = await getTenantBySlug(req.params.slug);
     if (!tenant) return res.status(404).json({ error: 'Ikke funnet' });
-    if (req.body.password !== tenant.password) return res.status(401).json({ error: 'Feil passord' });
+    if (erSperret(req, 'kunde:' + tenant.id)) return res.status(429).json(SPERRET);
+    if (!(await sjekkKundePassord(tenant, req.body.password))) {
+        registrerFeil(req, 'kunde:' + tenant.id);
+        return res.status(401).json({ error: 'Feil passord' });
+    }
+    nullstillFeil(req, 'kunde:' + tenant.id);
     const token = await createSession('tenant', tenant.id);
     const isDemo = req.params.slug === (process.env.DEMO_TENANT_SLUG || 'demo');
     res.json({ token, tenantName: tenant.name, isDemo });
@@ -669,9 +767,9 @@ app.post('/kunde/:slug/auth/login', async (req, res) => {
 
 app.post('/kunde/:slug/auth/change-password', requireTenantSession, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
-    if (currentPassword !== req.tenant.password) return res.status(401).json({ error: 'Feil passord' });
+    if (!(await sjekkPassord(currentPassword, req.tenant.password))) return res.status(401).json({ error: 'Feil passord' });
     if (!newPassword || newPassword.length < 8) return res.status(400).json({ error: 'Min 8 tegn' });
-    await pool.query('UPDATE tenants SET password=$1 WHERE id=$2', [newPassword, req.tenant.id]);
+    await pool.query('UPDATE tenants SET password=$1 WHERE id=$2', [await hashPassord(newPassword), req.tenant.id]);
     res.json({ success: true });
 });
 
@@ -690,7 +788,7 @@ app.post('/kunde/:slug/auth/request-reset', async (req, res) => {
     if (!tenant.phone_number) return res.status(400).json({ error: 'Ingen telefon registrert. Kontakt administrator.' });
 
     // Generer 6-sifret kode
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = String(crypto.randomInt(100000, 1000000));
     const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutter
 
     // Slett gamle koder
@@ -720,14 +818,16 @@ app.post('/kunde/:slug/auth/verify-reset', async (req, res) => {
     const tenant = await getTenantBySlug(req.params.slug);
     if (!tenant) return res.status(404).json({ error: 'Ikke funnet' });
 
+    if (erSperret(req, 'reset:' + tenant.id)) return res.status(429).json(SPERRET);
     const reset = await pool.query(
         'SELECT * FROM reset_codes WHERE tenant_id=$1 AND code=$2 AND used=FALSE AND expires_at > $3',
-        [tenant.id, code, Date.now()]
+        [tenant.id, String(code), Date.now()]
     );
 
-    if (!reset.rows[0]) return res.status(401).json({ error: 'Ugyldig eller utløpt kode' });
+    if (!reset.rows[0]) { registrerFeil(req, 'reset:' + tenant.id); return res.status(401).json({ error: 'Ugyldig eller utløpt kode' }); }
+    nullstillFeil(req, 'reset:' + tenant.id);
 
-    await pool.query('UPDATE tenants SET password=$1 WHERE id=$2', [newPassword, tenant.id]);
+    await pool.query('UPDATE tenants SET password=$1 WHERE id=$2', [await hashPassord(newPassword), tenant.id]);
     await pool.query('UPDATE reset_codes SET used=TRUE WHERE id=$1', [reset.rows[0].id]);
 
     res.json({ success: true });
@@ -1477,7 +1577,7 @@ app.post('/api/3rdparty/v1/message', async (req, res) => {
         // Prøv slug + passord først
         if (username && password) {
             const result = await pool.query('SELECT * FROM tenants WHERE slug=$1', [username]);
-            if (result.rows[0] && result.rows[0].password === password) {
+            if (result.rows[0] && await sjekkKundePassord(result.rows[0], password)) {
                 tenant = result.rows[0];
             }
         }
