@@ -4,6 +4,7 @@ const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const QRCodeLib = require('qrcode');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -452,7 +453,14 @@ app.post('/admin/tenants/:id/qr-token', requireAdmin, async (req, res) => {
         token: token,
         expiresAt: expiresAt
     });
-    res.json({ qrData, expiresAt });
+    // QR-bildet lages på serveren (pålitelig bibliotek, stor, hvit kant, lav feilretting = færre ruter)
+    let qrBilde = null;
+    try {
+        qrBilde = await QRCodeLib.toDataURL(qrData, { errorCorrectionLevel: 'L', margin: 4, width: 420, color: { dark: '#000000', light: '#ffffff' } });
+    } catch (e) {
+        console.error('[qr] kunne ikke lage QR-bilde:', e.message);
+    }
+    res.json({ qrData, qrBilde, expiresAt });
 });
 
 // ── GATEWAY APP REGISTRERING VIA QR ──────────────────────────────────────────
