@@ -128,6 +128,7 @@ async function initDB() {
             gateway_network TEXT
         );
 
+        ALTER TABLE tenants ADD COLUMN IF NOT EXISTS max_devices INT DEFAULT 1;
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS phone_number TEXT;
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS contact_person TEXT;
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS contact_phone TEXT;
@@ -138,6 +139,15 @@ async function initDB() {
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS email TEXT;
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS is_api_client BOOLEAN DEFAULT FALSE;
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS api_client_name TEXT;
+        CREATE TABLE IF NOT EXISTS devices (
+            id TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+            device_id TEXT NOT NULL,
+            device_name TEXT,
+            registered_at BIGINT NOT NULL,
+            last_seen BIGINT,
+            UNIQUE(tenant_id, device_id)
+        );
         ALTER TABLE devices ADD COLUMN IF NOT EXISTS battery_level INT;
         ALTER TABLE devices ADD COLUMN IF NOT EXISTS network_type TEXT;
         ALTER TABLE devices ADD COLUMN IF NOT EXISTS status TEXT;
@@ -304,6 +314,39 @@ async function requireAdmin(req, res, next) {
     next();
 }
 
+// ── SMS-BEKREFTELSE (step-up) FOR HEMMELIGHETER ──────────────────────────────
+// Visning av API-nøkler, ny nøkkel, QR-kode, passordbytte og sletting krever en kode
+// sendt på SMS til ADMIN_TELEFON. Godkjenningen varer i 15 minutter.
+// ADMIN_NODKODE (valgfri, settes på Railway) virker i stedet for SMS-koden hvis gateway-telefonen er nede.
+// Er ADMIN_TELEFON ikke satt, er bekreftelsen av (som før).
+const STEPUP_TTL = 15 * 60 * 1000;
+const KODE_TTL = 5 * 60 * 1000;
+const stepupKoder = new Map(); // adminToken → { hash, utloper, forsok }
+const stepupSendt = [];        // tidspunkt for sendte koder (begrensning)
+
+const adminTelefon = () => {
+    const t = String(process.env.ADMIN_TELEFON || '').replace(/[\s\-()]/g, '');
+    if (!t) return '';
+    if (t.startsWith('+')) return t;
+    if (t.startsWith('00')) return '+' + t.slice(2);
+    return t.length === 8 ? '+47' + t : t;
+};
+const stepupPa = () => !!adminTelefon();
+const maskertTelefon = () => { const t = adminTelefon(); return t ? '•••• ' + t.slice(-4) : ''; };
+const hashKode = (k) => crypto.createHash('sha256').update(String(k)).digest('hex');
+const likeTekster = (a, b) => {
+    const x = Buffer.from(String(a)), y = Buffer.from(String(b));
+    return x.length === y.length && crypto.timingSafeEqual(x, y);
+};
+
+async function requireStepup(req, res, next) {
+    if (!stepupPa()) return next();
+    const token = req.headers['x-stepup-token'];
+    const ok = token && await getSession(token, 'stepup');
+    if (!ok) return res.status(403).json({ error: 'Bekreft med SMS-kode først', stepup: true });
+    next();
+}
+
 async function requireTenantSession(req, res, next) {
     const token = req.headers['x-session-token'];
     const session = await getSession(token, 'tenant');
@@ -351,6 +394,63 @@ app.post('/admin/login', async (req, res) => {
     res.json({ token });
 });
 
+app.get('/admin/stepup/status', requireAdmin, async (req, res) => {
+    res.json({ pa: stepupPa(), telefon: maskertTelefon(), nodkode: !!process.env.ADMIN_NODKODE });
+});
+
+// Sender en 6-sifret kode på SMS til ADMIN_TELEFON via gateway-telefonen som sist var online
+app.post('/admin/stepup/start', requireAdmin, async (req, res) => {
+    if (!stepupPa()) return res.json({ pa: false });
+    const naa = Date.now();
+    while (stepupSendt.length && naa - stepupSendt[0] > 3600000) stepupSendt.shift();
+    if (stepupSendt.length >= 6) return res.status(429).json({ error: 'For mange koder siste time. Bruk nødkoden eller vent litt.' });
+    if (stepupSendt.length && naa - stepupSendt[stepupSendt.length - 1] < 30000) {
+        return res.status(429).json({ error: 'Vent 30 sekunder før du ber om en ny kode.' });
+    }
+    const enhet = await pool.query('SELECT tenant_id, last_seen FROM devices ORDER BY last_seen DESC NULLS LAST LIMIT 1');
+    if (!enhet.rows[0]) return res.status(503).json({ error: 'Ingen gateway-telefon er registrert. Bruk nødkoden.' });
+    const kode = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+    await pool.query(
+        'INSERT INTO messages (id,tenant_id,direction,status,to_number,body,created_at,source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [uuidv4(), enhet.rows[0].tenant_id, 'outbound', 'pending', adminTelefon(),
+         'sms.ay.no admin: koden er ' + kode + '. Gyldig i 5 min. Ikke del den med noen.', naa, 'admin-kode']
+    );
+    stepupKoder.set(req.headers['x-admin-token'], { hash: hashKode(kode), utloper: naa + KODE_TTL, forsok: 0 });
+    stepupSendt.push(naa);
+    const sist = parseInt(enhet.rows[0].last_seen || 0, 10);
+    res.json({ pa: true, telefon: maskertTelefon(), telefonOnline: naa - sist < 120000 });
+});
+
+app.post('/admin/stepup/verify', requireAdmin, async (req, res) => {
+    if (!stepupPa()) return res.json({ token: null, pa: false });
+    const adminToken = req.headers['x-admin-token'];
+    const kode = String((req.body && req.body.kode) || '').replace(/\s/g, '');
+    const nod = process.env.ADMIN_NODKODE;
+    let ok = false;
+    if (nod && kode.length >= 8 && likeTekster(kode, nod)) {
+        ok = true;
+        console.log('[stepup] nødkode brukt');
+    } else {
+        const k = stepupKoder.get(adminToken);
+        if (!k || Date.now() > k.utloper) return res.status(400).json({ error: 'Koden har gått ut. Be om en ny.' });
+        if (++k.forsok > 5) { stepupKoder.delete(adminToken); return res.status(429).json({ error: 'For mange forsøk. Be om en ny kode.' }); }
+        ok = likeTekster(hashKode(kode), k.hash);
+        if (!ok) return res.status(400).json({ error: 'Feil kode (' + Math.max(0, 5 - k.forsok) + ' forsøk igjen)' });
+    }
+    stepupKoder.delete(adminToken);
+    const token = crypto.randomBytes(32).toString('hex');
+    const utloper = Date.now() + STEPUP_TTL;
+    await pool.query('INSERT INTO sessions (token, type, tenant_id, expires_at) VALUES ($1, $2, $3, $4)', [token, 'stepup', null, utloper]);
+    res.json({ token, utloper });
+});
+
+// API-nøkkelen vises bare etter SMS-bekreftelse
+app.get('/admin/tenants/:id/hemmelig', requireAdmin, requireStepup, async (req, res) => {
+    const r = await pool.query('SELECT api_key FROM tenants WHERE id=$1', [req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'Kunde ikke funnet' });
+    res.json({ apiKey: r.rows[0].api_key });
+});
+
 app.get('/admin/tenants', requireAdmin, async (req, res) => {
     const tenants = await pool.query('SELECT * FROM tenants ORDER BY created_at DESC');
     const result = await Promise.all(tenants.rows.map(async t => {
@@ -360,7 +460,7 @@ app.get('/admin/tenants', requireAdmin, async (req, res) => {
             pool.query("SELECT COUNT(*) FROM messages WHERE tenant_id=$1 AND status='pending'", [t.id])
         ]);
         return {
-            id: t.id, name: t.name, slug: t.slug, apiKey: t.api_key,
+            id: t.id, name: t.name, slug: t.slug, apiKeyHint: t.api_key ? t.api_key.slice(-4) : '',
             createdAt: t.created_at, phoneNumber: t.phone_number, maxDevices: t.max_devices || 1,
             contactPerson: t.contact_person, contactPhone: t.contact_phone,
             address: t.address, postalCode: t.postal_code, city: t.city,
@@ -392,6 +492,11 @@ app.put('/admin/tenants/:id', requireAdmin, async (req, res) => {
         isApiClient || false, apiClientName || null
     ];
     if (password && password.length >= 8) {
+        // Passordbytte krever SMS-bekreftelse
+        if (stepupPa()) {
+            const st = req.headers['x-stepup-token'];
+            if (!st || !(await getSession(st, 'stepup'))) return res.status(403).json({ error: 'Bekreft med SMS-kode først', stepup: true });
+        }
         updates.push('password=$' + (values.length + 1));
         values.push(password);
     }
@@ -423,19 +528,19 @@ app.post('/admin/tenants', requireAdmin, async (req, res) => {
     res.status(201).json({ id: tenant.id, name, slug, apiKey: tenant.api_key, dashboardUrl, welcomeMessage: generateWelcomeMessage(tenant, serverUrl) });
 });
 
-app.delete('/admin/tenants/:id', requireAdmin, async (req, res) => {
+app.delete('/admin/tenants/:id', requireAdmin, requireStepup, async (req, res) => {
     await pool.query('DELETE FROM tenants WHERE id=$1', [req.params.id]);
     res.json({ success: true });
 });
 
-app.post('/admin/tenants/:id/regenerate-key', requireAdmin, async (req, res) => {
+app.post('/admin/tenants/:id/regenerate-key', requireAdmin, requireStepup, async (req, res) => {
     const newKey = generateApiKey();
     await pool.query('UPDATE tenants SET api_key=$1 WHERE id=$2', [newKey, req.params.id]);
     res.json({ apiKey: newKey });
 });
 
 // ── QR-TOKEN FOR GATEWAY-APP ─────────────────────────────────────────────────
-app.post('/admin/tenants/:id/qr-token', requireAdmin, async (req, res) => {
+app.post('/admin/tenants/:id/qr-token', requireAdmin, requireStepup, async (req, res) => {
     const tenant = await pool.query('SELECT * FROM tenants WHERE id=$1', [req.params.id]);
     if (!tenant.rows[0]) return res.status(404).json({ error: 'Kunde ikke funnet' });
     const t = tenant.rows[0];
@@ -752,6 +857,8 @@ app.post('/api/sms/:id/status', requireApiKey, async (req, res) => {
     const { success, sentAt, errorMessage } = req.body;
     if (success) {
         await pool.query("UPDATE messages SET status='sent', sent_at=$1, error_message=NULL, retry_count=0 WHERE id=$2 AND tenant_id=$3", [sentAt || Date.now(), req.params.id, req.tenant.id]);
+        // Admin-koder skal ikke ligge lesbare i meldingslister eller gå videre til webhooks
+        await pool.query("UPDATE messages SET body='sms.ay.no admin: kode ••••••' WHERE id=$1 AND source='admin-kode'", [req.params.id]);
         const msg = await pool.query('SELECT * FROM messages WHERE id=$1', [req.params.id]);
         if (msg.rows[0]) await triggerWebhooks(req.tenant.id, 'sms.sent', msg.rows[0]);
     } else {
