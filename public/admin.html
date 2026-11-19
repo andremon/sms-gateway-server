@@ -426,7 +426,7 @@ tr:hover td{background:#ffffff04}
               <div style="font-size:13px;font-weight:600;color:#818cf8;margin-bottom:8px">📱 QR-kode for gateway-appen</div>
               <div id="qrcode"></div>
               <div style="font-size:12px;color:#475569;margin-top:6px" id="qrExpires"></div>
-              <p style="font-size:11px;color:#334155;margin-top:4px">Engangsbruk · Gyldig 24 timer</p>
+              <p style="font-size:11px;color:#334155;margin-top:4px">Engangsbruk · Gyldig 1 time</p>
             </div>
           </div>
         </div>
@@ -876,25 +876,35 @@ function renderDangerPane(t) {
 }
 
 // ── QR / REGEN / DELETE ──────────────────────────────────────────
+
+// Viser QR-koden. Bruker bildet fra serveren (stort, med hvit kant); faller tilbake til qrcodejs.
+function visQr(el, qr, storrelse) {
+  el.innerHTML = '';
+  el.style.width = '';
+  el.style.height = '';
+  if (qr.qrBilde) {
+    var img = document.createElement('img');
+    img.src = qr.qrBilde;
+    img.alt = 'QR-kode';
+    img.style.cssText = 'width:' + storrelse + 'px;height:' + storrelse + 'px;max-width:80vw;max-height:80vw;image-rendering:pixelated;background:#fff;border-radius:8px;display:block;margin:0 auto';
+    el.appendChild(img);
+    return;
+  }
+  el.style.background = '#fff';
+  el.style.padding = '16px';
+  new QRCode(el, { text: qr.qrData, width: storrelse, height: storrelse, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L });
+}
+
 function genQrForTenant(id, name) {
   adminApi('/admin/tenants/' + id + '/qr-token', { method: 'POST' }).then(function(qr) {
     if (qr.error) { toast(qr.error, 'err'); return; }
     var modal = makeModal('📱 QR-kode — ' + name,
       '<div class="qr-box"><div id="qrModalCode"></div>' +
       '<div style="font-size:12px;color:#475569;margin-top:8px">Utløper: ' + new Date(qr.expiresAt).toLocaleString('nb-NO') + '</div>' +
-      '<p style="font-size:11px;color:#334155;margin-top:4px">Engangsbruk · Gyldig 24 timer</p></div>'
+      '<p style="font-size:11px;color:#334155;margin-top:4px">Engangsbruk · Gyldig 1 time</p></div>'
     );
     document.body.appendChild(modal);
-    setTimeout(function() {
-      new QRCode(document.getElementById('qrModalCode'), {
-        text: qr.qrData,
-        width: 200,
-        height: 200,
-        colorDark: '#000000',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    }, 100);
+    setTimeout(function() { visQr(document.getElementById('qrModalCode'), qr, 340); }, 50);
   });
 }
 
@@ -1042,19 +1052,7 @@ document.getElementById('createBtn').addEventListener('click', function() {
         adminApi('/admin/tenants/' + res.id + '/qr-token', { method: 'POST' }).then(function(qr) {
           if (qr.error) return;
           var qrEl = document.getElementById('qrcode');
-          qrEl.innerHTML = '';
-          qrEl.style.width = '180px';
-          qrEl.style.height = '180px';
-          setTimeout(function() {
-            new QRCode(qrEl, {
-              text: qr.qrData,
-              width: 180,
-              height: 180,
-              colorDark: '#000000',
-              colorLight: '#ffffff',
-              correctLevel: QRCode.CorrectLevel.M
-            });
-          }, 100);
+          setTimeout(function() { visQr(qrEl, qr, 300); }, 50);
           document.getElementById('qrExpires').textContent = 'Utløper: ' + new Date(qr.expiresAt).toLocaleString('nb-NO');
         });
       }
