@@ -514,8 +514,60 @@ var prevView = '';
 function adminApi(path, opts) {
   opts = opts || {};
   return fetch(BASE + path, Object.assign({}, opts, {
-    headers: Object.assign({ 'Content-Type': 'application/json', 'X-Admin-Token': adminToken }, opts.headers || {})
+    headers: Object.assign({ 'Content-Type': 'application/json', 'X-Admin-Token': adminToken, 'X-Stepup-Token': stepupToken() }, opts.headers || {})
   })).then(function(r) { return r.json(); });
+}
+
+// ── SMS-BEKREFTELSE ──────────────────────────────────────────────
+// API-tilkobling, Administrer, QR-kode og visning av nøkler krever en kode på SMS (gyldig 15 min).
+function stepupToken() {
+  try {
+    var t = sessionStorage.getItem('stepup_token'), u = parseInt(sessionStorage.getItem('stepup_utloper') || '0', 10);
+    return t && Date.now() < u ? t : '';
+  } catch (e) { return ''; }
+}
+var stepupAv = false; // true når ADMIN_TELEFON ikke er satt på serveren
+function medBekreftelse(fn) {
+  if (stepupAv || stepupToken()) { fn(); return; }
+  adminApi('/admin/stepup/status').then(function(st) {
+    if (!st.pa) { stepupAv = true; fn(); return; }
+    var modal = makeModal('🔐 Bekreft at det er deg',
+      '<p style="font-size:13px;color:#94a3b8;margin-bottom:14px">Hemmeligheter og endringer krever en kode sendt på SMS til <strong style="color:#f8fafc">' + esc(st.telefon) + '</strong>. Godkjenningen varer i 15 minutter.</p>' +
+      '<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn btn-primary btn-sm" id="suSend">📩 Send kode</button></div>' +
+      '<div class="form-group" style="margin-bottom:12px"><label>Kode fra SMS' + (st.nodkode ? ' (eller nødkode)' : '') + '</label>' +
+      '<input id="suKode" inputmode="numeric" autocomplete="one-time-code" placeholder="6 siffer" style="letter-spacing:4px;font-size:18px"></div>' +
+      '<div style="display:flex;gap:8px"><button class="btn btn-blue btn-sm" id="suOk">Bekreft</button>' +
+      '<button class="btn btn-gray btn-sm" onclick="this.closest(\'.modal-overlay\').remove()">Avbryt</button></div>' +
+      '<div id="suMsg" style="font-size:12px;margin-top:10px;color:#94a3b8"></div>'
+    );
+    document.body.appendChild(modal);
+    var msg = modal.querySelector('#suMsg');
+    modal.querySelector('#suSend').addEventListener('click', function() {
+      var knapp = this; knapp.disabled = true;
+      adminApi('/admin/stepup/start', { method: 'POST' }).then(function(r) {
+        knapp.disabled = false;
+        if (r.error) { msg.style.color = '#f87171'; msg.textContent = '✕ ' + r.error; return; }
+        msg.style.color = '#34d399';
+        msg.textContent = '✓ Kode sendt til ' + r.telefon + (r.telefonOnline ? '' : ' – gateway-telefonen har ikke vært online siste 2 min, så SMS-en kan bli forsinket') + '.';
+        knapp.textContent = '↻ Send ny kode';
+        modal.querySelector('#suKode').focus();
+      });
+    });
+    function bekreft() {
+      var kode = modal.querySelector('#suKode').value.trim();
+      if (!kode) return;
+      adminApi('/admin/stepup/verify', { method: 'POST', body: JSON.stringify({ kode: kode }) }).then(function(r) {
+        if (r.error) { msg.style.color = '#f87171'; msg.textContent = '✕ ' + r.error; return; }
+        try {
+          sessionStorage.setItem('stepup_token', r.token || '');
+          sessionStorage.setItem('stepup_utloper', String(r.utloper || 0));
+        } catch (e) {}
+        modal.remove(); toast('Bekreftet i 15 minutter'); fn();
+      });
+    }
+    modal.querySelector('#suOk').addEventListener('click', bekreft);
+    modal.querySelector('#suKode').addEventListener('keydown', function(e) { if (e.key === 'Enter') bekreft(); });
+  });
 }
 function customerApi(path, opts) {
   opts = opts || {};
@@ -745,10 +797,15 @@ document.getElementById('backFromDetail').addEventListener('click', function() {
 
 document.querySelectorAll('.detail-tab').forEach(function(tab) {
   tab.addEventListener('click', function() {
-    document.querySelectorAll('.detail-tab').forEach(function(t) { t.classList.remove('active'); });
-    document.querySelectorAll('.detail-pane').forEach(function(p) { p.classList.remove('active'); });
-    this.classList.add('active');
-    document.getElementById('pane-' + this.getAttribute('data-tab')).classList.add('active');
+    var fane = this;
+    var vis = function() {
+      document.querySelectorAll('.detail-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.detail-pane').forEach(function(p) { p.classList.remove('active'); });
+      fane.classList.add('active');
+      document.getElementById('pane-' + fane.getAttribute('data-tab')).classList.add('active');
+    };
+    var navn = fane.getAttribute('data-tab');
+    if (navn === 'api' || navn === 'danger') medBekreftelse(vis); else vis();
   });
 });
 
@@ -777,14 +834,43 @@ function renderInfoPane(t) {
     '</div>';
 }
 
+// Nøkkelen er skjult som standard (som på Railway). 👁 viser den i 60 sekunder, Kopier kopierer uten å vise.
+var synligNokkel = {}; // tenantId → apiKey (bare mens den vises)
+var MASKE = '••••••••••••••••••••';
+function hentNokkel(id, fn) {
+  medBekreftelse(function() {
+    adminApi('/admin/tenants/' + id + '/hemmelig').then(function(r) {
+      if (r.stepup) { try { sessionStorage.removeItem('stepup_token'); } catch (e) {} medBekreftelse(function() { hentNokkel(id, fn); }); return; }
+      if (r.error || !r.apiKey) { toast(r.error || 'Fant ikke nøkkelen', 'err'); return; }
+      fn(r.apiKey);
+    });
+  });
+}
+function visNokkel(id) {
+  var t = allTenants.find(function(x) { return x.id === id; });
+  if (!t) return;
+  if (synligNokkel[id]) { delete synligNokkel[id]; renderApiPane(t); return; }
+  hentNokkel(id, function(k) {
+    synligNokkel[id] = k; renderApiPane(t);
+    setTimeout(function() { if (synligNokkel[id]) { delete synligNokkel[id]; renderApiPane(t); } }, 60000);
+  });
+}
+function kopierNokkel(id, prefiks) {
+  hentNokkel(id, function(k) {
+    navigator.clipboard.writeText((prefiks || '') + k).then(function() { toast('Kopiert (vises ikke på skjermen)'); });
+  });
+}
+
 function renderApiPane(t) {
   var base = BASE;
+  var k = synligNokkel[t.id];
+  var vist = k || (MASKE + (t.apiKeyHint ? t.apiKeyHint : ''));
   document.getElementById('pane-api').innerHTML =
     '<div class="api-box">' +
       '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Konfigurasjon</div>' +
       apiRow2('SMS_GATEWAY_URL', base) +
-      apiRow2('SMS_GATEWAY_API_KEY', t.apiKey) +
-      apiRow2('Authorization', 'Bearer ' + t.apiKey) +
+      hemmeligRad('SMS_GATEWAY_API_KEY', vist, t.id, '') +
+      hemmeligRad('Authorization', 'Bearer ' + vist, t.id, 'Bearer ') +
     '</div>' +
     '<div class="api-box">' +
       '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Endepunkter</div>' +
@@ -795,9 +881,20 @@ function renderApiPane(t) {
     '</div>' +
     '<div class="api-box">' +
       '<div style="font-size:10px;color:#6366f1;font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Eksempel — Send SMS</div>' +
-      '<pre style="font-family:monospace;font-size:11px;color:#94a3b8;white-space:pre-wrap;line-height:1.7">POST ' + base + '/api/3rdparty/v1/message\nAuthorization: Bearer ' + t.apiKey + '\nContent-Type: application/json\n\n{\n  "to": "+4799887766",\n  "message": "Din time er bekreftet kl. 14:00"\n}</pre>' +
+      '<pre style="font-family:monospace;font-size:11px;color:#94a3b8;white-space:pre-wrap;line-height:1.7">POST ' + base + '/api/3rdparty/v1/message\nAuthorization: Bearer &lt;SMS_GATEWAY_API_KEY&gt;\nContent-Type: application/json\n\n{\n  "to": "+4799887766",\n  "message": "Din time er bekreftet kl. 14:00"\n}</pre>' +
     '</div>' +
     '<button class="btn btn-gray btn-sm" onclick="regenApiKey(\'' + t.id + '\',\'' + esc(t.name) + '\')">↻ Regenerer API-nøkkel</button>';
+}
+
+function hemmeligRad(label, vist, id, prefiks) {
+  var synlig = !!synligNokkel[id];
+  return '<div class="api-row">' +
+    '<span class="key">' + label + '</span>' +
+    '<div style="display:flex;align-items:center;gap:8px">' +
+      '<span class="val" style="' + (synlig ? '' : 'letter-spacing:1px;color:#64748b') + '">' + esc(vist) + '</span>' +
+      '<button onclick="visNokkel(\'' + id + '\')" class="btn-ghost" title="' + (synlig ? 'Skjul' : 'Vis i 60 sekunder') + '" style="padding:3px 8px;font-size:12px">' + (synlig ? '🙈' : '👁') + '</button>' +
+      '<button onclick="kopierNokkel(\'' + id + '\',\'' + prefiks + '\')" class="btn-ghost" style="padding:3px 8px;font-size:10px">Kopier</button>' +
+    '</div></div>';
 }
 
 function apiRow2(label, val) {
@@ -896,6 +993,9 @@ function visQr(el, qr, storrelse) {
 }
 
 function genQrForTenant(id, name) {
+  medBekreftelse(function() { lagQr(id, name); });
+}
+function lagQr(id, name) {
   adminApi('/admin/tenants/' + id + '/qr-token', { method: 'POST' }).then(function(qr) {
     if (qr.error) { toast(qr.error, 'err'); return; }
     var modal = makeModal('📱 QR-kode — ' + name,
@@ -909,8 +1009,13 @@ function genQrForTenant(id, name) {
 }
 
 function regenApiKey(id, name) {
-  if (!confirm('Regenerer API-nøkkel for ' + name + '?\nDen gamle nøkkelen slutter umiddelbart å fungere.')) return;
-  adminApi('/admin/tenants/' + id + '/regenerate-key', { method: 'POST' }).then(function() {
+  if (!confirm('Regenerer API-nøkkel for ' + name + '?\nDen gamle nøkkelen slutter umiddelbart å fungere – også for gateway-telefonen, som må skanne ny QR.')) return;
+  medBekreftelse(function() { nyNokkel(id); });
+}
+function nyNokkel(id) {
+  adminApi('/admin/tenants/' + id + '/regenerate-key', { method: 'POST' }).then(function(r) {
+    if (r.error) { toast(r.error, 'err'); return; }
+    delete synligNokkel[id];
     toast('Ny API-nøkkel generert'); loadAllTenants();
     setTimeout(function() {
       var t = allTenants.find(function(x) { return x.id === id; });
@@ -921,7 +1026,11 @@ function regenApiKey(id, name) {
 
 function deleteTenant(id, name) {
   if (!confirm('Slett ' + name + '?\nAlle meldinger slettes permanent. Kan ikke angres.')) return;
-  adminApi('/admin/tenants/' + id, { method: 'DELETE' }).then(function() {
+  medBekreftelse(function() { slettKunde(id); });
+}
+function slettKunde(id) {
+  adminApi('/admin/tenants/' + id, { method: 'DELETE' }).then(function(r) {
+    if (r && r.error) { toast(r.error, 'err'); return; }
     toast('Slettet'); loadAllTenants();
     switchView(prevView || 'dashboard');
   });
@@ -994,6 +1103,9 @@ function openEditModal(id) {
 }
 
 function openChangePwdModal(id, name) {
+  medBekreftelse(function() { visPassordModal(id, name); });
+}
+function visPassordModal(id, name) {
   var modal = makeModal('🔑 Endre passord — ' + name,
     '<div class="form-group" style="margin-bottom:12px"><label>Nytt passord</label><input type="password" id="cpNew" placeholder="Min. 8 tegn"></div>' +
     '<div class="form-group" style="margin-bottom:14px"><label>Bekreft passord</label><input type="password" id="cpCfm"></div>' +
@@ -1049,12 +1161,12 @@ document.getElementById('createBtn').addEventListener('click', function() {
       document.getElementById('createResult').classList.remove('hidden');
       document.getElementById('goToCustomerBtn').onclick = function() { loadAllTenants(); setTimeout(function() { openCustomerDetail(res.id); }, 600); };
       if (!isApi && res.id) {
-        adminApi('/admin/tenants/' + res.id + '/qr-token', { method: 'POST' }).then(function(qr) {
-          if (qr.error) return;
+        medBekreftelse(function() { adminApi('/admin/tenants/' + res.id + '/qr-token', { method: 'POST' }).then(function(qr) {
+          if (qr.error) { toast(qr.error, 'err'); return; }
           var qrEl = document.getElementById('qrcode');
           setTimeout(function() { visQr(qrEl, qr, 300); }, 50);
           document.getElementById('qrExpires').textContent = 'Utløper: ' + new Date(qr.expiresAt).toLocaleString('nb-NO');
-        });
+        }); });
       }
       loadAllTenants(); toast('Kunde opprettet!');
       ['ncName','ncPwd','ncPhone','ncContact','ncContactPhone','ncEmail','ncOrg','ncAddress','ncPostal','ncCity','ncApiName'].forEach(function(id) { var el = document.getElementById(id); if(el) el.value = ''; });
