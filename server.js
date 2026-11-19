@@ -432,7 +432,16 @@ async function requireApiKey(req, res, next) {
 // Helsesjekk som JSON (for apper og overvåking). «/» gir forsiden i nettleser, JSON for alt annet –
 // så gateway-appen og andre som sjekker «/» får samme svar som før.
 const helse = { status: 'ok', version: '4.0.0', message: 'SMS Gateway Server' };
-app.get('/health', (req, res) => res.json(helse));
+// /health sjekker også databasen – svarer 503 hvis den ikke svarer
+const startetAt = Date.now();
+app.get('/health', async (req, res) => {
+    try {
+        await pool.query('SELECT 1');
+        res.json({ ...helse, database: 'ok', oppetidSek: Math.round((Date.now() - startetAt) / 1000) });
+    } catch (e) {
+        res.status(503).json({ ...helse, status: 'feil', database: 'feil', error: e.message });
+    }
+});
 app.get('/', (req, res) => {
     if (req.accepts(['json', 'html']) === 'html') return res.sendFile(__dirname + '/public/forside.html');
     res.json(helse);
@@ -1687,6 +1696,46 @@ app.get('/api/3rdparty/v1/messages/sent', async (req, res) => {
             createdAt: m.createdAt ? new Date(parseInt(m.createdAt)).toISOString() : null,
             sentAt: m.sentAt ? new Date(parseInt(m.sentAt)).toISOString() : null
         }))
+    });
+});
+
+// Driftsstatus for kundens gateway-telefon og SMS-kø (brukes av AFASupport → Drift).
+// Krever kundens API-nøkkel (Bearer eller X-Api-Key). Ingen meldingsinnhold eller numre.
+app.get('/api/3rdparty/v1/status', async (req, res) => {
+    const tenant = await getTenantByApiKey(
+        req.headers['x-api-key'] ||
+        (req.headers['authorization'] || '').replace('Bearer ', '').trim()
+    );
+    if (!tenant) return res.status(401).json({ status: 'error', error: 'Ugyldig API-nøkkel' });
+    const naa = Date.now();
+    const dag = naa - 864e5;
+    const [enheter, ko, dogn] = await Promise.all([
+        pool.query('SELECT device_name, last_seen, battery_level, network_type FROM devices WHERE tenant_id=$1 ORDER BY last_seen DESC NULLS LAST', [tenant.id]),
+        pool.query("SELECT COUNT(*)::int AS antall, MIN(created_at) AS eldste FROM messages WHERE tenant_id=$1 AND direction='outbound' AND status='pending'", [tenant.id]),
+        pool.query(`SELECT
+              COUNT(*) FILTER (WHERE status='sent' AND sent_at > $2)::int AS sendt,
+              COUNT(*) FILTER (WHERE status='failed' AND created_at > $2)::int AS feilet,
+              MAX(sent_at) AS sist_sendt
+            FROM messages WHERE tenant_id=$1 AND direction='outbound'`, [tenant.id, dag]),
+    ]);
+    const sek = (t) => (t ? Math.round((naa - parseInt(t, 10)) / 1000) : null);
+    res.json({
+        status: 'ok',
+        kunde: tenant.name,
+        enheter: enheter.rows.map((d) => ({
+            navn: d.device_name || 'Ukjent enhet',
+            sistSettSek: sek(d.last_seen),
+            online: !!d.last_seen && naa - parseInt(d.last_seen, 10) < 120000,
+            batteri: d.battery_level == null ? null : d.battery_level,
+            nett: d.network_type || null,
+        })),
+        ko: {
+            venter: ko.rows[0].antall,
+            eldsteVenterSek: sek(ko.rows[0].eldste),
+            sendtSiste24t: dogn.rows[0].sendt,
+            feiletSiste24t: dogn.rows[0].feilet,
+            sistSendtSek: sek(dogn.rows[0].sist_sendt),
+        },
     });
 });
 
