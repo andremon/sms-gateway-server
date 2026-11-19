@@ -140,6 +140,8 @@ async function initDB() {
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS api_client_name TEXT;
         ALTER TABLE devices ADD COLUMN IF NOT EXISTS battery_level INT;
         ALTER TABLE devices ADD COLUMN IF NOT EXISTS network_type TEXT;
+        ALTER TABLE devices ADD COLUMN IF NOT EXISTS status TEXT;
+        ALTER TABLE devices ADD COLUMN IF NOT EXISTS created_at BIGINT;
         ALTER TABLE messages ADD COLUMN IF NOT EXISTS retry_count INT DEFAULT 0;
         ALTER TABLE messages ADD COLUMN IF NOT EXISTS last_retry_at BIGINT;
 
@@ -477,14 +479,31 @@ app.post('/api/register', async (req, res) => {
 
     const tenantId = session.rows[0].tenant_id;
 
-    // Registrer enhet
-    const { v4: uuidv4 } = require('uuid');
-    await pool.query(
-        `INSERT INTO devices (id, tenant_id, device_id, device_name, last_seen, status, network_type, battery_level, created_at)
-         VALUES ($1,$2,$3,$4,$5,'online','–',100,$5)
-         ON CONFLICT (device_id) DO UPDATE SET tenant_id=$2, device_name=$4, last_seen=$5, status='online'`,
-        [uuidv4(), tenantId, deviceId, deviceName || 'Ukjent enhet', Date.now()]
-    );
+    // Registrer enhet. Tabellen har UNIQUE(tenant_id, device_id) og registered_at NOT NULL,
+    // så vi slår opp enheten først i stedet for ON CONFLICT (device_id), som feilet og krasjet serveren (502).
+    try {
+        const naa = Date.now();
+        const navn = deviceName || 'Ukjent enhet';
+        const finnes = await pool.query('SELECT id FROM devices WHERE device_id=$1', [deviceId]);
+        if (finnes.rows.length) {
+            // Samme telefon kan bare høre til én kunde: fjern eventuelle ekstra rader først
+            await pool.query('DELETE FROM devices WHERE device_id=$1 AND id<>$2', [deviceId, finnes.rows[0].id]);
+            // Flytt den til denne kunden og marker den som online
+            await pool.query(
+                "UPDATE devices SET tenant_id=$1, device_name=$2, last_seen=$3, status='online' WHERE device_id=$4",
+                [tenantId, navn, naa, deviceId]
+            );
+        } else {
+            await pool.query(
+                `INSERT INTO devices (id, tenant_id, device_id, device_name, registered_at, last_seen, status, network_type, battery_level, created_at)
+                 VALUES ($1,$2,$3,$4,$5,$5,'online','–',100,$5)`,
+                [uuidv4(), tenantId, deviceId, navn, naa]
+            );
+        }
+    } catch (err) {
+        console.error('[register] kunne ikke registrere enhet:', err.message);
+        return res.status(500).json({ error: 'Kunne ikke registrere enheten: ' + err.message });
+    }
 
     // Slett brukt QR-token
     await pool.query('DELETE FROM sessions WHERE token=$1', [token]);
@@ -1522,6 +1541,9 @@ app.get('/api/3rdparty/v1/messages/:id', async (req, res) => {
         }
     });
 });
+// En feil i én forespørsel skal aldri krasje hele serveren (det gir 502 for alle)
+process.on('unhandledRejection', (err) => console.error('[uhåndtert feil]', err && err.message ? err.message : err));
+
 initDB().then(() => {
     app.listen(PORT, () => {
         console.log('SMS Gateway Server v5.1 med PostgreSQL');
