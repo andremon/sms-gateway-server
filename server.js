@@ -429,7 +429,14 @@ async function requireApiKey(req, res, next) {
 }
 
 // ── HELSESJEKK ────────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'ok', version: '4.0.0', message: 'SMS Gateway Server' }));
+// Helsesjekk som JSON (for apper og overvåking). «/» gir forsiden i nettleser, JSON for alt annet –
+// så gateway-appen og andre som sjekker «/» får samme svar som før.
+const helse = { status: 'ok', version: '4.0.0', message: 'SMS Gateway Server' };
+app.get('/health', (req, res) => res.json(helse));
+app.get('/', (req, res) => {
+    if (req.accepts(['json', 'html']) === 'html') return res.sendFile(__dirname + '/public/forside.html');
+    res.json(helse);
+});
 
 // ── ADMIN API ─────────────────────────────────────────────────────────────────
 // Innlogging: passord, og (når ADMIN_TELEFON er satt) en kode på SMS til din telefon
