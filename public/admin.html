@@ -177,6 +177,16 @@ tr:hover td{background:#ffffff04}
     <div class="login-err" id="loginErr"></div>
     <button class="forgot-link" id="forgotBtn">Glemt passord?</button>
   </div>
+  <div class="login-box hidden" id="kodeBox">
+    <div class="icon">📩</div>
+    <h1>Kode på SMS</h1>
+    <p class="sub" id="kodeInfo">Skriv koden vi sendte til telefonen din</p>
+    <input id="loginKode" inputmode="numeric" autocomplete="one-time-code" placeholder="6 siffer" style="letter-spacing:6px;font-size:20px;text-align:center">
+    <button class="login-btn" id="kodeBtn">Bekreft</button>
+    <div class="login-err" id="kodeErr"></div>
+    <button class="forgot-link" id="nyKodeBtn">Send ny kode</button>
+    <button class="forgot-link" id="kodeTilbakeBtn">← Tilbake</button>
+  </div>
   <div class="login-box hidden" id="resetBox">
     <div class="icon">🔑</div>
     <h1>Tilbakestill passord</h1>
@@ -621,19 +631,69 @@ document.querySelectorAll('.nav-item[data-view]').forEach(function(btn) {
 });
 
 // ── LOGIN ────────────────────────────────────────────────────────
+// Passord, og (når ADMIN_TELEFON er satt på serveren) en kode på SMS til telefonen din.
+var loginVenter = '', loginEtter = null, loginFraBoks = 'loginBox';
+function visBoks(id) {
+  ['loginBox', 'resetBox', 'kodeBox'].forEach(function(b) { document.getElementById(b).classList.toggle('hidden', b !== id); });
+}
+function postJson(sti, data) {
+  return fetch(BASE + sti, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    .then(function(r) { return r.json().then(function(j) { j._status = r.status; return j; }); });
+}
+// Logger inn med passord (+ SMS-kode). Kaller ferdig(token) når alt er godkjent.
+function loggInn(pwd, errEl, fraBoks, ferdig) {
+  errEl.style.color = ''; errEl.textContent = '';
+  postJson('/admin/login', { password: pwd }).then(function(res) {
+    if (res.token) { ferdig(res.token); return; }
+    if (res.trengerKode) {
+      loginVenter = res.venter; loginEtter = ferdig; loginFraBoks = fraBoks;
+      document.getElementById('kodeInfo').textContent = 'Koden er sendt til ' + (res.telefon || 'telefonen din') + '. Den er gyldig i 5 minutter.';
+      var ke = document.getElementById('kodeErr');
+      ke.style.color = res.sendFeil ? '#f87171' : '#94a3b8';
+      ke.textContent = res.sendFeil ? '✕ ' + res.sendFeil : (res.telefonOnline === false ? 'Gateway-telefonen har ikke vært online siste 2 min – SMS-en kan bli forsinket.' : '');
+      document.getElementById('loginKode').value = '';
+      visBoks('kodeBox');
+      setTimeout(function() { document.getElementById('loginKode').focus(); }, 50);
+      return;
+    }
+    errEl.textContent = '✕ ' + (res.error || 'Feil passord');
+  }).catch(function() { errEl.textContent = '✕ Feil — sjekk tilkobling'; });
+}
+function sendLoginKode() {
+  var kode = document.getElementById('loginKode').value.trim();
+  var ke = document.getElementById('kodeErr');
+  if (!kode) return;
+  postJson('/admin/login/kode', { venter: loginVenter, kode: kode }).then(function(res) {
+    if (!res.token) { ke.style.color = '#f87171'; ke.textContent = '✕ ' + (res.error || 'Feil kode'); return; }
+    try {
+      sessionStorage.setItem('stepup_token', res.stepupToken || '');
+      sessionStorage.setItem('stepup_utloper', String(res.stepupUtloper || 0));
+    } catch (e) {}
+    loginVenter = '';
+    var f = loginEtter; loginEtter = null;
+    if (f) f(res.token);
+  }).catch(function() { ke.style.color = '#f87171'; ke.textContent = '✕ Feil — sjekk tilkobling'; });
+}
+document.getElementById('kodeBtn').addEventListener('click', sendLoginKode);
+document.getElementById('loginKode').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendLoginKode(); });
+document.getElementById('nyKodeBtn').addEventListener('click', function() {
+  var ke = document.getElementById('kodeErr');
+  postJson('/admin/login/ny-kode', { venter: loginVenter }).then(function(res) {
+    if (res.error) { ke.style.color = '#f87171'; ke.textContent = '✕ ' + res.error; return; }
+    ke.style.color = '#34d399'; ke.textContent = '✓ Ny kode sendt til ' + res.telefon;
+  });
+});
+document.getElementById('kodeTilbakeBtn').addEventListener('click', function() { loginVenter = ''; visBoks(loginFraBoks); });
+
 function adminLogin() {
   var pwd = document.getElementById('adminPwd').value;
-  document.getElementById('loginErr').textContent = '';
-  fetch(BASE + '/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) })
-    .then(function(r) { return r.json(); }).then(function(res) {
-      if (res.token) {
-        adminToken = res.token;
-        localStorage.setItem('admin_token', adminToken);
-        showApp();
-      } else {
-        document.getElementById('loginErr').textContent = '✕ Feil passord';
-      }
-    }).catch(function() { document.getElementById('loginErr').textContent = '✕ Feil — sjekk tilkobling'; });
+  loggInn(pwd, document.getElementById('loginErr'), 'loginBox', function(token) {
+    adminToken = token;
+    localStorage.setItem('admin_token', adminToken);
+    document.getElementById('adminPwd').value = '';
+    visBoks('loginBox');
+    showApp();
+  });
 }
 document.getElementById('loginBtn').addEventListener('click', adminLogin);
 document.getElementById('adminPwd').addEventListener('keydown', function(e) { if (e.key === 'Enter') adminLogin(); });
@@ -652,10 +712,8 @@ document.getElementById('doResetBtn').addEventListener('click', function() {
   var err = document.getElementById('resetErr');
   if (!nw || nw.length < 8) { err.textContent = '✕ Min. 8 tegn'; return; }
   if (nw !== cf) { err.textContent = '✕ Passordene er ikke like'; return; }
-  fetch(BASE + '/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: cur }) })
-    .then(function(r) { return r.json(); }).then(function(res) {
-      if (!res.token) { err.textContent = '✕ Feil nåværende passord'; return; }
-      var tmp = res.token;
+  loggInn(cur, err, 'resetBox', function(tmp) {
+      visBoks('resetBox');
       fetch(BASE + '/admin/settings/password', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Admin-Token': tmp }, body: JSON.stringify({ currentPassword: cur, newPassword: nw }) })
         .then(function(r) { return r.json(); }).then(function(r2) {
           if (r2.success) {
@@ -668,6 +726,8 @@ document.getElementById('doResetBtn').addEventListener('click', function() {
     });
 });
 document.getElementById('logoutNavBtn').addEventListener('click', function() {
+  adminApi('/admin/logout', { method: 'POST' }).catch(function() {});
+  try { sessionStorage.removeItem('stepup_token'); sessionStorage.removeItem('stepup_utloper'); } catch (e) {}
   localStorage.removeItem('admin_token'); adminToken = '';
   document.getElementById('appWrap').classList.add('hidden');
   document.getElementById('loginWrap').classList.remove('hidden');
